@@ -26,10 +26,19 @@ export async function finalizeUpscaled(
   await rm(tmpPngPath, { force: true })
 }
 
+/** Light feather radius (sharp blur sigma) for a bleed of `border` px per side. */
+function featherSigma(border: number): number {
+  return Math.min(12, Math.max(1, border / 3))
+}
+
 /**
- * Adds a mirrored bleed border so a printed card has real bleed content (rather
- * than a zoomed card or a white edge). Returns the input unchanged for the
- * 'zoom' mode or when there is no bleed.
+ * Adds a bleed border by extending each edge pixel straight outward
+ * (edge-replicate), so a printed card has real bleed content. Unlike a mirror
+ * reflection, replication never duplicates edge features and never produces the
+ * 4-fold "kaleidoscope" at corners (where a mirror reflects on both axes at
+ * once). The replicated streaks are then feathered with a light blur, and the
+ * crisp original is composited back over the card area so only the bleed ring is
+ * softened. Returns the input unchanged for 'zoom' mode or when there's no bleed.
  */
 export async function extendBleed(
   imageBytes: Uint8Array,
@@ -46,8 +55,15 @@ export async function extendBleed(
 
   const left = Math.round((width * bleedMm) / CARD_WIDTH_MM)
   const top = Math.round((height * bleedMm) / CARD_HEIGHT_MM)
-  const out = await image
-    .extend({ top, bottom: top, left, right: left, extendWith: 'mirror' })
+  if (left <= 0 && top <= 0) return imageBytes
+
+  const extended = await image
+    .extend({ top, bottom: top, left, right: left, extendWith: 'copy' })
+    .toBuffer()
+
+  const out = await sharp(extended)
+    .blur(featherSigma(Math.max(left, top)))
+    .composite([{ input: Buffer.from(imageBytes), left, top }])
     .jpeg({ quality: JPEG_QUALITY })
     .toBuffer()
   return new Uint8Array(out)
@@ -55,8 +71,9 @@ export async function extendBleed(
 
 /**
  * Renders a card face to MakePlayingCards' full-bleed spec: the art is resized
- * to the cut area, then a mirrored bleed border is added so the final PNG is
- * exactly MPC's expected pixel size (no white edges, no zoomed crop).
+ * to the cut area, then an edge-replicated bleed border is added so the final
+ * PNG is exactly MPC's expected pixel size (no white edges, no zoomed crop, and
+ * no mirror kaleidoscope at the corners).
  */
 export async function buildMpcImage(imageBytes: Uint8Array): Promise<Uint8Array> {
   const cutWidth = MPC_IMAGE_WIDTH - MPC_BLEED_PX * 2
@@ -68,7 +85,7 @@ export async function buildMpcImage(imageBytes: Uint8Array): Promise<Uint8Array>
       bottom: MPC_BLEED_PX,
       left: MPC_BLEED_PX,
       right: MPC_BLEED_PX,
-      extendWith: 'mirror'
+      extendWith: 'copy'
     })
     .png()
     .toBuffer()

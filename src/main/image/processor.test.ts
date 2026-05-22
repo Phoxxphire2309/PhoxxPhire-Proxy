@@ -52,7 +52,7 @@ describe('finalizeUpscaled', () => {
 })
 
 describe('extendBleed', () => {
-  it('adds a mirrored border sized to the bleed in extend mode', async () => {
+  it('adds an edge-replicated border sized to the bleed in extend mode', async () => {
     const png = await solidPng(630, 880) // 10px per mm at card size
     const out = await extendBleed(new Uint8Array(png), 2, 'extend')
     const meta = await sharp(out).metadata()
@@ -60,6 +60,35 @@ describe('extendBleed', () => {
     expect(meta.width).toBe(630 + 2 * 20)
     expect(meta.height).toBe(880 + 2 * 20)
     expect(isJpeg(out)).toBe(true)
+  })
+
+  it('replicates the edge outward (not a mirror reflection) into the bleed', async () => {
+    // A white stripe along the very left edge, black everywhere else. Edge
+    // replication carries the white edge across the whole left bleed; a mirror
+    // would reflect the black interior outward instead, leaving the outer bleed
+    // dark. Sampling the outermost bleed column distinguishes the two.
+    const W = 630
+    const H = 880
+    const raw = Buffer.alloc(W * H * 3)
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) {
+        const v = x < 3 ? 255 : 0
+        const i = (y * W + x) * 3
+        raw[i] = v
+        raw[i + 1] = v
+        raw[i + 2] = v
+      }
+    }
+    const png = await sharp(raw, { raw: { width: W, height: H, channels: 3 } })
+      .png()
+      .toBuffer()
+    const out = await extendBleed(new Uint8Array(png), 2, 'extend')
+    const { data, info } = await sharp(out).raw().toBuffer({ resolveWithObject: true })
+
+    let sum = 0
+    for (let y = 0; y < info.height; y += 1) sum += data[(y * info.width + 0) * info.channels]!
+    const leftEdgeMean = sum / info.height
+    expect(leftEdgeMean).toBeGreaterThan(150) // bright: the edge was replicated, not reflected
   })
 
   it('returns the input unchanged for zoom mode or zero bleed', async () => {
