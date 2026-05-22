@@ -764,6 +764,35 @@ body {
   opacity: 1;
 }
 
+.tile__upscale {
+  position: absolute;
+  left: 8px;
+  bottom: 8px;
+  padding: 5px 10px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: rgba(18, 19, 22, 0.82);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+  backdrop-filter: blur(4px);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.tile__art:hover .tile__upscale,
+.tile__upscale:focus-visible,
+.tile__upscale.is-on {
+  opacity: 1;
+}
+
+.tile__upscale.is-on {
+  color: #1a1206;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 .tile__caption {
   display: flex;
   flex-direction: column;
