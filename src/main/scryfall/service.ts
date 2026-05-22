@@ -2,8 +2,11 @@ import {
   parseDecklist,
   type DeckLine,
   type DeckResolution,
-  type DeckResolvedItem
+  type DeckResolvedItem,
+  type ImportProgress
 } from '@shared/decklist'
+
+type ProgressFn = (progress: ImportProgress) => void
 import type { Card, SearchResult } from '@shared/scryfall'
 import { CardCache } from './cache'
 import { ScryfallClient } from './client'
@@ -81,20 +84,21 @@ export class ScryfallService {
    * by name. Duplicate cards are merged by quantity, and unresolved lines are
    * returned as error messages rather than failing the whole import.
    */
-  resolveDeck(text: string): Promise<DeckResolution> {
-    return this.resolveLines(parseDecklist(text))
+  resolveDeck(text: string, onProgress?: ProgressFn): Promise<DeckResolution> {
+    return this.resolveLines(parseDecklist(text), onProgress)
   }
 
   /** Fetch a decklist from a supported site URL and resolve it. */
-  async importDeckUrl(url: string): Promise<DeckResolution> {
-    return this.resolveLines(await fetchDeckLines(url, this.deckFetch))
+  async importDeckUrl(url: string, onProgress?: ProgressFn): Promise<DeckResolution> {
+    return this.resolveLines(await fetchDeckLines(url, this.deckFetch), onProgress)
   }
 
-  async resolveLines(lines: DeckLine[]): Promise<DeckResolution> {
+  async resolveLines(lines: DeckLine[], onProgress?: ProgressFn): Promise<DeckResolution> {
     const items: DeckResolvedItem[] = []
     const byId = new Map<string, DeckResolvedItem>()
     const errors: string[] = []
 
+    let completed = 0
     for (const line of lines) {
       try {
         const card =
@@ -115,6 +119,8 @@ export class ScryfallService {
         const reason = error instanceof Error ? error.message : 'unknown error'
         errors.push(`${line.quantity}× ${line.name}: ${reason}`)
       }
+      completed += 1
+      onProgress?.({ completed, total: lines.length, name: line.name })
     }
 
     return { items, errors }

@@ -1,6 +1,7 @@
 import { join } from 'node:path'
-import { ipcMain, net } from 'electron'
+import { BrowserWindow, ipcMain, net } from 'electron'
 import { IpcChannel } from '@shared/ipc'
+import type { ImportProgress } from '@shared/decklist'
 import { CardCache } from './cache'
 import { ScryfallClient } from './client'
 import { ScryfallService } from './service'
@@ -36,10 +37,19 @@ export async function initScryfall(
   ipcMain.handle(IpcChannel.ScryfallPrints, (_event, oracleId: string) =>
     service.getPrintings(oracleId)
   )
+  const broadcastImportProgress = (progress: ImportProgress): void => {
+    for (const window of BrowserWindow.getAllWindows()) {
+      if (!window.isDestroyed()) {
+        window.webContents.send(IpcChannel.ScryfallImportProgress, progress)
+      }
+    }
+  }
   ipcMain.handle(IpcChannel.ScryfallResolveDeck, (_event, text: string) =>
-    service.resolveDeck(text)
+    service.resolveDeck(text, broadcastImportProgress)
   )
-  ipcMain.handle(IpcChannel.ScryfallImportUrl, (_event, url: string) => service.importDeckUrl(url))
+  ipcMain.handle(IpcChannel.ScryfallImportUrl, (_event, url: string) =>
+    service.importDeckUrl(url, broadcastImportProgress)
+  )
 
   return { service, cache }
 }

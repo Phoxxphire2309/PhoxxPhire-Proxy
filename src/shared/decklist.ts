@@ -26,6 +26,13 @@ export interface DeckResolution {
   errors: string[]
 }
 
+/** Per-line progress while a decklist is resolved against Scryfall. */
+export interface ImportProgress {
+  completed: number
+  total: number
+  name: string
+}
+
 /** Section headers emitted by various exporters; ignored when on their own line. */
 const SECTION_HEADERS = new Set([
   'deck',

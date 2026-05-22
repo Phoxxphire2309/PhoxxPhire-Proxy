@@ -8,7 +8,7 @@
 
 import type { AppState } from './appState'
 import type { DeckLoadOutcome, DeckSaveOutcome, SavedDeck } from './deck'
-import type { DeckResolution } from './decklist'
+import type { DeckResolution, ImportProgress } from './decklist'
 import type {
   CalibrationOutcome,
   ExportImagesOutcome,
@@ -28,6 +28,8 @@ export const IpcChannel = {
   ScryfallPrints: 'scryfall:prints',
   ScryfallResolveDeck: 'scryfall:resolveDeck',
   ScryfallImportUrl: 'scryfall:importUrl',
+  /** Main → renderer push channel for per-card deck-import progress. */
+  ScryfallImportProgress: 'scryfall:importProgress',
   DeckSave: 'deck:save',
   DeckLoad: 'deck:load',
   CustomCardImport: 'custom:import',
@@ -89,6 +91,8 @@ export interface PhoxxApi {
   resolveDeck(text: string): Promise<DeckResolution>
   /** Fetch + resolve a decklist from a supported site URL (Archidekt, Moxfield). */
   importDeckUrl(url: string): Promise<DeckResolution>
+  /** Subscribe to per-card deck-import progress; returns an unsubscribe function. */
+  onImportProgress(listener: (progress: ImportProgress) => void): () => void
   /** Save a deck to a JSON file (prompts for a path). */
   saveDeck(deck: SavedDeck): Promise<DeckSaveOutcome>
   /** Load a deck from a JSON file (prompts for a file). */

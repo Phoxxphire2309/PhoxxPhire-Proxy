@@ -1,4 +1,5 @@
 import { useEffect, useState } from 'react'
+import type { ImportProgress } from '@shared/decklist'
 import { useDeckStore } from '@renderer/state/deckStore'
 
 const PLACEHOLDER = `4 Lightning Bolt
@@ -11,21 +12,28 @@ export function ImportDialog({ onClose }: { onClose: () => void }): React.JSX.El
   const importing = useDeckStore((state) => state.importing)
   const [text, setText] = useState('')
   const [url, setUrl] = useState('')
+  const [progress, setProgress] = useState<ImportProgress | null>(null)
 
   useEffect(() => {
+    const unsubscribe = window.phoxx.onImportProgress(setProgress)
     const onKey = (event: KeyboardEvent): void => {
-      if (event.key === 'Escape') onClose()
+      if (event.key === 'Escape' && !importing) onClose()
     }
     window.addEventListener('keydown', onKey)
-    return () => window.removeEventListener('keydown', onKey)
-  }, [onClose])
+    return () => {
+      unsubscribe()
+      window.removeEventListener('keydown', onKey)
+    }
+  }, [onClose, importing])
 
   const submit = async (): Promise<void> => {
+    setProgress(null)
     await importText(text)
     onClose()
   }
 
   const submitUrl = async (): Promise<void> => {
+    setProgress(null)
     await importUrl(url)
     onClose()
   }
@@ -73,6 +81,20 @@ export function ImportDialog({ onClose }: { onClose: () => void }): React.JSX.El
           aria-label="Decklist text"
           spellCheck={false}
         />
+        {importing && progress && (
+          <div className="import__progress" role="status" aria-live="polite">
+            <div className="upscale-progress__bar">
+              <div
+                className="upscale-progress__fill"
+                style={{ width: `${(progress.completed / Math.max(1, progress.total)) * 100}%` }}
+              />
+            </div>
+            <span className="import__progress-label">
+              Resolving {progress.completed}/{progress.total} — {progress.name}
+            </span>
+          </div>
+        )}
+
         <div className="import__actions">
           <button
             className="search__button"

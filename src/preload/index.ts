@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IpcChannel, type PhoxxApi, type UpscaleStatusEvent } from '@shared/ipc'
 import type { ExportProgress } from '@shared/layout'
+import type { ImportProgress } from '@shared/decklist'
 import type { InstallPhase } from '@shared/upscaleInstall'
 
 const api: PhoxxApi = {
@@ -10,6 +11,12 @@ const api: PhoxxApi = {
   getPrintings: (oracleId) => ipcRenderer.invoke(IpcChannel.ScryfallPrints, oracleId),
   resolveDeck: (text) => ipcRenderer.invoke(IpcChannel.ScryfallResolveDeck, text),
   importDeckUrl: (url) => ipcRenderer.invoke(IpcChannel.ScryfallImportUrl, url),
+  onImportProgress: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: ImportProgress): void =>
+      listener(data)
+    ipcRenderer.on(IpcChannel.ScryfallImportProgress, handler)
+    return () => ipcRenderer.removeListener(IpcChannel.ScryfallImportProgress, handler)
+  },
   saveDeck: (deck) => ipcRenderer.invoke(IpcChannel.DeckSave, deck),
   loadDeck: () => ipcRenderer.invoke(IpcChannel.DeckLoad),
   importCustomCard: () => ipcRenderer.invoke(IpcChannel.CustomCardImport),

@@ -1202,3 +1202,19 @@ body {
     width: 100%;
   }
 }
+
+/* Deck-import progress (inside the Import dialog) */
+.import__progress {
+  margin-top: 12px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.import__progress-label {
+  font-size: 12px;
+  color: var(--muted);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
