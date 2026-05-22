@@ -39,7 +39,11 @@ export class ScryfallService {
   constructor(
     private readonly client: ScryfallClient,
     private readonly cache: CardCache,
-    private readonly fetchFn: typeof fetch = fetch
+    private readonly fetchFn: typeof fetch = fetch,
+    // Deck-site fetches go through this; in the app it's Electron's Chromium
+    // network stack (net.fetch), which clears Cloudflare bot checks that block
+    // a plain Node/undici request to e.g. Moxfield.
+    private readonly deckFetch: typeof fetch = fetch
   ) {}
 
   async init(): Promise<void> {
@@ -83,7 +87,7 @@ export class ScryfallService {
 
   /** Fetch a decklist from a supported site URL and resolve it. */
   async importDeckUrl(url: string): Promise<DeckResolution> {
-    return this.resolveLines(await fetchDeckLines(url))
+    return this.resolveLines(await fetchDeckLines(url, this.deckFetch))
   }
 
   async resolveLines(lines: DeckLine[]): Promise<DeckResolution> {

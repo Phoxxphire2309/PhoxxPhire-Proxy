@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { ipcMain } from 'electron'
+import { ipcMain, net } from 'electron'
 import { IpcChannel } from '@shared/ipc'
 import { CardCache } from './cache'
 import { ScryfallClient } from './client'
@@ -24,7 +24,9 @@ export async function initScryfall(
     userAgent: `PhoxxPhireProxy/${options.version} (+https://github.com/phoxxphire/proxy)`
   })
   const cache = new CardCache(join(options.userDataDir, 'cache'))
-  const service = new ScryfallService(client, cache)
+  // Deck-site imports use Electron's Chromium network stack so Cloudflare-fronted
+  // APIs (Moxfield) see a real browser request instead of a blocked Node one.
+  const service = new ScryfallService(client, cache, fetch, net.fetch as unknown as typeof fetch)
   await service.init()
 
   ipcMain.handle(IpcChannel.ScryfallSearch, (_event, query: string) => service.search(query))
