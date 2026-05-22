@@ -1,47 +1,40 @@
 import { useEffect, useState } from 'react'
 import { bestUsd, faceImageUrl, formatUsd, type Card } from '@shared/scryfall'
-import { useSearchStore } from '@renderer/state/searchStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useDeckStore } from '@renderer/state/deckStore'
 
 export function CardDetail(): React.JSX.Element | null {
-  const detailCardId = usePrintingStore((state) => state.detailCardId)
-  const override = usePrintingStore((state) =>
-    detailCardId ? state.overrides[detailCardId] : undefined
-  )
+  const detailCard = usePrintingStore((state) => state.detailCard)
   const close = usePrintingStore((state) => state.close)
   const choose = usePrintingStore((state) => state.choose)
   const addToDeck = useDeckStore((state) => state.add)
-  const original = useSearchStore((state) =>
-    detailCardId ? state.cards.find((card) => card.id === detailCardId) : undefined
-  )
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
   const scale = useUpscaleStore((state) => state.scale)
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
-  const markUpscaled = useUpscaleStore((state) => state.markUpscaled)
+  const runUpscale = useUpscaleStore((state) => state.runUpscale)
 
   const [printings, setPrintings] = useState<Card[]>([])
   const [loadingPrintings, setLoadingPrintings] = useState(false)
   const [faceIndex, setFaceIndex] = useState(0)
   const [compare, setCompare] = useState(50)
 
-  const displayed = override ?? original
+  const displayed = detailCard
   const oracleId = displayed?.oracleId ?? null
 
   // Close on Escape.
   useEffect(() => {
-    if (!detailCardId) return
+    if (!detailCard) return
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') close()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
-  }, [detailCardId, close])
+  }, [detailCard, close])
 
   // Reset the viewed face when switching to a different card.
-  useEffect(() => setFaceIndex(0), [detailCardId])
+  useEffect(() => setFaceIndex(0), [detailCard?.id])
 
   // Load all printings for the displayed card's oracle id.
   useEffect(() => {
@@ -61,7 +54,7 @@ export function CardDetail(): React.JSX.Element | null {
     }
   }, [oracleId])
 
-  if (!detailCardId || !displayed) return null
+  if (!displayed) return null
 
   const face = displayed.faces[faceIndex] ?? displayed.faces[0]
   const isDoubleFaced = displayed.faces.length > 1
@@ -146,7 +139,15 @@ export function CardDetail(): React.JSX.Element | null {
                 ＋ Add to deck
               </button>
               {upscalerAvailable && !upscaled && (
-                <button className="toggle" type="button" onClick={() => markUpscaled(displayed.id)}>
+                <button
+                  className="toggle"
+                  type="button"
+                  onClick={() =>
+                    runUpscale(
+                      displayed.faces.map((_f, i) => ({ cardId: displayed.id, faceIndex: i }))
+                    )
+                  }
+                >
                   Upscale {scale}×
                 </button>
               )}
@@ -175,7 +176,7 @@ export function CardDetail(): React.JSX.Element | null {
                     <button
                       type="button"
                       className={`prints__item${printing.id === displayed.id ? ' is-active' : ''}`}
-                      onClick={() => choose(detailCardId, printing)}
+                      onClick={() => choose(printing)}
                       title={`${printing.setCode.toUpperCase()} · #${printing.collectorNumber}`}
                     >
                       <img

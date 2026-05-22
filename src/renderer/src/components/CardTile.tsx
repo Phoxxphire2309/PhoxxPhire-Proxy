@@ -31,7 +31,7 @@ export function CardTile({
   const available = useUpscaleStore((state) => state.available) === true
   const upscaled = useUpscaleStore((state) => Boolean(state.upscaled[card.id]))
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
-  const markUpscaled = useUpscaleStore((state) => state.markUpscaled)
+  const runUpscale = useUpscaleStore((state) => state.runUpscale)
   const unmarkUpscaled = useUpscaleStore((state) => state.unmarkUpscaled)
   const status = useUpscaleStore((state) => state.statuses[faceKey(card.id, faceIndex)])
 
@@ -88,7 +88,7 @@ export function CardTile({
             onClick={(event) => {
               event.stopPropagation()
               if (upscaled) unmarkUpscaled(card.id)
-              else markUpscaled(card.id)
+              else runUpscale(card.faces.map((_f, i) => ({ cardId: card.id, faceIndex: i })))
             }}
             aria-pressed={upscaled}
             title={upscaled ? 'Show original' : 'Upscale this card'}

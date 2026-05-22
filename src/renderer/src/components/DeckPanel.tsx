@@ -1,6 +1,7 @@
 import { useState } from 'react'
 import { bestUsd, faceImageUrl, formatUsd } from '@shared/scryfall'
 import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
+import { usePrintingStore } from '@renderer/state/printingStore'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 import { ImportDialog } from '@renderer/components/ImportDialog'
 import { ExportDialog } from '@renderer/components/ExportDialog'
@@ -20,27 +21,44 @@ function DeckFaceRow({
 }): React.JSX.Element {
   const setFaceQuantity = useDeckStore((state) => state.setFaceQuantity)
   const remove = useDeckStore((state) => state.remove)
+  const openDeck = usePrintingStore((state) => state.openDeck)
   const status = useUpscaleStore((state) => state.statuses[faceKey(item.card.id, faceIndex)])
 
   const multiFace = item.card.faces.length > 1
   const faceName = multiFace ? (item.card.faces[faceIndex]?.name ?? item.card.name) : item.card.name
   const quantity = item.quantities[faceIndex] ?? 0
 
+  const open = (): void => openDeck(item.card)
+
   return (
     <li className="ditem">
-      <img
-        className="ditem__thumb"
-        src={faceImageUrl(item.card.id, faceIndex, 'source')}
-        alt={faceName}
-        loading="lazy"
-        draggable={false}
-      />
-      <div className="ditem__info">
-        <span className="ditem__name">{faceName}</span>
-        <span className="ditem__meta">
-          {item.card.setCode.toUpperCase()} · {formatUsd(bestUsd(item.card.prices))}
-          {status === 'ready' ? ' · 4×' : status === 'upscaling' ? ' · …' : ''}
-        </span>
+      <div
+        className="ditem__open"
+        role="button"
+        tabIndex={0}
+        aria-label={`Change version or upscale ${faceName}`}
+        onClick={open}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            open()
+          }
+        }}
+      >
+        <img
+          className="ditem__thumb"
+          src={faceImageUrl(item.card.id, faceIndex, 'source')}
+          alt={faceName}
+          loading="lazy"
+          draggable={false}
+        />
+        <div className="ditem__info">
+          <span className="ditem__name">{faceName}</span>
+          <span className="ditem__meta">
+            {item.card.setCode.toUpperCase()} · {formatUsd(bestUsd(item.card.prices))}
+            {status === 'ready' ? ' · 4×' : status === 'upscaling' ? ' · …' : ''}
+          </span>
+        </div>
       </div>
       <div className="ditem__qty">
         <button
@@ -80,8 +98,7 @@ export function DeckPanel(): React.JSX.Element {
   const addCustomCard = useDeckStore((state) => state.addCustomCard)
   const importErrors = useDeckStore((state) => state.importErrors)
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
-  const markManyUpscaled = useUpscaleStore((state) => state.markManyUpscaled)
-  const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
+  const runUpscale = useUpscaleStore((state) => state.runUpscale)
   const [showImport, setShowImport] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
@@ -94,15 +111,12 @@ export function DeckPanel(): React.JSX.Element {
   )
 
   // Mark every deck card upscaled (so preview/export use it) and warm the cache.
-  const preUpscale = (): void => {
-    markManyUpscaled(items.map((item) => item.card.id))
-    for (const item of items) {
-      item.card.faces.forEach((_face, index) => {
-        const image = new Image()
-        image.src = faceImageUrl(item.card.id, index, 'upscaled', settingsVersion)
-      })
-    }
-  }
+  const preUpscale = (): void =>
+    runUpscale(
+      items.flatMap((item) =>
+        item.card.faces.map((_f, i) => ({ cardId: item.card.id, faceIndex: i }))
+      )
+    )
 
   return (
     <section className="deck">

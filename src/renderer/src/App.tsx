@@ -6,6 +6,7 @@ import { CardDetail } from '@renderer/components/CardDetail'
 import { DeckPanel } from '@renderer/components/DeckPanel'
 import { UpscaleControls } from '@renderer/components/UpscaleControls'
 import { ToastContainer } from '@renderer/components/ToastContainer'
+import { UpscaleProgress } from '@renderer/components/UpscaleProgress'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore } from '@renderer/state/uiStore'
 import { loadPersistedState, startPersisting } from '@renderer/state/persist'
@@ -90,6 +91,7 @@ export function App(): React.JSX.Element {
 
       <CardDetail />
       <ToastContainer />
+      <UpscaleProgress />
     </div>
   )
 }

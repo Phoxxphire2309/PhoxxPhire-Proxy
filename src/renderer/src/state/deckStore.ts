@@ -21,6 +21,7 @@ interface DeckState {
   add: (card: Card, quantity?: number) => void
   setItems: (items: DeckItem[]) => void
   setFaceQuantity: (cardId: string, faceIndex: number, quantity: number) => void
+  replaceCard: (oldCardId: string, newCard: Card) => void
   remove: (cardId: string) => void
   clear: () => void
   importText: (text: string) => Promise<void>
@@ -87,6 +88,19 @@ export const useDeckStore = create<DeckState>((set, get) => ({
       }
       return { items }
     }),
+
+  replaceCard: (oldCardId, newCard) =>
+    set((state) => ({
+      items: state.items.map((item) => {
+        if (item.card.id !== oldCardId) return item
+        const oldQuantities = item.quantities
+        const resized = Array.from(
+          { length: facesOf(newCard) },
+          (_unused, index) => oldQuantities[index] ?? oldQuantities[0] ?? 1
+        )
+        return { card: newCard, quantities: resized }
+      })
+    })),
 
   remove: (cardId) =>
     set((state) => ({ items: state.items.filter((item) => item.card.id !== cardId) })),

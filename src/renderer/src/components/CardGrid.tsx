@@ -7,10 +7,16 @@ import { CardTile } from '@renderer/components/CardTile'
 
 function GridItem({ card }: { card: Card }): React.JSX.Element {
   const override = usePrintingStore((state) => state.overrides[card.id])
-  const open = usePrintingStore((state) => state.open)
+  const openGrid = usePrintingStore((state) => state.openGrid)
   const add = useDeckStore((state) => state.add)
   const displayed = override ?? card
-  return <CardTile card={displayed} onOpen={() => open(card.id)} onAdd={() => add(displayed)} />
+  return (
+    <CardTile
+      card={displayed}
+      onOpen={() => openGrid(card.id, displayed)}
+      onAdd={() => add(displayed)}
+    />
+  )
 }
 
 export function CardGrid(): React.JSX.Element {
@@ -20,7 +26,7 @@ export function CardGrid(): React.JSX.Element {
   const totalCards = useSearchStore((state) => state.totalCards)
   const overrides = usePrintingStore((state) => state.overrides)
   const available = useUpscaleStore((state) => state.available) === true
-  const markManyUpscaled = useUpscaleStore((state) => state.markManyUpscaled)
+  const runUpscale = useUpscaleStore((state) => state.runUpscale)
 
   if (status === 'error') {
     return <p className="grid__message grid__message--error">{error}</p>
@@ -35,7 +41,12 @@ export function CardGrid(): React.JSX.Element {
   }
 
   const upscaleAll = (): void =>
-    markManyUpscaled(cards.map((card) => (overrides[card.id] ?? card).id))
+    runUpscale(
+      cards.flatMap((c) => {
+        const d = overrides[c.id] ?? c
+        return d.faces.map((_f, i) => ({ cardId: d.id, faceIndex: i }))
+      })
+    )
 
   return (
     <>
