@@ -100,6 +100,11 @@ describe('ScryfallClient', () => {
     expect(fetchFn).toHaveBeenCalledTimes(1)
   })
 
+  it('returns no suggestions (never throws) when autocomplete fails', async () => {
+    const fetchFn = vi.fn<typeof fetch>(async () => new Response('down', { status: 503 }))
+    await expect(makeClient(fetchFn, 0).autocomplete('bolt')).resolves.toEqual([])
+  })
+
   it('builds a fuzzy named lookup by default', async () => {
     const fetchFn = vi.fn<typeof fetch>(async () => jsonResponse(rawCard))
     await makeClient(fetchFn).named('lightning bolt')

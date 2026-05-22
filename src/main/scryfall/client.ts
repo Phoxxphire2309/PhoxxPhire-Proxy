@@ -99,11 +99,15 @@ export class ScryfallClient {
     }
   }
 
-  /** Card-name autocomplete suggestions. */
+  /** Card-name autocomplete suggestions. Best-effort: failures yield no suggestions. */
   async autocomplete(query: string): Promise<string[]> {
     if (!query.trim()) return []
-    const result = await this.request<{ data: string[] }>('/cards/autocomplete', { q: query })
-    return result.data
+    try {
+      const result = await this.request<{ data: string[] }>('/cards/autocomplete', { q: query })
+      return result.data
+    } catch {
+      return []
+    }
   }
 
   /** Fetch a single card by its Scryfall id. */
@@ -174,10 +178,11 @@ export class ScryfallClient {
       }
 
       if (!response.ok) {
-        throw new ScryfallError(
-          `Scryfall request failed (HTTP ${response.status})`,
-          response.status
-        )
+        const message =
+          response.status >= 500
+            ? `Scryfall is temporarily unavailable (HTTP ${response.status}) — try again shortly.`
+            : `Scryfall request failed (HTTP ${response.status})`
+        throw new ScryfallError(message, response.status)
       }
 
       return (await response.json()) as T
