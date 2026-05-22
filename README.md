@@ -75,51 +75,27 @@ invoked directly as a subprocess, so there's no dependency on a separate GUI app
 
 ---
 
-## Download & install
+## Run it
 
-Grab the installer for your OS from the **[Releases page](https://github.com/Phoxxphire2309/PhoxxPhire-Proxy/releases)**,
-then run it. On first launch, click **Install upscaler** in the header to download the
-Real-ESRGAN engine (~50 MB) — no terminal needed. Without it the app still works; it just shows
-original Scryfall art instead of upscaled.
-
-> You need a GPU with **Vulkan** support for upscaling (Macs use Metal automatically). Decks are
-> saved/loaded as `.json` from the deck panel's **Save** / **Load** buttons.
-
-| OS | File | First launch |
-| --- | --- | --- |
-| **macOS** | `…-<version>.dmg` — open it and drag the app to Applications | Builds aren't notarised yet, so Gatekeeper blocks the first open: **right-click the app → Open → Open**. |
-| **Windows** | `…-Setup-<version>.exe` — run the installer | SmartScreen may warn (unsigned): **More info → Run anyway**. Keep GPU drivers up to date. |
-| **Linux** | `…-<version>.AppImage` | `chmod +x` it and run. Needs Vulkan drivers (`mesa-vulkan-drivers`) and, on some distros, FUSE (`libfuse2`). |
-
-> **Note:** until the first release is published, the Releases page is empty — see
-> [_For developers_](#for-developers) to run from source, or push a `v*` tag to trigger the
-> release build (below).
-
----
-
-## For developers
+There are no pre-built installers yet — for now you run it from source:
 
 ```bash
 npm install        # install dependencies
 npm run dev        # launch the app with hot reload
 ```
 
-Requires Node.js ≥ 22.12. For development you can pre-provision the upscaler with
-`npm run setup:upscaler` instead of using the in-app button.
+Then click **Install upscaler** in the header to download the Real-ESRGAN engine (~50 MB) — no
+terminal needed. Without it the app still works; it just shows original Scryfall art instead of
+upscaled.
 
-### Building & releasing
+**Requirements:** Node.js ≥ 22.12, and a GPU with **Vulkan** support for upscaling (Macs use
+Metal automatically). Decks are saved/loaded as `.json` from the deck panel's **Save** / **Load**.
 
-```bash
-npm run package    # build an unsigned installer for the current OS → dist/
-```
+Platform notes for the in-app upscaler install:
 
-Pushing a Git tag that starts with `v` (e.g. `v0.1.0`, matching `package.json`'s version)
-triggers the **release workflow** (`.github/workflows/release.yml`): it builds the installer on
-macOS, Windows, and Linux runners and attaches them to a GitHub Release.
-
-**Code signing** is wired and ready — add your Apple / Windows certificates as repository secrets
-and the workflow signs (and notarises macOS) automatically; without them builds stay unsigned and
-show the first-launch warnings above. Full steps: **[docs/SIGNING.md](docs/SIGNING.md)**.
+- **macOS** — Apple Silicon and Intel both work (the binary is a universal Mach-O); uses built-in `unzip`.
+- **Windows** — keep GPU drivers current; extraction uses built-in PowerShell.
+- **Linux** — needs Vulkan drivers (e.g. `mesa-vulkan-drivers`) and `unzip` on `PATH`.
 
 ### Scripts
 
@@ -127,11 +103,25 @@ show the first-launch warnings above. Full steps: **[docs/SIGNING.md](docs/SIGNI
 | --- | --- |
 | `npm run dev` | Run in development with HMR |
 | `npm run build` | Type-check + bundle (main / preload / renderer) |
-| `npm run package` | Build an installer for the current OS |
-| `npm run release` | Build + publish installers to a GitHub Release (CI) |
-| `npm run setup:upscaler` | Pre-provision the Real-ESRGAN binary (dev) |
+| `npm run setup:upscaler` | Pre-provision the Real-ESRGAN binary instead of the in-app button |
 | `npm run lint` / `typecheck` / `test` | Quality gates |
 | `npm run format` | Prettier write |
+
+---
+
+## Packaging & distribution (not yet published)
+
+The app isn't distributed as installers yet, but the tooling is ready for when it is:
+
+```bash
+npm run package    # build an unsigned installer for the current OS → dist/ (dmg / nsis / AppImage)
+```
+
+Pushing a Git tag like `v0.1.0` (matching `package.json`'s version) triggers the **release
+workflow** (`.github/workflows/release.yml`), which builds installers on macOS, Windows, and
+Linux runners and attaches them to a GitHub Release. **Code signing** (Apple notarisation /
+Windows certificate) is wired but inactive until you add certificates as repo secrets — see
+**[docs/SIGNING.md](docs/SIGNING.md)**.
 
 ---
 
