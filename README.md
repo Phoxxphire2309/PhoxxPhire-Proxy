@@ -95,6 +95,53 @@ npm run package    # type-check, bundle, and produce a dmg / nsis / AppImage
 > Code-signing (Apple notarization / Windows certificate) is required for a publishable,
 > auto-updating release; the config is wired but unsigned local builds work for personal use.
 
+## Installing & running per platform
+
+You can run from source (`npm install && npm run dev`) on any platform, or build a native
+installer with `npm run package`. The Real-ESRGAN upscaler is **not bundled** — on first launch
+click **Install upscaler** in the header and it downloads the right binary for your OS into the
+app's data folder (one-click; no terminal). Decks are saved/loaded as `.json` via **Save** /
+**Load** in the deck panel.
+
+**Prerequisites (all platforms):** Node.js ≥ 22.12 to build, and a GPU with **Vulkan** support
+for upscaling (Apple Silicon/Intel Macs use Metal automatically). Without a usable GPU the app
+still runs and shows original art.
+
+### macOS
+
+```bash
+npm install && npm run dev      # run from source
+npm run package                 # → dist/PhoxxPhire Proxy-<version>.dmg
+```
+
+- Apple Silicon and Intel both work (the upscaler binary is a universal Mach-O).
+- Unsigned local builds: macOS Gatekeeper will block the first launch — **right-click the app →
+  Open**, then confirm. (A signed/notarised build removes this.)
+- The one-click installer uses the built-in `unzip`; nothing extra to install.
+
+### Windows
+
+```powershell
+npm install ; npm run dev       # run from source
+npm run package                 # → dist\PhoxxPhire Proxy Setup <version>.exe (NSIS)
+```
+
+- Install up-to-date GPU drivers (Vulkan ships with current NVIDIA/AMD/Intel drivers).
+- SmartScreen may warn on an unsigned installer — **More info → Run anyway**.
+- The one-click installer extracts via built-in PowerShell `Expand-Archive`.
+
+### Linux
+
+```bash
+npm install && npm run dev      # run from source
+npm run package                 # → dist/PhoxxPhire Proxy-<version>.AppImage
+chmod +x "dist/PhoxxPhire Proxy-"*.AppImage && ./dist/PhoxxPhire\ Proxy-*.AppImage
+```
+
+- Requires Vulkan drivers (e.g. `mesa-vulkan-drivers` / `vulkan-tools`) and `unzip` on PATH for
+  the one-click installer.
+- On some distros AppImages need FUSE (`libfuse2`).
+
 ### Scripts
 
 | Script | Purpose |

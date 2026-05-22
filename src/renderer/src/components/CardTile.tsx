@@ -2,8 +2,7 @@ import { useEffect, useState } from 'react'
 import { bestUsd, faceImageUrl, formatUsd, type Card } from '@shared/scryfall'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 
-function statusLabel(status: string | undefined, showingSource: boolean): string | null {
-  if (showingSource) return 'Original'
+function statusBadge(status: string | undefined): string | null {
   switch (status) {
     case 'queued':
     case 'upscaling':
@@ -29,17 +28,18 @@ export function CardTile({
   const [faceIndex, setFaceIndex] = useState(0)
   const [loaded, setLoaded] = useState(false)
 
-  const showSource = useUpscaleStore((state) => state.showSource)
-  const available = useUpscaleStore((state) => state.available)
+  const available = useUpscaleStore((state) => state.available) === true
+  const upscaled = useUpscaleStore((state) => Boolean(state.upscaled[card.id]))
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
+  const markUpscaled = useUpscaleStore((state) => state.markUpscaled)
+  const unmarkUpscaled = useUpscaleStore((state) => state.unmarkUpscaled)
   const status = useUpscaleStore((state) => state.statuses[faceKey(card.id, faceIndex)])
 
-  const showingSource = showSource || available === false
-  const quality = showingSource ? 'source' : 'upscaled'
-  const src = faceImageUrl(card.id, faceIndex, quality, showingSource ? undefined : settingsVersion)
+  const quality = upscaled ? 'upscaled' : 'source'
+  const src = faceImageUrl(card.id, faceIndex, quality, upscaled ? settingsVersion : undefined)
   const isDoubleFaced = card.faces.length > 1
   const face = card.faces[faceIndex] ?? card.faces[0]
-  const badge = statusLabel(status, showingSource)
+  const badge = upscaled ? statusBadge(status) : null
 
   // Reset the loading state whenever the displayed image changes.
   useEffect(() => setLoaded(false), [src])
@@ -81,6 +81,21 @@ export function CardTile({
         >
           ＋
         </button>
+        {available && (
+          <button
+            className={`tile__upscale${upscaled ? ' is-on' : ''}`}
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              if (upscaled) unmarkUpscaled(card.id)
+              else markUpscaled(card.id)
+            }}
+            aria-pressed={upscaled}
+            title={upscaled ? 'Show original' : 'Upscale this card'}
+          >
+            {upscaled ? 'Original' : 'Upscale 4×'}
+          </button>
+        )}
         {isDoubleFaced && (
           <button
             className="tile__flip"

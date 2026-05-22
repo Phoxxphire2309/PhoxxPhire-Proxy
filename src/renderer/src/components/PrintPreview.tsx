@@ -2,6 +2,7 @@ import { useEffect } from 'react'
 import { computePageLayout, DEFAULT_EXPORT_OPTIONS, pageCountFor } from '@shared/layout'
 import { faceImageUrl } from '@shared/scryfall'
 import { useDeckStore } from '@renderer/state/deckStore'
+import { useUpscaleStore } from '@renderer/state/upscaleStore'
 
 interface SlotSpec {
   cardId: string
@@ -10,6 +11,8 @@ interface SlotSpec {
 
 export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.Element {
   const items = useDeckStore((state) => state.items)
+  const upscaledSet = useUpscaleStore((state) => state.upscaled)
+  const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -60,11 +63,17 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
                 const globalIndex = page * layout.perPage + slotIndex
                 if (globalIndex >= slots.length) return null
                 const spec = slots[globalIndex]!
+                const isUpscaled = Boolean(upscaledSet[spec.cardId])
                 return (
                   <img
                     key={slotIndex}
                     className="preview__card"
-                    src={faceImageUrl(spec.cardId, spec.faceIndex, 'source')}
+                    src={faceImageUrl(
+                      spec.cardId,
+                      spec.faceIndex,
+                      isUpscaled ? 'upscaled' : 'source',
+                      isUpscaled ? settingsVersion : undefined
+                    )}
                     alt=""
                     loading="lazy"
                     draggable={false}

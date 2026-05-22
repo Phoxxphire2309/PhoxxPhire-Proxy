@@ -18,8 +18,6 @@ function formatBytes(bytes: number): string {
 
 export function UpscaleControls(): React.JSX.Element {
   const available = useUpscaleStore((state) => state.available)
-  const showSource = useUpscaleStore((state) => state.showSource)
-  const toggleShowSource = useUpscaleStore((state) => state.toggleShowSource)
   const model = useUpscaleStore((state) => state.model)
   const scale = useUpscaleStore((state) => state.scale)
   const setSettings = useUpscaleStore((state) => state.setSettings)
@@ -112,16 +110,6 @@ export function UpscaleControls(): React.JSX.Element {
           <option value={4}>4×</option>
         </select>
       </label>
-
-      <button
-        className={`toggle${showSource ? '' : ' is-on'}`}
-        type="button"
-        onClick={toggleShowSource}
-        disabled={available !== true}
-        aria-pressed={!showSource}
-      >
-        {showSource ? 'Original' : 'Upscaled'}
-      </button>
 
       <span className="controls__cache" title="On-disk image cache">
         {cacheBytes === null ? '—' : formatBytes(cacheBytes)}

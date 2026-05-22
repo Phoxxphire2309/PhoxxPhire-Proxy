@@ -2,6 +2,7 @@ import type { Card } from '@shared/scryfall'
 import { useSearchStore } from '@renderer/state/searchStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { useDeckStore } from '@renderer/state/deckStore'
+import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { CardTile } from '@renderer/components/CardTile'
 
 function GridItem({ card }: { card: Card }): React.JSX.Element {
@@ -17,6 +18,9 @@ export function CardGrid(): React.JSX.Element {
   const error = useSearchStore((state) => state.error)
   const cards = useSearchStore((state) => state.cards)
   const totalCards = useSearchStore((state) => state.totalCards)
+  const overrides = usePrintingStore((state) => state.overrides)
+  const available = useUpscaleStore((state) => state.available) === true
+  const markManyUpscaled = useUpscaleStore((state) => state.markManyUpscaled)
 
   if (status === 'error') {
     return <p className="grid__message grid__message--error">{error}</p>
@@ -30,11 +34,21 @@ export function CardGrid(): React.JSX.Element {
     return <p className="grid__message">No cards yet — try a search above.</p>
   }
 
+  const upscaleAll = (): void =>
+    markManyUpscaled(cards.map((card) => (overrides[card.id] ?? card).id))
+
   return (
     <>
-      <p className="grid__count">
-        Showing {cards.length} of {totalCards} card{totalCards === 1 ? '' : 's'}
-      </p>
+      <div className="grid__bar">
+        <p className="grid__count">
+          Showing {cards.length} of {totalCards} card{totalCards === 1 ? '' : 's'}
+        </p>
+        {available && (
+          <button className="toggle" type="button" onClick={upscaleAll}>
+            Upscale all
+          </button>
+        )}
+      </div>
       <ul className="grid">
         {cards.map((card) => (
           <li key={card.id} className="grid__item">

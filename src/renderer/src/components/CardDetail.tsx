@@ -19,6 +19,8 @@ export function CardDetail(): React.JSX.Element | null {
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
   const scale = useUpscaleStore((state) => state.scale)
+  const upscaledSet = useUpscaleStore((state) => state.upscaled)
+  const markUpscaled = useUpscaleStore((state) => state.markUpscaled)
 
   const [printings, setPrintings] = useState<Card[]>([])
   const [loadingPrintings, setLoadingPrintings] = useState(false)
@@ -63,6 +65,8 @@ export function CardDetail(): React.JSX.Element | null {
 
   const face = displayed.faces[faceIndex] ?? displayed.faces[0]
   const isDoubleFaced = displayed.faces.length > 1
+  const upscaled = Boolean(upscaledSet[displayed.id])
+  const showCompare = upscalerAvailable && upscaled
   const sourceSrc = faceImageUrl(displayed.id, faceIndex, 'source')
   const upscaledSrc = faceImageUrl(displayed.id, faceIndex, 'upscaled', settingsVersion)
 
@@ -81,7 +85,7 @@ export function CardDetail(): React.JSX.Element | null {
         </button>
 
         <div className="detail__main">
-          {upscalerAvailable ? (
+          {showCompare ? (
             <div className="compare">
               <img
                 className="detail__image"
@@ -141,6 +145,11 @@ export function CardDetail(): React.JSX.Element | null {
               <button className="toggle is-on" type="button" onClick={() => addToDeck(displayed)}>
                 ＋ Add to deck
               </button>
+              {upscalerAvailable && !upscaled && (
+                <button className="toggle" type="button" onClick={() => markUpscaled(displayed.id)}>
+                  Upscale {scale}×
+                </button>
+              )}
               {isDoubleFaced && (
                 <button
                   className="toggle"

@@ -6,16 +6,17 @@ export const faceKey = (cardId: string, faceIndex: number): string => `${cardId}
 interface UpscaleState {
   /** null until queried; false when the Real-ESRGAN binary is not provisioned. */
   available: boolean | null
-  /** Global before/after toggle: when true, tiles show the raw Scryfall image. */
-  showSource: boolean
+  /** Cards the user has chosen to upscale (id -> true). Session-only, not persisted. */
+  upscaled: Record<string, true>
   model: string
   scale: number
   /** Bumped whenever settings change, to bust cached <img> URLs. */
   settingsVersion: number
   statuses: Record<string, UpscaleStatus>
   setAvailable: (available: boolean) => void
-  toggleShowSource: () => void
-  setShowSource: (showSource: boolean) => void
+  markUpscaled: (cardId: string) => void
+  unmarkUpscaled: (cardId: string) => void
+  markManyUpscaled: (cardIds: string[]) => void
   applyStatus: (event: UpscaleStatusEvent) => void
   loadSettings: () => Promise<void>
   setSettings: (settings: { model?: string; scale?: number }) => Promise<void>
@@ -23,16 +24,27 @@ interface UpscaleState {
 
 export const useUpscaleStore = create<UpscaleState>((set, get) => ({
   available: null,
-  // Default to original art so the app never auto-upscales every card on render;
-  // upscaling happens on demand (the toggle, the detail compare, or export).
-  showSource: true,
+  upscaled: {},
   model: 'realesrgan-x4plus',
   scale: 2,
   settingsVersion: 0,
   statuses: {},
   setAvailable: (available) => set({ available }),
-  toggleShowSource: () => set((state) => ({ showSource: !state.showSource })),
-  setShowSource: (showSource) => set({ showSource }),
+
+  markUpscaled: (cardId) => set((state) => ({ upscaled: { ...state.upscaled, [cardId]: true } })),
+  unmarkUpscaled: (cardId) =>
+    set((state) => {
+      const next = { ...state.upscaled }
+      delete next[cardId]
+      return { upscaled: next }
+    }),
+  markManyUpscaled: (cardIds) =>
+    set((state) => {
+      const next = { ...state.upscaled }
+      for (const id of cardIds) next[id] = true
+      return { upscaled: next }
+    }),
+
   applyStatus: (event) =>
     set((state) => ({
       statuses: { ...state.statuses, [faceKey(event.cardId, event.faceIndex)]: event.status }
@@ -52,6 +64,7 @@ export const useUpscaleStore = create<UpscaleState>((set, get) => ({
     set((state) => ({
       model: applied.model,
       scale: applied.scale,
+      // Changing settings invalidates existing upscales; bump the cache-bust key.
       settingsVersion: state.settingsVersion + 1
     }))
   }

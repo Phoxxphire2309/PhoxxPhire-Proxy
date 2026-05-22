@@ -38,7 +38,9 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   customWidthMm: 210,
   customHeightMm: 297,
   bleedMm: 2,
-  marginMm: 6,
+  // 4mm keeps the standard 3×3 = 9 cards per A4 page even with 2mm bleed
+  // (3 × (63+4)mm = 201mm fits A4's 210mm width).
+  marginMm: 4,
   spacingMm: 0,
   cutGuideStyle: 'outline',
   cardBack: 'none',

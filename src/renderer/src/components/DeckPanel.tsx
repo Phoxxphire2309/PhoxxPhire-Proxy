@@ -64,6 +64,8 @@ export function DeckPanel(): React.JSX.Element {
   const addCustomCard = useDeckStore((state) => state.addCustomCard)
   const importErrors = useDeckStore((state) => state.importErrors)
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
+  const markManyUpscaled = useUpscaleStore((state) => state.markManyUpscaled)
+  const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
   const [showImport, setShowImport] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
@@ -74,12 +76,13 @@ export function DeckPanel(): React.JSX.Element {
     0
   )
 
-  // Warm the upscale pipeline for every deck face so they're ready for export.
+  // Mark every deck card upscaled (so preview/export use it) and warm the cache.
   const preUpscale = (): void => {
+    markManyUpscaled(items.map((item) => item.card.id))
     for (const item of items) {
       item.card.faces.forEach((_face, index) => {
         const image = new Image()
-        image.src = faceImageUrl(item.card.id, index, 'upscaled')
+        image.src = faceImageUrl(item.card.id, index, 'upscaled', settingsVersion)
       })
     }
   }
