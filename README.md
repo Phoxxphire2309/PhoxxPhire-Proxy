@@ -115,9 +115,11 @@ npm run package    # build an unsigned installer for the current OS → dist/
 
 Pushing a Git tag that starts with `v` (e.g. `v0.1.0`, matching `package.json`'s version)
 triggers the **release workflow** (`.github/workflows/release.yml`): it builds the installer on
-macOS, Windows, and Linux runners and attaches them to a GitHub Release. Code-signing
-(Apple notarisation / Windows certificate) needs your own certificates and isn't configured —
-unsigned builds work but show the first-launch warnings above.
+macOS, Windows, and Linux runners and attaches them to a GitHub Release.
+
+**Code signing** is wired and ready — add your Apple / Windows certificates as repository secrets
+and the workflow signs (and notarises macOS) automatically; without them builds stay unsigned and
+show the first-launch warnings above. Full steps: **[docs/SIGNING.md](docs/SIGNING.md)**.
 
 ### Scripts
 

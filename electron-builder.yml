@@ -27,6 +27,13 @@ mac:
   target:
     - dmg
   category: public.app-category.graphics-design
+  # Signing settings only take effect when a signing identity is provided
+  # (CSC_LINK). Notarization runs automatically when APPLE_ID / APPLE_TEAM_ID /
+  # APPLE_APP_SPECIFIC_PASSWORD are set. See docs/SIGNING.md.
+  hardenedRuntime: true
+  gatekeeperAssess: false
+  entitlements: build/entitlements.mac.plist
+  entitlementsInherit: build/entitlements.mac.plist
 win:
   target:
     - nsis
