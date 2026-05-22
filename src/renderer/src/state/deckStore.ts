@@ -149,9 +149,9 @@ async function runImport(
       importing: false
     })
   } catch (error) {
-    set({
-      importing: false,
-      importErrors: [error instanceof Error ? error.message : 'Import failed']
-    })
+    // A whole-import failure (e.g. a blocked deck URL) isn't a per-line issue,
+    // so surface it as a toast rather than the "lines couldn't be resolved" list.
+    set({ importing: false, importErrors: [] })
+    toast(error instanceof Error ? error.message : 'Import failed', 'error')
   }
 }
