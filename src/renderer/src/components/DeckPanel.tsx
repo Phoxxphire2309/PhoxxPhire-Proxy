@@ -4,6 +4,7 @@ import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 import { ImportDialog } from '@renderer/components/ImportDialog'
+import { TokenDialog } from '@renderer/components/TokenDialog'
 import { ExportDialog } from '@renderer/components/ExportDialog'
 import { PrintPreview } from '@renderer/components/PrintPreview'
 import { PageSetup } from '@renderer/components/PageSetup'
@@ -100,6 +101,7 @@ export function DeckPanel(): React.JSX.Element {
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
   const runUpscale = useUpscaleStore((state) => state.runUpscale)
   const [showImport, setShowImport] = useState(false)
+  const [showTokens, setShowTokens] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [showPageSetup, setShowPageSetup] = useState(false)
@@ -161,6 +163,9 @@ export function DeckPanel(): React.JSX.Element {
           <button className="deck__preview" type="button" onClick={() => setShowPreview(true)}>
             Print preview
           </button>
+          <button className="deck__preview" type="button" onClick={() => setShowTokens(true)}>
+            Tokens
+          </button>
           <button className="deck__export" type="button" onClick={() => setShowExport(true)}>
             Export PDF
           </button>
@@ -196,6 +201,7 @@ export function DeckPanel(): React.JSX.Element {
       )}
 
       {showImport && <ImportDialog onClose={() => setShowImport(false)} />}
+      {showTokens && <TokenDialog onClose={() => setShowTokens(false)} />}
       {showExport && (
         <ExportDialog
           onClose={() => setShowExport(false)}

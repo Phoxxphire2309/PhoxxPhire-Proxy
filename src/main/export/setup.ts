@@ -10,9 +10,10 @@ import type {
   ExportRequest,
   ExportSlot
 } from '@shared/layout'
+import type { MpcCard, MpcExportOutcome } from '@shared/mpc'
 import type { ScryfallService } from '../scryfall/service'
 import type { UpscaleService } from '../upscale/service'
-import { extendBleed } from '../image/processor'
+import { buildMpcCardBack, buildMpcImage, extendBleed } from '../image/processor'
 import { buildCalibrationPdf } from './calibration'
 import { ExportService } from './service'
 
@@ -39,6 +40,8 @@ export function initExport(options: ExportSetupOptions): void {
         : options.scryfall.ensureFaceImage(cardId, faceIndex),
     processImage: (bytes, exportOptions) =>
       extendBleed(bytes, exportOptions.bleedMm, exportOptions.bleedMode),
+    mpcImage: buildMpcImage,
+    mpcCardBack: buildMpcCardBack,
     emit: broadcastProgress
   })
 
@@ -71,6 +74,22 @@ export function initExport(options: ExportSetupOptions): void {
         return { canceled: true }
       }
       const result = await service.exportImages(slots, folder)
+      return { canceled: false, ...result }
+    }
+  )
+
+  ipcMain.handle(
+    IpcChannel.ExportMpc,
+    async (_event, cards: MpcCard[]): Promise<MpcExportOutcome> => {
+      const { canceled, filePaths } = await dialog.showOpenDialog({
+        title: 'Choose a folder for the MakePlayingCards order',
+        properties: ['openDirectory', 'createDirectory']
+      })
+      const folder = filePaths[0]
+      if (canceled || !folder) {
+        return { canceled: true }
+      }
+      const result = await service.exportMpc(cards, folder)
       return { canceled: false, ...result }
     }
   )

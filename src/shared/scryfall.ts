@@ -22,6 +22,19 @@ export interface ScryfallCardFace {
   image_uris?: ScryfallImageUris
 }
 
+/**
+ * An entry in a card's `all_parts` — a related card (token, emblem, meld piece,
+ * combo piece). We use the `token` component to surface the tokens/emblems a
+ * card creates so they can be added to the deck.
+ */
+export interface ScryfallRelatedCard {
+  id: string
+  component: string
+  name: string
+  type_line: string
+  uri: string
+}
+
 /** Per-printing prices Scryfall reports (strings or null), updated ~daily. */
 export interface ScryfallPrices {
   usd?: string | null
@@ -44,6 +57,7 @@ export interface ScryfallCard {
   image_uris?: ScryfallImageUris
   card_faces?: ScryfallCardFace[]
   prices?: ScryfallPrices
+  all_parts?: ScryfallRelatedCard[]
 }
 
 /** Generic Scryfall paginated list envelope. */
@@ -72,6 +86,14 @@ export interface CardPrices {
   tix: number | null
 }
 
+/** A token or emblem a card creates, in normalized form. */
+export interface RelatedToken {
+  /** Scryfall id of the token/emblem printing. */
+  id: string
+  name: string
+  typeLine: string
+}
+
 /** Normalized card used across IPC and the renderer. */
 export interface Card {
   id: string
@@ -83,6 +105,8 @@ export interface Card {
   layout: string
   faces: CardFace[]
   prices: CardPrices
+  /** Tokens / emblems this card creates (from Scryfall `all_parts`). */
+  relatedTokens: RelatedToken[]
 }
 
 /** Best available non-foil USD price, falling back to etched/foil. */

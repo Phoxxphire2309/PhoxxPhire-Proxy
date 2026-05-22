@@ -85,3 +85,72 @@ describe('ScryfallService.resolveDeck', () => {
     expect(await service.resolveDeck('   \n\n')).toEqual({ items: [], errors: [] })
   })
 })
+
+describe('ScryfallService.findTokens', () => {
+  let dir: string
+  let service: ScryfallService
+  let cache: CardCache
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'phoxx-tokens-'))
+    cache = new CardCache(dir)
+    await cache.init()
+    const tokenFetch = (async (input: string | URL) => {
+      const url = String(input)
+      if (url.includes('/cards/tok-goblin')) {
+        return jsonResponse(card('tok-goblin', 'tlea', 't1', 'Goblin'))
+      }
+      return jsonResponse({ object: 'error', status: 404 }, 404)
+    }) as typeof fetch
+    const client = new ScryfallClient({
+      userAgent: 'test',
+      limiter: new RateLimiter(0),
+      sleepFn: async () => {},
+      maxRetries: 0,
+      fetchFn: tokenFetch
+    })
+    service = new ScryfallService(client, cache)
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('returns the distinct tokens created by the given deck cards', async () => {
+    await cache.putCard({
+      id: 'krenko',
+      oracleId: 'o-krenko',
+      name: 'Krenko, Mob Boss',
+      setCode: 'lea',
+      collectorNumber: '1',
+      lang: 'en',
+      layout: 'normal',
+      faces: [{ name: 'Krenko, Mob Boss', imageUrl: 'https://img/krenko.png' }],
+      prices: { usd: null, usdFoil: null, usdEtched: null, eur: null, eurFoil: null, tix: null },
+      relatedTokens: [{ id: 'tok-goblin', name: 'Goblin', typeLine: 'Token Creature — Goblin' }]
+    })
+
+    const tokens = await service.findTokens(['krenko'])
+    expect(tokens).toHaveLength(1)
+    expect(tokens[0]?.id).toBe('tok-goblin')
+    expect(tokens[0]?.name).toBe('Goblin')
+  })
+
+  it('skips tokens that are already in the deck', async () => {
+    await cache.putCard({
+      id: 'krenko',
+      oracleId: 'o-krenko',
+      name: 'Krenko, Mob Boss',
+      setCode: 'lea',
+      collectorNumber: '1',
+      lang: 'en',
+      layout: 'normal',
+      faces: [{ name: 'Krenko, Mob Boss', imageUrl: 'https://img/krenko.png' }],
+      prices: { usd: null, usdFoil: null, usdEtched: null, eur: null, eurFoil: null, tix: null },
+      relatedTokens: [{ id: 'tok-goblin', name: 'Goblin', typeLine: 'Token Creature — Goblin' }]
+    })
+
+    const tokens = await service.findTokens(['krenko', 'tok-goblin'])
+    expect(tokens).toEqual([])
+  })
+})

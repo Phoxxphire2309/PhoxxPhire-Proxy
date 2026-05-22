@@ -1,6 +1,7 @@
 import { rm } from 'node:fs/promises'
 import sharp from 'sharp'
 import type { BleedMode } from '@shared/layout'
+import { MPC_BLEED_PX, MPC_IMAGE_HEIGHT, MPC_IMAGE_WIDTH } from '@shared/mpc'
 import { CARD_HEIGHT_MM, CARD_WIDTH_MM } from '@shared/units'
 
 const JPEG_QUALITY = 85
@@ -48,6 +49,46 @@ export async function extendBleed(
   const out = await image
     .extend({ top, bottom: top, left, right: left, extendWith: 'mirror' })
     .jpeg({ quality: JPEG_QUALITY })
+    .toBuffer()
+  return new Uint8Array(out)
+}
+
+/**
+ * Renders a card face to MakePlayingCards' full-bleed spec: the art is resized
+ * to the cut area, then a mirrored bleed border is added so the final PNG is
+ * exactly MPC's expected pixel size (no white edges, no zoomed crop).
+ */
+export async function buildMpcImage(imageBytes: Uint8Array): Promise<Uint8Array> {
+  const cutWidth = MPC_IMAGE_WIDTH - MPC_BLEED_PX * 2
+  const cutHeight = MPC_IMAGE_HEIGHT - MPC_BLEED_PX * 2
+  const out = await sharp(imageBytes, { limitInputPixels: false })
+    .resize(cutWidth, cutHeight, { fit: 'fill' })
+    .extend({
+      top: MPC_BLEED_PX,
+      bottom: MPC_BLEED_PX,
+      left: MPC_BLEED_PX,
+      right: MPC_BLEED_PX,
+      extendWith: 'mirror'
+    })
+    .png()
+    .toBuffer()
+  return new Uint8Array(out)
+}
+
+/**
+ * A plain dark card back at MPC's full-bleed size, used as the common
+ * `<cardback>` for single-faced cards. Users can replace the file afterwards.
+ */
+export async function buildMpcCardBack(): Promise<Uint8Array> {
+  const out = await sharp({
+    create: {
+      width: MPC_IMAGE_WIDTH,
+      height: MPC_IMAGE_HEIGHT,
+      channels: 3,
+      background: { r: 18, g: 19, b: 22 }
+    }
+  })
+    .png()
     .toBuffer()
   return new Uint8Array(out)
 }

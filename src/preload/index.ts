@@ -11,6 +11,7 @@ const api: PhoxxApi = {
   getPrintings: (oracleId) => ipcRenderer.invoke(IpcChannel.ScryfallPrints, oracleId),
   resolveDeck: (text) => ipcRenderer.invoke(IpcChannel.ScryfallResolveDeck, text),
   importDeckUrl: (url) => ipcRenderer.invoke(IpcChannel.ScryfallImportUrl, url),
+  findTokens: (cardIds) => ipcRenderer.invoke(IpcChannel.ScryfallFindTokens, cardIds),
   onImportProgress: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, data: ImportProgress): void =>
       listener(data)
@@ -24,6 +25,7 @@ const api: PhoxxApi = {
   setAppState: (state) => ipcRenderer.invoke(IpcChannel.StateSet, state),
   exportPdf: (request) => ipcRenderer.invoke(IpcChannel.ExportPdf, request),
   exportImages: (slots) => ipcRenderer.invoke(IpcChannel.ExportImages, slots),
+  exportMpc: (cards) => ipcRenderer.invoke(IpcChannel.ExportMpc, cards),
   exportCalibration: (options) => ipcRenderer.invoke(IpcChannel.ExportCalibration, options),
   onExportProgress: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, data: ExportProgress): void =>

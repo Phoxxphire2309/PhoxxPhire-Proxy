@@ -73,7 +73,11 @@ export class CardCache {
 
   async getCard(id: string): Promise<Card | null> {
     try {
-      return JSON.parse(await readFile(this.cardPath(id), 'utf8')) as Card
+      const card = JSON.parse(await readFile(this.cardPath(id), 'utf8')) as Card
+      // Default fields added after a card was first cached, so older entries
+      // (written by a previous version) stay safe to consume.
+      if (!Array.isArray(card.relatedTokens)) card.relatedTokens = []
+      return card
     } catch {
       return null
     }

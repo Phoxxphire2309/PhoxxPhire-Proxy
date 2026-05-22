@@ -50,6 +50,9 @@ export async function initScryfall(
   ipcMain.handle(IpcChannel.ScryfallImportUrl, (_event, url: string) =>
     service.importDeckUrl(url, broadcastImportProgress)
   )
+  ipcMain.handle(IpcChannel.ScryfallFindTokens, (_event, cardIds: string[]) =>
+    service.findTokens(cardIds)
+  )
 
   return { service, cache }
 }

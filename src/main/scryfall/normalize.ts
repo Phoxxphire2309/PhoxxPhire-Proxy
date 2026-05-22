@@ -2,6 +2,7 @@ import type {
   Card,
   CardFace,
   CardPrices,
+  RelatedToken,
   ScryfallCard,
   ScryfallImageUris,
   ScryfallPrices
@@ -47,8 +48,25 @@ export function normalizeCard(raw: ScryfallCard): Card {
     lang: raw.lang,
     layout: raw.layout,
     faces: extractFaces(raw),
-    prices: extractPrices(raw.prices)
+    prices: extractPrices(raw.prices),
+    relatedTokens: extractRelatedTokens(raw)
   }
+}
+
+/**
+ * Pulls the tokens / emblems a card creates from its `all_parts`. Scryfall lists
+ * these with `component: 'token'` (emblems included); the card's own entry uses
+ * a different component, so filtering by component also excludes self-references.
+ */
+function extractRelatedTokens(raw: ScryfallCard): RelatedToken[] {
+  const seen = new Set<string>()
+  const tokens: RelatedToken[] = []
+  for (const part of raw.all_parts ?? []) {
+    if (part.component !== 'token' || part.id === raw.id || seen.has(part.id)) continue
+    seen.add(part.id)
+    tokens.push({ id: part.id, name: part.name, typeLine: part.type_line })
+  }
+  return tokens
 }
 
 function extractFaces(raw: ScryfallCard): CardFace[] {

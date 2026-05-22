@@ -18,6 +18,7 @@ import type {
   ExportRequest,
   ExportSlot
 } from './layout'
+import type { MpcCard, MpcExportOutcome } from './mpc'
 import type { Card, SearchResult } from './scryfall'
 import type { InstallPhase } from './upscaleInstall'
 
@@ -28,6 +29,7 @@ export const IpcChannel = {
   ScryfallPrints: 'scryfall:prints',
   ScryfallResolveDeck: 'scryfall:resolveDeck',
   ScryfallImportUrl: 'scryfall:importUrl',
+  ScryfallFindTokens: 'scryfall:findTokens',
   /** Main → renderer push channel for per-card deck-import progress. */
   ScryfallImportProgress: 'scryfall:importProgress',
   DeckSave: 'deck:save',
@@ -47,6 +49,7 @@ export const IpcChannel = {
   UpscaleInstallProgress: 'upscale:installProgress',
   ExportPdf: 'export:pdf',
   ExportImages: 'export:images',
+  ExportMpc: 'export:mpc',
   ExportCalibration: 'export:calibration',
   /** Main → renderer push channel for export progress. */
   ExportProgress: 'export:progress'
@@ -91,6 +94,8 @@ export interface PhoxxApi {
   resolveDeck(text: string): Promise<DeckResolution>
   /** Fetch + resolve a decklist from a supported site URL (Archidekt, Moxfield). */
   importDeckUrl(url: string): Promise<DeckResolution>
+  /** Distinct tokens / emblems created by the given deck cards, ready to add. */
+  findTokens(cardIds: string[]): Promise<Card[]>
   /** Subscribe to per-card deck-import progress; returns an unsubscribe function. */
   onImportProgress(listener: (progress: ImportProgress) => void): () => void
   /** Save a deck to a JSON file (prompts for a path). */
@@ -107,6 +112,8 @@ export interface PhoxxApi {
   exportPdf(request: ExportRequest): Promise<ExportOutcome>
   /** Export each unique card face as a PNG into a chosen folder. */
   exportImages(slots: ExportSlot[]): Promise<ExportImagesOutcome>
+  /** Export the deck as a MakePlayingCards (MPC Autofill) order into a chosen folder. */
+  exportMpc(cards: MpcCard[]): Promise<MpcExportOutcome>
   /** Save a print-calibration PDF for the given page options. */
   exportCalibration(options: ExportOptions): Promise<CalibrationOutcome>
   /** Subscribe to export progress; returns an unsubscribe function. */

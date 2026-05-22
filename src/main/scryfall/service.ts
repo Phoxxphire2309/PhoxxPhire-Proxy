@@ -79,6 +79,33 @@ export class ScryfallService {
   }
 
   /**
+   * Given a set of deck cards (by id), returns the distinct tokens / emblems
+   * they create, as full cards ready to add to the deck. Tokens already present
+   * in `cardIds` are skipped so re-running doesn't offer duplicates.
+   */
+  async findTokens(cardIds: string[]): Promise<Card[]> {
+    const present = new Set(cardIds)
+    const wanted = new Map<string, string>() // token id → token name (for fallback ordering)
+    for (const cardId of cardIds) {
+      const card = await this.getCard(cardId)
+      for (const token of card.relatedTokens) {
+        if (!present.has(token.id) && !wanted.has(token.id)) wanted.set(token.id, token.name)
+      }
+    }
+
+    const tokens: Card[] = []
+    for (const tokenId of wanted.keys()) {
+      try {
+        tokens.push(await this.getCard(tokenId))
+      } catch {
+        // A token printing that can't be fetched is skipped rather than failing
+        // the whole lookup.
+      }
+    }
+    return tokens
+  }
+
+  /**
    * Parse a decklist and resolve each line to a card. Lines with a set +
    * collector number resolve to that exact printing; otherwise we fuzzy-match
    * by name. Duplicate cards are merged by quantity, and unresolved lines are

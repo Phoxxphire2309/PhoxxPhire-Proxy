@@ -84,6 +84,24 @@ export function ExportDialog({
       return outcome.canceled ? null : `Saved ${outcome.count} card image(s) to ${outcome.path}`
     })
 
+  // One physical card per deck card; double-faced cards pair front + back, so the
+  // front-face quantity drives the copy count.
+  const mpcCards = items
+    .map((item) => ({
+      cardId: item.card.id,
+      quantity: item.quantities[0] ?? 0,
+      upscale: Boolean(upscaledSet[item.card.id])
+    }))
+    .filter((card) => card.quantity > 0)
+
+  const exportMpc = (): Promise<void> =>
+    runGuarded(async () => {
+      const outcome = await window.phoxx.exportMpc(mpcCards)
+      return outcome.canceled
+        ? null
+        : `Saved an MPC order of ${outcome.cardCount} card(s) (${outcome.fileCount} files) to ${outcome.path}`
+    })
+
   const exportCalibration = (): Promise<void> =>
     runGuarded(async () => {
       const outcome = await window.phoxx.exportCalibration(options)
@@ -157,6 +175,15 @@ export function ExportDialog({
                 onClick={() => void exportImages()}
               >
                 Export images
+              </button>
+              <button
+                className="toggle"
+                type="button"
+                disabled={running || mpcCards.length === 0}
+                onClick={() => void exportMpc()}
+                title="Full-bleed images + order.xml for MakePlayingCards (MPC Autofill)"
+              >
+                Export for MPC
               </button>
               <button
                 className="search__button"

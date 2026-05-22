@@ -14,7 +14,8 @@ const sampleCard: Card = {
   lang: 'en',
   layout: 'normal',
   faces: [{ name: 'Test', imageUrl: 'https://img/x.png' }],
-  prices: { usd: null, usdFoil: null, usdEtched: null, eur: null, eurFoil: null, tix: null }
+  prices: { usd: null, usdFoil: null, usdEtched: null, eur: null, eurFoil: null, tix: null },
+  relatedTokens: []
 }
 
 describe('CardCache size + clear', () => {

@@ -3,7 +3,11 @@ import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import sharp from 'sharp'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
-import { extendBleed, finalizeUpscaled } from './processor'
+import { MPC_BLEED_PX, MPC_IMAGE_HEIGHT, MPC_IMAGE_WIDTH } from '@shared/mpc'
+import { buildMpcCardBack, buildMpcImage, extendBleed, finalizeUpscaled } from './processor'
+
+const isPng = (bytes: Uint8Array): boolean =>
+  bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
 
 const isJpeg = (bytes: Uint8Array): boolean => bytes[0] === 0xff && bytes[1] === 0xd8
 
@@ -62,5 +66,32 @@ describe('extendBleed', () => {
     const bytes = new Uint8Array(await solidPng(10, 14))
     expect(await extendBleed(bytes, 2, 'zoom')).toBe(bytes)
     expect(await extendBleed(bytes, 0, 'extend')).toBe(bytes)
+  })
+})
+
+describe('buildMpcImage', () => {
+  it('renders to the full MPC bleed PNG dimensions regardless of input size', async () => {
+    const out = await buildMpcImage(new Uint8Array(await solidPng(100, 140)))
+    const meta = await sharp(out).metadata()
+    expect(isPng(out)).toBe(true)
+    expect(meta.width).toBe(MPC_IMAGE_WIDTH)
+    expect(meta.height).toBe(MPC_IMAGE_HEIGHT)
+  })
+
+  it('reserves the configured bleed on each side around the cut area', async () => {
+    const out = await buildMpcImage(new Uint8Array(await solidPng(745, 1040)))
+    const meta = await sharp(out).metadata()
+    expect((meta.width ?? 0) - 2 * MPC_BLEED_PX).toBe(MPC_IMAGE_WIDTH - 2 * MPC_BLEED_PX)
+    expect((meta.height ?? 0) - 2 * MPC_BLEED_PX).toBe(MPC_IMAGE_HEIGHT - 2 * MPC_BLEED_PX)
+  })
+})
+
+describe('buildMpcCardBack', () => {
+  it('produces a PNG at the full MPC bleed dimensions', async () => {
+    const back = await buildMpcCardBack()
+    const meta = await sharp(back).metadata()
+    expect(isPng(back)).toBe(true)
+    expect(meta.width).toBe(MPC_IMAGE_WIDTH)
+    expect(meta.height).toBe(MPC_IMAGE_HEIGHT)
   })
 })

@@ -37,7 +37,8 @@ export function initCustomCards(cache: CardCache): void {
       lang: 'en',
       layout: 'normal',
       faces: [{ name, imageUrl: 'custom' }],
-      prices: emptyPrices()
+      prices: emptyPrices(),
+      relatedTokens: []
     }
 
     const png = await sharp(file, { limitInputPixels: false }).png().toBuffer()

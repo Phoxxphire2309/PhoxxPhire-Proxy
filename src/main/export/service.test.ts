@@ -25,7 +25,8 @@ function card(id: string, faceCount: number): Card {
       name: `${id}-${index}`,
       imageUrl: `https://img/${id}-${index}.png`
     })),
-    prices: { usd: null, usdFoil: null, usdEtched: null, eur: null, eurFoil: null, tix: null }
+    prices: { usd: null, usdFoil: null, usdEtched: null, eur: null, eurFoil: null, tix: null },
+    relatedTokens: []
   }
 }
 
@@ -166,5 +167,95 @@ describe('ExportService.export', () => {
     expect(result.cardCount).toBe(2)
     expect(ensureImage).toHaveBeenCalledWith('dfc', 0, false)
     expect(ensureImage).not.toHaveBeenCalledWith('dfc', 1, false)
+  })
+})
+
+describe('ExportService.exportMpc', () => {
+  let dir: string
+  let imagePath: string
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'phoxx-mpc-'))
+    imagePath = join(dir, 'face.png')
+    await writeFile(imagePath, PNG_1X1)
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  function mpcService(cards: Record<string, Card>): ExportService {
+    return new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage: async () => imagePath,
+      // Identity transforms keep the test off the real sharp pipeline.
+      mpcImage: async (bytes) => bytes,
+      mpcCardBack: async () => new Uint8Array([1, 2, 3]),
+      emit: () => {}
+    })
+  }
+
+  it('throws a clear error when the MPC deps are not configured', async () => {
+    const service = new ExportService({
+      resolveCard: async () => card('a', 1),
+      ensureImage: async () => imagePath,
+      emit: () => {}
+    })
+    await expect(
+      service.exportMpc([{ cardId: 'a', quantity: 1, upscale: false }], dir)
+    ).rejects.toThrow(/not configured/)
+  })
+
+  it('writes a front image, a card back, an order.xml, and pairs DFC backs', async () => {
+    const cards: Record<string, Card> = { single: card('single', 1), dfc: card('dfc', 2) }
+    const outDir = join(dir, 'order')
+    await mkdir(outDir)
+
+    const result = await mpcService(cards).exportMpc(
+      [
+        { cardId: 'single', quantity: 2, upscale: false },
+        { cardId: 'dfc', quantity: 1, upscale: false }
+      ],
+      outDir
+    )
+
+    // 2 single copies + 1 dfc copy = 3 physical cards.
+    expect(result.cardCount).toBe(3)
+    // single front + dfc front + dfc back + cardback = 4 files (+ order.xml).
+    expect(result.fileCount).toBe(4)
+
+    const files = (await readdir(outDir)).sort()
+    expect(files).toContain('order.xml')
+    expect(files).toContain('tst-1-single.png')
+    expect(files).toContain('tst-1-dfc.png')
+    expect(files).toContain('tst-1-dfc-back.png')
+
+    const xml = await readFile(join(outDir, 'order.xml'), 'utf8')
+    expect(xml).toContain('<quantity>3</quantity>')
+    // The single card's two copies occupy two consecutive slots.
+    expect(xml).toContain('<slots>0,1</slots>')
+    // The DFC front+back share the DFC's single slot (index 2).
+    const backs = xml.slice(xml.indexOf('<backs>'), xml.indexOf('</backs>'))
+    expect(backs).toContain('tst-1-dfc-back.png')
+    expect(backs).toContain('<slots>2</slots>')
+  })
+
+  it('skips cards with zero quantity', async () => {
+    const cards: Record<string, Card> = { a: card('a', 1), b: card('b', 1) }
+    const outDir = join(dir, 'order2')
+    await mkdir(outDir)
+
+    const result = await mpcService(cards).exportMpc(
+      [
+        { cardId: 'a', quantity: 0, upscale: false },
+        { cardId: 'b', quantity: 1, upscale: false }
+      ],
+      outDir
+    )
+
+    expect(result.cardCount).toBe(1)
+    const xml = await readFile(join(outDir, 'order.xml'), 'utf8')
+    expect(xml).not.toContain('tst-1-a.png')
+    expect(xml).toContain('tst-1-b.png')
   })
 })

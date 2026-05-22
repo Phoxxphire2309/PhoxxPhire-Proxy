@@ -76,4 +76,52 @@ describe('normalizeCard', () => {
       tix: null
     })
   })
+
+  it('defaults relatedTokens to an empty array when all_parts is absent', () => {
+    expect(normalizeCard(base).relatedTokens).toEqual([])
+  })
+
+  it('extracts only token components from all_parts, excluding the card itself', () => {
+    const card = normalizeCard({
+      ...base,
+      all_parts: [
+        {
+          id: 'abc-123',
+          component: 'combo_piece',
+          name: 'Lightning Bolt',
+          type_line: 'Instant',
+          uri: 'https://api/self'
+        },
+        {
+          id: 'tok-1',
+          component: 'token',
+          name: 'Goblin',
+          type_line: 'Token Creature — Goblin',
+          uri: 'https://api/tok-1'
+        },
+        {
+          id: 'tok-emblem',
+          component: 'token',
+          name: 'Emblem',
+          type_line: 'Emblem',
+          uri: 'https://api/tok-emblem'
+        }
+      ]
+    })
+    expect(card.relatedTokens).toEqual([
+      { id: 'tok-1', name: 'Goblin', typeLine: 'Token Creature — Goblin' },
+      { id: 'tok-emblem', name: 'Emblem', typeLine: 'Emblem' }
+    ])
+  })
+
+  it('de-duplicates repeated token ids in all_parts', () => {
+    const card = normalizeCard({
+      ...base,
+      all_parts: [
+        { id: 'tok-1', component: 'token', name: 'Goblin', type_line: 'Token', uri: 'u' },
+        { id: 'tok-1', component: 'token', name: 'Goblin', type_line: 'Token', uri: 'u' }
+      ]
+    })
+    expect(card.relatedTokens).toEqual([{ id: 'tok-1', name: 'Goblin', typeLine: 'Token' }])
+  })
 })
