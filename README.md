@@ -80,11 +80,12 @@ invoked directly as a subprocess, so there's no dependency on a separate GUI app
 There are no pre-built installers yet — for now you run it from source:
 
 ```bash
-npm install        # install dependencies
-npm run dev        # launch the app with hot reload
+npm install
+npm run dev
 ```
 
-Then click **Install upscaler** in the header to download the Real-ESRGAN engine (~50 MB) — no
+`npm install` pulls dependencies; `npm run dev` launches the app with hot reload. Then click
+**Install upscaler** in the header to download the Real-ESRGAN engine (~50 MB) — no
 terminal needed. Without it the app still works; it just shows original Scryfall art instead of
 upscaled.
 
@@ -114,8 +115,10 @@ Platform notes for the in-app upscaler install:
 The app isn't distributed as installers yet, but the tooling is ready for when it is:
 
 ```bash
-npm run package    # build an unsigned installer for the current OS → dist/ (dmg / nsis / AppImage)
+npm run package
 ```
+
+This builds an unsigned installer for the current OS into `dist/` (`.dmg` / `.exe` / `.AppImage`).
 
 Pushing a Git tag like `v0.1.0` (matching `package.json`'s version) triggers the **release
 workflow** (`.github/workflows/release.yml`), which builds installers on macOS, Windows, and
