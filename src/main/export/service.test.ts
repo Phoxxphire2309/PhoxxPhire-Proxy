@@ -58,8 +58,8 @@ describe('ExportService.export', () => {
     // 2× single face + 1× double-faced (2 faces) = 2 + 2 = 4 card slots.
     const result = await service.export(
       [
-        { id: 'single', quantity: 2 },
-        { id: 'dfc', quantity: 1 }
+        { id: 'single', quantity: 2, upscale: true },
+        { id: 'dfc', quantity: 1, upscale: false }
       ],
       DEFAULT_EXPORT_OPTIONS,
       savePath
@@ -71,6 +71,9 @@ describe('ExportService.export', () => {
 
     // Three unique faces (single/0, dfc/0, dfc/1) → image prepared three times only.
     expect(ensureImage).toHaveBeenCalledTimes(3)
+    // The per-card flag is forwarded: single is upscaled, dfc is not.
+    expect(ensureImage).toHaveBeenCalledWith('single', 0, true)
+    expect(ensureImage).toHaveBeenCalledWith('dfc', 0, false)
     expect(events.at(-1)).toEqual({ phase: 'done', completed: 4, total: 4 })
 
     const doc = await PDFDocument.load(await readFile(savePath))
@@ -90,8 +93,8 @@ describe('ExportService.export', () => {
 
     const result = await service.exportImages(
       [
-        { id: 'single', quantity: 3 },
-        { id: 'dfc', quantity: 1 }
+        { id: 'single', quantity: 3, upscale: false },
+        { id: 'dfc', quantity: 1, upscale: false }
       ],
       outDir
     )

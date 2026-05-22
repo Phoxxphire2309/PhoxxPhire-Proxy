@@ -33,8 +33,8 @@ function broadcastProgress(progress: ExportProgress): void {
 export function initExport(options: ExportSetupOptions): void {
   const service = new ExportService({
     resolveCard: (cardId) => options.scryfall.getCard(cardId),
-    ensureImage: (cardId, faceIndex) =>
-      options.upscale.available()
+    ensureImage: (cardId, faceIndex, useUpscaled) =>
+      useUpscaled && options.upscale.available()
         ? options.upscale.ensureUpscaled(cardId, faceIndex)
         : options.scryfall.ensureFaceImage(cardId, faceIndex),
     processImage: (bytes, exportOptions) =>

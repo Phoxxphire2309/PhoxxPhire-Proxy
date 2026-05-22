@@ -9,11 +9,13 @@ import {
   type PageSize
 } from '@shared/layout'
 import { useDeckStore } from '@renderer/state/deckStore'
+import { useUpscaleStore } from '@renderer/state/upscaleStore'
 
 type Phase = 'configure' | 'running' | 'done' | 'error'
 
 export function ExportDialog({ onClose }: { onClose: () => void }): React.JSX.Element {
   const items = useDeckStore((state) => state.items)
+  const upscaledSet = useUpscaleStore((state) => state.upscaled)
   const [options, setOptions] = useState<ExportOptions>(DEFAULT_EXPORT_OPTIONS)
   const [phase, setPhase] = useState<Phase>('configure')
   const [progress, setProgress] = useState<ExportProgress | null>(null)
@@ -35,7 +37,12 @@ export function ExportDialog({ onClose }: { onClose: () => void }): React.JSX.El
     (sum, item) => sum + item.quantity * Math.max(1, item.card.faces.length),
     0
   )
-  const cards = items.map((item) => ({ id: item.card.id, quantity: item.quantity }))
+  const cards = items.map((item) => ({
+    id: item.card.id,
+    quantity: item.quantity,
+    upscale: Boolean(upscaledSet[item.card.id])
+  }))
+  const upscaledCount = cards.filter((card) => card.upscale).length
 
   const runGuarded = async (action: () => Promise<string | null>): Promise<void> => {
     setPhase('running')
@@ -110,6 +117,11 @@ export function ExportDialog({ onClose }: { onClose: () => void }): React.JSX.El
               {totalCards} card image(s) at 63×88mm
               {options.bleedMm > 0 ? ` · ${options.bleedMm}mm bleed` : ''}
               {options.cardBack !== 'none' ? ' · with card backs (duplex)' : ''}.
+            </p>
+            <p className="detail__hint">
+              {upscaledCount === 0
+                ? 'All cards export at original quality (use the Upscale buttons first).'
+                : `${upscaledCount} of ${items.length} card type(s) will export upscaled; the rest stay original.`}
             </p>
 
             <div className="export__form">

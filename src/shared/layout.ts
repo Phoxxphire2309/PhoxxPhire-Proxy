@@ -134,6 +134,8 @@ export function pageCountFor(slotCount: number, perPage: number): number {
 export interface ExportRequestCard {
   id: string
   quantity: number
+  /** Whether to use the upscaled image for this card (else the original). */
+  upscale: boolean
 }
 
 export interface ExportRequest {
