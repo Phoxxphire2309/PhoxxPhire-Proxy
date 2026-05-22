@@ -75,72 +75,49 @@ invoked directly as a subprocess, so there's no dependency on a separate GUI app
 
 ---
 
-## Quick start
+## Download & install
+
+Grab the installer for your OS from the **[Releases page](https://github.com/Phoxxphire2309/PhoxxPhire-Proxy/releases)**,
+then run it. On first launch, click **Install upscaler** in the header to download the
+Real-ESRGAN engine (~50 MB) — no terminal needed. Without it the app still works; it just shows
+original Scryfall art instead of upscaled.
+
+> You need a GPU with **Vulkan** support for upscaling (Macs use Metal automatically). Decks are
+> saved/loaded as `.json` from the deck panel's **Save** / **Load** buttons.
+
+| OS | File | First launch |
+| --- | --- | --- |
+| **macOS** | `…-<version>.dmg` — open it and drag the app to Applications | Builds aren't notarised yet, so Gatekeeper blocks the first open: **right-click the app → Open → Open**. |
+| **Windows** | `…-Setup-<version>.exe` — run the installer | SmartScreen may warn (unsigned): **More info → Run anyway**. Keep GPU drivers up to date. |
+| **Linux** | `…-<version>.AppImage` | `chmod +x` it and run. Needs Vulkan drivers (`mesa-vulkan-drivers`) and, on some distros, FUSE (`libfuse2`). |
+
+> **Note:** until the first release is published, the Releases page is empty — see
+> [_For developers_](#for-developers) to run from source, or push a `v*` tag to trigger the
+> release build (below).
+
+---
+
+## For developers
 
 ```bash
 npm install        # install dependencies
-npm run dev        # launch the app (hot reload)
+npm run dev        # launch the app with hot reload
 ```
 
-On first run, click **Install upscaler** in the header to download the Real-ESRGAN binary
-(~50 MB). Without it the app still works — it just shows original Scryfall art instead of
-upscaled images. (For development you can also pre-provision with `npm run setup:upscaler`.)
+Requires Node.js ≥ 22.12. For development you can pre-provision the upscaler with
+`npm run setup:upscaler` instead of using the in-app button.
 
-### Build a distributable
+### Building & releasing
 
 ```bash
-npm run package    # type-check, bundle, and produce a dmg / nsis / AppImage
+npm run package    # build an unsigned installer for the current OS → dist/
 ```
 
-> Code-signing (Apple notarization / Windows certificate) is required for a publishable,
-> auto-updating release; the config is wired but unsigned local builds work for personal use.
-
-## Installing & running per platform
-
-You can run from source (`npm install && npm run dev`) on any platform, or build a native
-installer with `npm run package`. The Real-ESRGAN upscaler is **not bundled** — on first launch
-click **Install upscaler** in the header and it downloads the right binary for your OS into the
-app's data folder (one-click; no terminal). Decks are saved/loaded as `.json` via **Save** /
-**Load** in the deck panel.
-
-**Prerequisites (all platforms):** Node.js ≥ 22.12 to build, and a GPU with **Vulkan** support
-for upscaling (Apple Silicon/Intel Macs use Metal automatically). Without a usable GPU the app
-still runs and shows original art.
-
-### macOS
-
-```bash
-npm install && npm run dev      # run from source
-npm run package                 # → dist/PhoxxPhire Proxy-<version>.dmg
-```
-
-- Apple Silicon and Intel both work (the upscaler binary is a universal Mach-O).
-- Unsigned local builds: macOS Gatekeeper will block the first launch — **right-click the app →
-  Open**, then confirm. (A signed/notarised build removes this.)
-- The one-click installer uses the built-in `unzip`; nothing extra to install.
-
-### Windows
-
-```powershell
-npm install ; npm run dev       # run from source
-npm run package                 # → dist\PhoxxPhire Proxy Setup <version>.exe (NSIS)
-```
-
-- Install up-to-date GPU drivers (Vulkan ships with current NVIDIA/AMD/Intel drivers).
-- SmartScreen may warn on an unsigned installer — **More info → Run anyway**.
-- The one-click installer extracts via built-in PowerShell `Expand-Archive`.
-
-### Linux
-
-```bash
-npm install && npm run dev      # run from source
-npm run package                 # → dist/PhoxxPhire Proxy-<version>.AppImage
-chmod +x "dist/PhoxxPhire Proxy-"*.AppImage && ./dist/PhoxxPhire\ Proxy-*.AppImage
-```
-
-- Requires Vulkan drivers (e.g. `mesa-vulkan-drivers` / `vulkan-tools`) and `unzip` on PATH for
-  the one-click installer.
-- On some distros AppImages need FUSE (`libfuse2`).
+Pushing a Git tag that starts with `v` (e.g. `v0.1.0`, matching `package.json`'s version)
+triggers the **release workflow** (`.github/workflows/release.yml`): it builds the installer on
+macOS, Windows, and Linux runners and attaches them to a GitHub Release. Code-signing
+(Apple notarisation / Windows certificate) needs your own certificates and isn't configured —
+unsigned builds work but show the first-launch warnings above.
 
 ### Scripts
 
@@ -148,7 +125,8 @@ chmod +x "dist/PhoxxPhire Proxy-"*.AppImage && ./dist/PhoxxPhire\ Proxy-*.AppIma
 | --- | --- |
 | `npm run dev` | Run in development with HMR |
 | `npm run build` | Type-check + bundle (main / preload / renderer) |
-| `npm run package` | Build a distributable via electron-builder |
+| `npm run package` | Build an installer for the current OS |
+| `npm run release` | Build + publish installers to a GitHub Release (CI) |
 | `npm run setup:upscaler` | Pre-provision the Real-ESRGAN binary (dev) |
 | `npm run lint` / `typecheck` / `test` | Quality gates |
 | `npm run format` | Prettier write |
