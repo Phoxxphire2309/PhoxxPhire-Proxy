@@ -43,7 +43,7 @@ describe('ExportService.export', () => {
     await rm(dir, { recursive: true, force: true })
   })
 
-  it('expands quantity × faces, dedupes image prep, and writes a valid PDF', async () => {
+  it('dedupes image prep over the given slots and writes a valid PDF', async () => {
     const cards: Record<string, Card> = { single: card('single', 1), dfc: card('dfc', 2) }
     const ensureImage = vi.fn(async () => imagePath)
     const events: ExportProgress[] = []
@@ -55,11 +55,13 @@ describe('ExportService.export', () => {
     })
 
     const savePath = join(dir, 'out.pdf')
-    // 2× single face + 1×+1× double-faced (2 faces) = 2 + 2 = 4 card slots.
+    // 2× single face + double-faced front + back = 4 card slots.
     const result = await service.export(
       [
-        { id: 'single', quantities: [2], upscale: true },
-        { id: 'dfc', quantities: [1, 1], upscale: false }
+        { cardId: 'single', faceIndex: 0, upscale: true },
+        { cardId: 'single', faceIndex: 0, upscale: true },
+        { cardId: 'dfc', faceIndex: 0, upscale: false },
+        { cardId: 'dfc', faceIndex: 1, upscale: false }
       ],
       DEFAULT_EXPORT_OPTIONS,
       savePath
@@ -71,13 +73,46 @@ describe('ExportService.export', () => {
 
     // Three unique faces (single/0, dfc/0, dfc/1) → image prepared three times only.
     expect(ensureImage).toHaveBeenCalledTimes(3)
-    // The per-card flag is forwarded: single is upscaled, dfc is not.
+    // The per-slot flag is forwarded: single is upscaled, dfc is not.
     expect(ensureImage).toHaveBeenCalledWith('single', 0, true)
-    expect(ensureImage).toHaveBeenCalledWith('dfc', 0, false)
+    expect(ensureImage).toHaveBeenCalledWith('dfc', 1, false)
     expect(events.at(-1)).toEqual({ phase: 'done', completed: 4, total: 4 })
 
     const doc = await PDFDocument.load(await readFile(savePath))
     expect(doc.getPageCount()).toBe(1)
+  })
+
+  it('prints slots in the given order across pages', async () => {
+    const cards: Record<string, Card> = { a: card('a', 1), b: card('b', 1), c: card('c', 1) }
+    const ensureImage = vi.fn(async (_cardId: string, _faceIndex: number, _upscale: boolean) =>
+      Promise.resolve(imagePath)
+    )
+
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage,
+      emit: () => {}
+    })
+
+    const savePath = join(dir, 'ordered.pdf')
+    // A deliberate, non-sorted order; each card is unique so prep order tracks input order.
+    const result = await service.export(
+      [
+        { cardId: 'c', faceIndex: 0, upscale: false },
+        { cardId: 'a', faceIndex: 0, upscale: false },
+        { cardId: 'b', faceIndex: 0, upscale: false }
+      ],
+      DEFAULT_EXPORT_OPTIONS,
+      savePath
+    )
+
+    expect(result.cardCount).toBe(3)
+    // Unique images are prepared in the order the slots first appear.
+    const order = ensureImage.mock.calls.map(([cardId]) => cardId)
+    expect(order).toEqual(['c', 'a', 'b'])
+
+    const doc = await PDFDocument.load(await readFile(savePath))
+    expect(doc.getPageCount()).toBe(result.pageCount)
   })
 
   it('exports each unique face as a PNG named by set, number, and card name', async () => {
@@ -93,19 +128,20 @@ describe('ExportService.export', () => {
 
     const result = await service.exportImages(
       [
-        { id: 'single', quantities: [3], upscale: false },
-        { id: 'dfc', quantities: [1, 1], upscale: false }
+        { cardId: 'single', faceIndex: 0, upscale: false },
+        { cardId: 'dfc', faceIndex: 0, upscale: false },
+        { cardId: 'dfc', faceIndex: 1, upscale: false }
       ],
       outDir
     )
 
-    // Unique faces only: single (1) + dfc (2) = 3, regardless of quantity.
+    // Unique faces only: single (1) + dfc (2) = 3, regardless of repeats.
     expect(result.count).toBe(3)
     const files = (await readdir(outDir)).sort()
     expect(files).toEqual(['tst-1-dfc-1.png', 'tst-1-dfc-2.png', 'tst-1-single.png'])
   })
 
-  it('omits a face whose quantity is zero', async () => {
+  it('prints only the faces present in the slots', async () => {
     const cards: Record<string, Card> = { dfc: card('dfc', 2) }
     const ensureImage = vi.fn(async () => imagePath)
     const events: ExportProgress[] = []
@@ -117,9 +153,12 @@ describe('ExportService.export', () => {
     })
 
     const savePath = join(dir, 'out.pdf')
-    // Only the front face is printed (2 copies); the back face is omitted.
+    // Only the front face is printed (2 copies); the back face is absent.
     const result = await service.export(
-      [{ id: 'dfc', quantities: [2, 0], upscale: false }],
+      [
+        { cardId: 'dfc', faceIndex: 0, upscale: false },
+        { cardId: 'dfc', faceIndex: 0, upscale: false }
+      ],
       DEFAULT_EXPORT_OPTIONS,
       savePath
     )

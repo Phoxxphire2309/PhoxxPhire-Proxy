@@ -135,16 +135,17 @@ export function pageCountFor(slotCount: number, perPage: number): number {
   return perPage > 0 ? Math.ceil(slotCount / perPage) : 0
 }
 
-export interface ExportRequestCard {
-  id: string
-  /** Copies to print per face; index is the faceIndex, 0 omits that face. */
-  quantities: number[]
-  /** Whether to use the upscaled image for this card (else the original). */
+/** One printable card image: a single card face, with the quality to print it at. */
+export interface ExportSlot {
+  cardId: string
+  faceIndex: number
+  /** Whether to use the upscaled image for this slot (else the original). */
   upscale: boolean
 }
 
 export interface ExportRequest {
-  cards: ExportRequestCard[]
+  /** Fully expanded, ordered list of printable slots (one per printed card image). */
+  slots: ExportSlot[]
   options: ExportOptions
 }
 

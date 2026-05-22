@@ -1063,6 +1063,20 @@ body {
   object-fit: cover;
 }
 
+/* Drag-to-reorder affordance for preview cards (Print preview only). */
+.preview__pages .preview__card {
+  cursor: grab;
+}
+
+.preview__pages .preview__card:active {
+  cursor: grabbing;
+}
+
+.preview__footer {
+  margin-top: 16px;
+  justify-content: flex-end;
+}
+
 /* Page setup modal */
 .setup {
   width: min(960px, 100%);

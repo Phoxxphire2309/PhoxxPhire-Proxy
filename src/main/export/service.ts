@@ -5,7 +5,7 @@ import {
   pageCountFor,
   type ExportOptions,
   type ExportProgress,
-  type ExportRequestCard
+  type ExportSlot
 } from '@shared/layout'
 import type { Card } from '@shared/scryfall'
 import { buildProxyPdf } from './pdf'
@@ -20,48 +20,29 @@ export interface ExportServiceDeps {
   emit: (progress: ExportProgress) => void
 }
 
-interface SlotSpec {
-  cardId: string
-  faceIndex: number
-  upscale: boolean
-}
-
 function sanitizeName(value: string): string {
   return value.replace(/[^a-z0-9._-]+/gi, '_').replace(/^_+|_+$/g, '') || 'card'
 }
 
 /**
- * Turns a deck into a print-ready PDF: every copy of every card contributes a
- * slot per face (so double-faced cards print both sides as separate proxies),
- * each unique face image is prepared once, and the PDF is written to disk.
- * Whether a card is upscaled is decided per card (the `upscale` flag).
+ * Turns an ordered list of printable slots into a print-ready PDF: each slot is
+ * one card face (so double-faced cards print both sides as separate proxies),
+ * each unique face image is prepared once, and the PDF is written to disk in the
+ * slots' given order. Whether a slot is upscaled is decided per slot (`upscale`).
  */
 export class ExportService {
   constructor(private readonly deps: ExportServiceDeps) {}
 
-  private expandSlots(cards: ExportRequestCard[]): SlotSpec[] {
-    const slots: SlotSpec[] = []
-    for (const entry of cards) {
-      for (let faceIndex = 0; faceIndex < entry.quantities.length; faceIndex += 1) {
-        for (let copy = 0; copy < entry.quantities[faceIndex]!; copy += 1) {
-          slots.push({ cardId: entry.id, faceIndex, upscale: entry.upscale })
-        }
-      }
-    }
-    return slots
-  }
-
   async export(
-    cards: ExportRequestCard[],
+    slots: ExportSlot[],
     options: ExportOptions,
     savePath: string
   ): Promise<{ path: string; cardCount: number; pageCount: number }> {
-    const slots = this.expandSlots(cards)
-    const slotKey = (slot: SlotSpec): string =>
+    const slotKey = (slot: ExportSlot): string =>
       `${slot.upscale ? 'u' : 's'} ${slot.faceIndex} ${slot.cardId}`
 
     // Prepare each unique image (per card / face / quality) exactly once.
-    const uniqueSlots = new Map<string, SlotSpec>()
+    const uniqueSlots = new Map<string, ExportSlot>()
     for (const slot of slots) uniqueSlots.set(slotKey(slot), slot)
     const keys = [...uniqueSlots.keys()]
     const keyToIndex = new Map(keys.map((key, index) => [key, index]))
@@ -95,9 +76,9 @@ export class ExportService {
     }
   }
 
-  /** Exports each unique card face as its own PNG (upscaled per the card's flag) into `folder`. */
+  /** Exports each unique card face as its own PNG (upscaled per the slot's flag) into `folder`. */
   async exportImages(
-    cards: ExportRequestCard[],
+    slots: ExportSlot[],
     folder: string
   ): Promise<{ path: string; count: number }> {
     const faces: {
@@ -111,24 +92,20 @@ export class ExportService {
     }[] = []
     const seen = new Set<string>()
 
-    for (const entry of cards) {
-      const card = await this.deps.resolveCard(entry.id)
-      const multiFace = card.faces.length > 1
-      for (let faceIndex = 0; faceIndex < entry.quantities.length; faceIndex += 1) {
-        if (entry.quantities[faceIndex]! <= 0) continue
-        const key = `${entry.id} ${faceIndex}`
-        if (seen.has(key)) continue
-        seen.add(key)
-        faces.push({
-          cardId: entry.id,
-          faceIndex,
-          upscale: entry.upscale,
-          setCode: card.setCode,
-          collectorNumber: card.collectorNumber,
-          name: card.name,
-          multiFace
-        })
-      }
+    for (const slot of slots) {
+      const key = `${slot.cardId} ${slot.faceIndex}`
+      if (seen.has(key)) continue
+      seen.add(key)
+      const card = await this.deps.resolveCard(slot.cardId)
+      faces.push({
+        cardId: slot.cardId,
+        faceIndex: slot.faceIndex,
+        upscale: slot.upscale,
+        setCode: card.setCode,
+        collectorNumber: card.collectorNumber,
+        name: card.name,
+        multiFace: card.faces.length > 1
+      })
     }
 
     let completed = 0

@@ -16,7 +16,7 @@ import type {
   ExportOutcome,
   ExportProgress,
   ExportRequest,
-  ExportRequestCard
+  ExportSlot
 } from './layout'
 import type { Card, SearchResult } from './scryfall'
 import type { InstallPhase } from './upscaleInstall'
@@ -102,7 +102,7 @@ export interface PhoxxApi {
   /** Render the given cards into a print-ready PDF (prompts for a save path). */
   exportPdf(request: ExportRequest): Promise<ExportOutcome>
   /** Export each unique card face as a PNG into a chosen folder. */
-  exportImages(cards: ExportRequestCard[]): Promise<ExportImagesOutcome>
+  exportImages(slots: ExportSlot[]): Promise<ExportImagesOutcome>
   /** Save a print-calibration PDF for the given page options. */
   exportCalibration(options: ExportOptions): Promise<CalibrationOutcome>
   /** Subscribe to export progress; returns an unsubscribe function. */

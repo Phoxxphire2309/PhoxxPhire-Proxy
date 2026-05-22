@@ -16,7 +16,7 @@ const api: PhoxxApi = {
   getAppState: () => ipcRenderer.invoke(IpcChannel.StateGet),
   setAppState: (state) => ipcRenderer.invoke(IpcChannel.StateSet, state),
   exportPdf: (request) => ipcRenderer.invoke(IpcChannel.ExportPdf, request),
-  exportImages: (cards) => ipcRenderer.invoke(IpcChannel.ExportImages, cards),
+  exportImages: (slots) => ipcRenderer.invoke(IpcChannel.ExportImages, slots),
   exportCalibration: (options) => ipcRenderer.invoke(IpcChannel.ExportCalibration, options),
   onExportProgress: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, data: ExportProgress): void =>

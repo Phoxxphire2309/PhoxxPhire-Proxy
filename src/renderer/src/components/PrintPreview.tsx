@@ -1,20 +1,33 @@
-import { useEffect } from 'react'
-import { computePageLayout, pageCountFor } from '@shared/layout'
+import { useEffect, useRef } from 'react'
+import { computePageLayout, pageCountFor, type ExportSlot } from '@shared/layout'
 import { faceImageUrl } from '@shared/scryfall'
 import { useDeckStore } from '@renderer/state/deckStore'
+import { useOrderStore } from '@renderer/state/orderStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
-
-interface SlotSpec {
-  cardId: string
-  faceIndex: number
-}
+import { toast } from '@renderer/state/toastStore'
 
 export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.Element {
   const items = useDeckStore((state) => state.items)
+  const slots = useOrderStore((state) => state.slots)
+  const reorder = useOrderStore((state) => state.reorder)
+  const syncFromDeck = useOrderStore((state) => state.syncFromDeck)
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
   const options = usePageSetupStore((state) => state.options)
+
+  const dragIndex = useRef<number | null>(null)
+
+  // Stable signature of the deck's quantities; rebuilds the order only when it changes.
+  const deckSignature = items
+    .map((item) => `${item.card.id}:${item.quantities.join(',')}`)
+    .join('|')
+
+  useEffect(() => {
+    syncFromDeck(items)
+    // The deck signature captures everything syncFromDeck reads; items/syncFromDeck are stable refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckSignature])
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -26,17 +39,21 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
 
   const layout = computePageLayout(options)
   const { pageWidthPt: pw, pageHeightPt: ph } = layout
+  const pageCount = pageCountFor(slots.length, layout.perPage)
 
-  // One slot per copy per face (each face has its own print quantity).
-  const slots: SlotSpec[] = []
-  for (const item of items) {
-    for (let faceIndex = 0; faceIndex < item.quantities.length; faceIndex += 1) {
-      for (let copy = 0; copy < item.quantities[faceIndex]!; copy += 1) {
-        slots.push({ cardId: item.card.id, faceIndex })
-      }
+  const exportPdf = async (): Promise<void> => {
+    const exportSlots: ExportSlot[] = slots.map((slot) => ({
+      ...slot,
+      upscale: Boolean(upscaledSet[slot.cardId])
+    }))
+    try {
+      const outcome = await window.phoxx.exportPdf({ slots: exportSlots, options })
+      if (outcome.canceled) return
+      toast(`Saved ${outcome.cardCount} cards to ${outcome.path}`, 'success')
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Export failed', 'error')
     }
   }
-  const pageCount = pageCountFor(slots.length, layout.perPage)
 
   return (
     <div className="detail" role="dialog" aria-modal="true" aria-label="Print preview">
@@ -53,8 +70,8 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
           </span>
         </h2>
         <p className="detail__hint">
-          Reflects your Page setup. Cards you’ve upscaled show upscaled here; the rest stay
-          original.
+          Drag cards to reorder. Reflects your Page setup; cards you’ve upscaled show upscaled here,
+          the rest stay original.
         </p>
 
         <div className="preview__pages">
@@ -77,7 +94,18 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
                     )}
                     alt=""
                     loading="lazy"
-                    draggable={false}
+                    draggable
+                    onDragStart={() => {
+                      dragIndex.current = globalIndex
+                    }}
+                    onDragOver={(event) => event.preventDefault()}
+                    onDrop={() => {
+                      if (dragIndex.current !== null) reorder(dragIndex.current, globalIndex)
+                      dragIndex.current = null
+                    }}
+                    onDragEnd={() => {
+                      dragIndex.current = null
+                    }}
                     style={{
                       left: `${(slot.bleed.x / pw) * 100}%`,
                       top: `${(slot.bleed.y / ph) * 100}%`,
@@ -89,6 +117,17 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
               })}
             </div>
           ))}
+        </div>
+
+        <div className="import__actions preview__footer">
+          <button
+            className="search__button"
+            type="button"
+            disabled={slots.length === 0}
+            onClick={() => void exportPdf()}
+          >
+            Export PDF
+          </button>
         </div>
       </div>
     </div>

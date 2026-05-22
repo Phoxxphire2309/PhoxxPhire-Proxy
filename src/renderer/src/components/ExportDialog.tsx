@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
-import type { ExportProgress } from '@shared/layout'
+import type { ExportProgress, ExportSlot } from '@shared/layout'
 import { useDeckStore } from '@renderer/state/deckStore'
+import { useOrderStore } from '@renderer/state/orderStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 
@@ -14,11 +15,24 @@ export function ExportDialog({
   onEditPageSetup: () => void
 }): React.JSX.Element {
   const items = useDeckStore((state) => state.items)
+  const slots = useOrderStore((state) => state.slots)
+  const syncFromDeck = useOrderStore((state) => state.syncFromDeck)
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
   const options = usePageSetupStore((state) => state.options)
   const [phase, setPhase] = useState<Phase>('configure')
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   const [message, setMessage] = useState<string>('')
+
+  // Stable signature of the deck's quantities; rebuilds the order only when it changes.
+  const deckSignature = items
+    .map((item) => `${item.card.id}:${item.quantities.join(',')}`)
+    .join('|')
+
+  useEffect(() => {
+    syncFromDeck(items)
+    // The deck signature captures everything syncFromDeck reads; items/syncFromDeck are stable refs.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [deckSignature])
 
   useEffect(() => {
     const unsubscribe = window.phoxx.onExportProgress(setProgress)
@@ -32,16 +46,12 @@ export function ExportDialog({
     }
   }, [onClose, phase])
 
-  const totalCards = items.reduce(
-    (sum, item) => sum + item.quantities.reduce((a, b) => a + b, 0),
-    0
-  )
-  const cards = items.map((item) => ({
-    id: item.card.id,
-    quantities: item.quantities,
-    upscale: Boolean(upscaledSet[item.card.id])
+  const exportSlots: ExportSlot[] = slots.map((slot) => ({
+    ...slot,
+    upscale: Boolean(upscaledSet[slot.cardId])
   }))
-  const upscaledCount = cards.filter((card) => card.upscale).length
+  const totalCards = exportSlots.length
+  const upscaledCount = items.filter((item) => upscaledSet[item.card.id]).length
 
   const runGuarded = async (action: () => Promise<string | null>): Promise<void> => {
     setPhase('running')
@@ -62,7 +72,7 @@ export function ExportDialog({
 
   const exportPdf = (): Promise<void> =>
     runGuarded(async () => {
-      const outcome = await window.phoxx.exportPdf({ cards, options })
+      const outcome = await window.phoxx.exportPdf({ slots: exportSlots, options })
       return outcome.canceled
         ? null
         : `Saved ${outcome.cardCount} cards across ${outcome.pageCount} page(s) to ${outcome.path}`
@@ -70,7 +80,7 @@ export function ExportDialog({
 
   const exportImages = (): Promise<void> =>
     runGuarded(async () => {
-      const outcome = await window.phoxx.exportImages(cards)
+      const outcome = await window.phoxx.exportImages(exportSlots)
       return outcome.canceled ? null : `Saved ${outcome.count} card image(s) to ${outcome.path}`
     })
 

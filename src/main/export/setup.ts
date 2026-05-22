@@ -8,7 +8,7 @@ import type {
   ExportOutcome,
   ExportProgress,
   ExportRequest,
-  ExportRequestCard
+  ExportSlot
 } from '@shared/layout'
 import type { ScryfallService } from '../scryfall/service'
 import type { UpscaleService } from '../upscale/service'
@@ -54,14 +54,14 @@ export function initExport(options: ExportSetupOptions): void {
         return { canceled: true }
       }
 
-      const result = await service.export(request.cards, request.options, filePath)
+      const result = await service.export(request.slots, request.options, filePath)
       return { canceled: false, ...result }
     }
   )
 
   ipcMain.handle(
     IpcChannel.ExportImages,
-    async (_event, cards: ExportRequestCard[]): Promise<ExportImagesOutcome> => {
+    async (_event, slots: ExportSlot[]): Promise<ExportImagesOutcome> => {
       const { canceled, filePaths } = await dialog.showOpenDialog({
         title: 'Choose a folder for card images',
         properties: ['openDirectory', 'createDirectory']
@@ -70,7 +70,7 @@ export function initExport(options: ExportSetupOptions): void {
       if (canceled || !folder) {
         return { canceled: true }
       }
-      const result = await service.exportImages(cards, folder)
+      const result = await service.exportImages(slots, folder)
       return { canceled: false, ...result }
     }
   )
