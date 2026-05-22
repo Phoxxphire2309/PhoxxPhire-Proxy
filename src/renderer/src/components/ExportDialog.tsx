@@ -1,22 +1,21 @@
 import { useEffect, useState } from 'react'
-import {
-  DEFAULT_EXPORT_OPTIONS,
-  type BleedMode,
-  type CutGuideStyle,
-  type ExportOptions,
-  type ExportProgress,
-  type Orientation,
-  type PageSize
-} from '@shared/layout'
+import type { ExportProgress } from '@shared/layout'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
+import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 
 type Phase = 'configure' | 'running' | 'done' | 'error'
 
-export function ExportDialog({ onClose }: { onClose: () => void }): React.JSX.Element {
+export function ExportDialog({
+  onClose,
+  onEditPageSetup
+}: {
+  onClose: () => void
+  onEditPageSetup: () => void
+}): React.JSX.Element {
   const items = useDeckStore((state) => state.items)
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
-  const [options, setOptions] = useState<ExportOptions>(DEFAULT_EXPORT_OPTIONS)
+  const options = usePageSetupStore((state) => state.options)
   const [phase, setPhase] = useState<Phase>('configure')
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   const [message, setMessage] = useState<string>('')
@@ -81,13 +80,10 @@ export function ExportDialog({ onClose }: { onClose: () => void }): React.JSX.El
       return outcome.canceled ? null : `Saved calibration page to ${outcome.path}`
     })
 
-  const set = <K extends keyof ExportOptions>(key: K, value: ExportOptions[K]): void =>
-    setOptions((current) => ({ ...current, [key]: value }))
-
   const running = phase === 'running'
 
   return (
-    <div className="detail" role="dialog" aria-modal="true" aria-label="Export PDF">
+    <div className="detail" role="dialog" aria-modal="true" aria-label="Export">
       <button
         className="detail__backdrop"
         type="button"
@@ -114,123 +110,18 @@ export function ExportDialog({ onClose }: { onClose: () => void }): React.JSX.El
         ) : (
           <>
             <p className="detail__hint">
-              {totalCards} card image(s) at 63×88mm
+              {totalCards} card image(s) · {options.pageSize.toUpperCase()} {options.orientation}
               {options.bleedMm > 0 ? ` · ${options.bleedMm}mm bleed` : ''}
-              {options.cardBack !== 'none' ? ' · with card backs (duplex)' : ''}.
+              {options.cardBack !== 'none' ? ' · card backs (duplex)' : ''}.{' '}
+              <button type="button" className="linklike" onClick={onEditPageSetup}>
+                Edit page setup
+              </button>
             </p>
             <p className="detail__hint">
               {upscaledCount === 0
                 ? 'All cards export at original quality (use the Upscale buttons first).'
                 : `${upscaledCount} of ${items.length} card type(s) will export upscaled; the rest stay original.`}
             </p>
-
-            <div className="export__form">
-              <label className="export__field">
-                <span>Page size</span>
-                <select
-                  value={options.pageSize}
-                  onChange={(event) => set('pageSize', event.target.value as PageSize)}
-                  disabled={running}
-                >
-                  <option value="a4">A4</option>
-                  <option value="letter">US Letter</option>
-                  <option value="legal">US Legal</option>
-                  <option value="a3">A3</option>
-                  <option value="custom">Custom</option>
-                </select>
-              </label>
-
-              <label className="export__field">
-                <span>Orientation</span>
-                <select
-                  value={options.orientation}
-                  onChange={(event) => set('orientation', event.target.value as Orientation)}
-                  disabled={running}
-                >
-                  <option value="portrait">Portrait</option>
-                  <option value="landscape">Landscape</option>
-                </select>
-              </label>
-
-              {options.pageSize === 'custom' && (
-                <>
-                  <label className="export__field">
-                    <span>Width (mm)</span>
-                    <input
-                      type="number"
-                      min={50}
-                      value={options.customWidthMm}
-                      onChange={(event) =>
-                        set('customWidthMm', Math.max(50, Number(event.target.value)))
-                      }
-                      disabled={running}
-                    />
-                  </label>
-                  <label className="export__field">
-                    <span>Height (mm)</span>
-                    <input
-                      type="number"
-                      min={50}
-                      value={options.customHeightMm}
-                      onChange={(event) =>
-                        set('customHeightMm', Math.max(50, Number(event.target.value)))
-                      }
-                      disabled={running}
-                    />
-                  </label>
-                </>
-              )}
-
-              <label className="export__field">
-                <span>Bleed (mm)</span>
-                <input
-                  type="number"
-                  min={0}
-                  max={6}
-                  step={0.5}
-                  value={options.bleedMm}
-                  onChange={(event) => set('bleedMm', Math.max(0, Number(event.target.value)))}
-                  disabled={running}
-                />
-              </label>
-
-              {options.bleedMm > 0 && (
-                <label className="export__field">
-                  <span>Bleed style</span>
-                  <select
-                    value={options.bleedMode}
-                    onChange={(event) => set('bleedMode', event.target.value as BleedMode)}
-                    disabled={running}
-                  >
-                    <option value="extend">Extend art (mirror)</option>
-                    <option value="zoom">Zoom card</option>
-                  </select>
-                </label>
-              )}
-
-              <label className="export__field">
-                <span>Cut guides</span>
-                <select
-                  value={options.cutGuideStyle}
-                  onChange={(event) => set('cutGuideStyle', event.target.value as CutGuideStyle)}
-                  disabled={running}
-                >
-                  <option value="none">None</option>
-                  <option value="outline">Outline</option>
-                  <option value="corners">Corner marks</option>
-                </select>
-              </label>
-
-              <label className="export__field export__field--inline">
-                <input
-                  type="checkbox"
-                  checked={options.cardBack !== 'none'}
-                  onChange={(event) => set('cardBack', event.target.checked ? 'plain' : 'none')}
-                  disabled={running}
-                />
-                <span>Card backs (duplex)</span>
-              </label>
-            </div>
 
             {running && (
               <p className="detail__hint">

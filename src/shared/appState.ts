@@ -1,3 +1,4 @@
+import type { ExportOptions } from './layout'
 import type { Card } from './scryfall'
 
 export type ThemeName = 'dark' | 'light'
@@ -8,4 +9,5 @@ export interface AppState {
   upscale?: { model: string; scale: number }
   showSource?: boolean
   theme?: ThemeName
+  pageSetup?: ExportOptions
 }

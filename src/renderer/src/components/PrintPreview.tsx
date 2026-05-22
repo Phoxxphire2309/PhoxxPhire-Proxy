@@ -1,8 +1,9 @@
 import { useEffect } from 'react'
-import { computePageLayout, DEFAULT_EXPORT_OPTIONS, pageCountFor } from '@shared/layout'
+import { computePageLayout, pageCountFor } from '@shared/layout'
 import { faceImageUrl } from '@shared/scryfall'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
+import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 
 interface SlotSpec {
   cardId: string
@@ -13,6 +14,7 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
   const items = useDeckStore((state) => state.items)
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
+  const options = usePageSetupStore((state) => state.options)
 
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
@@ -22,7 +24,7 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const layout = computePageLayout(DEFAULT_EXPORT_OPTIONS)
+  const layout = computePageLayout(options)
   const { pageWidthPt: pw, pageHeightPt: ph } = layout
 
   // One slot per copy per face (double-faced cards print both sides).
@@ -48,12 +50,12 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
           Print preview{' '}
           <span className="preview__meta">
             {slots.length} card{slots.length === 1 ? '' : 's'} · {pageCount} page
-            {pageCount === 1 ? '' : 's'} · A4
+            {pageCount === 1 ? '' : 's'} · {options.pageSize.toUpperCase()} {options.orientation}
           </span>
         </h2>
         <p className="detail__hint">
-          Showing original art at the default A4 layout. Use Export for full options (page size,
-          bleed, cut guides, duplex).
+          Reflects your Page setup. Cards you’ve upscaled show upscaled here; the rest stay
+          original.
         </p>
 
         <div className="preview__pages">

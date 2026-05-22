@@ -5,6 +5,7 @@ import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 import { ImportDialog } from '@renderer/components/ImportDialog'
 import { ExportDialog } from '@renderer/components/ExportDialog'
 import { PrintPreview } from '@renderer/components/PrintPreview'
+import { PageSetup } from '@renderer/components/PageSetup'
 
 function DeckItemRow({ item }: { item: DeckItem }): React.JSX.Element {
   const setQuantity = useDeckStore((state) => state.setQuantity)
@@ -69,6 +70,7 @@ export function DeckPanel(): React.JSX.Element {
   const [showImport, setShowImport] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
+  const [showPageSetup, setShowPageSetup] = useState(false)
 
   const total = items.reduce((sum, item) => sum + item.quantity, 0)
   const totalPrice = items.reduce(
@@ -124,6 +126,9 @@ export function DeckPanel(): React.JSX.Element {
 
       {items.length > 0 && (
         <div className="deck__primary">
+          <button className="deck__preview" type="button" onClick={() => setShowPageSetup(true)}>
+            Page setup
+          </button>
           <button className="deck__preview" type="button" onClick={() => setShowPreview(true)}>
             Print preview
           </button>
@@ -160,8 +165,17 @@ export function DeckPanel(): React.JSX.Element {
       )}
 
       {showImport && <ImportDialog onClose={() => setShowImport(false)} />}
-      {showExport && <ExportDialog onClose={() => setShowExport(false)} />}
+      {showExport && (
+        <ExportDialog
+          onClose={() => setShowExport(false)}
+          onEditPageSetup={() => {
+            setShowExport(false)
+            setShowPageSetup(true)
+          }}
+        />
+      )}
       {showPreview && <PrintPreview onClose={() => setShowPreview(false)} />}
+      {showPageSetup && <PageSetup onClose={() => setShowPageSetup(false)} />}
     </section>
   )
 }

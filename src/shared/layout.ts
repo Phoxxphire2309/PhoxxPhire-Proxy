@@ -25,7 +25,9 @@ export interface ExportOptions {
   customHeightMm: number
   bleedMm: number
   marginMm: number
-  spacingMm: number
+  /** Gap between columns (horizontal) and rows (vertical), in mm. */
+  columnSpacingMm: number
+  rowSpacingMm: number
   cutGuideStyle: CutGuideStyle
   /** When not 'none', interleave mirrored back pages for duplex printing. */
   cardBack: CardBackStyle
@@ -41,7 +43,8 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   // 4mm keeps the standard 3×3 = 9 cards per A4 page even with 2mm bleed
   // (3 × (63+4)mm = 201mm fits A4's 210mm width).
   marginMm: 4,
-  spacingMm: 0,
+  columnSpacingMm: 0,
+  rowSpacingMm: 0,
   cutGuideStyle: 'outline',
   cardBack: 'none',
   bleedMode: 'extend'
@@ -94,7 +97,8 @@ export function computePageLayout(options: ExportOptions): PageLayout {
   const { width: pageWidthPt, height: pageHeightPt } = pageDimensionsPt(options)
   const bleed = mmToPt(options.bleedMm)
   const margin = mmToPt(options.marginMm)
-  const spacing = mmToPt(options.spacingMm)
+  const spacingX = mmToPt(options.columnSpacingMm)
+  const spacingY = mmToPt(options.rowSpacingMm)
 
   const cutW = mmToPt(CARD_WIDTH_MM)
   const cutH = mmToPt(CARD_HEIGHT_MM)
@@ -103,20 +107,20 @@ export function computePageLayout(options: ExportOptions): PageLayout {
 
   const usableW = pageWidthPt - margin * 2
   const usableH = pageHeightPt - margin * 2
-  const columns = Math.max(0, Math.floor((usableW + spacing) / (footW + spacing)))
-  const rows = Math.max(0, Math.floor((usableH + spacing) / (footH + spacing)))
+  const columns = Math.max(0, Math.floor((usableW + spacingX) / (footW + spacingX)))
+  const rows = Math.max(0, Math.floor((usableH + spacingY) / (footH + spacingY)))
 
   // Centre the grid block on the page (margins end up >= the requested margin).
-  const gridW = columns > 0 ? columns * footW + (columns - 1) * spacing : 0
-  const gridH = rows > 0 ? rows * footH + (rows - 1) * spacing : 0
+  const gridW = columns > 0 ? columns * footW + (columns - 1) * spacingX : 0
+  const gridH = rows > 0 ? rows * footH + (rows - 1) * spacingY : 0
   const originX = (pageWidthPt - gridW) / 2
   const originY = (pageHeightPt - gridH) / 2
 
   const slots: Slot[] = []
   for (let row = 0; row < rows; row += 1) {
     for (let col = 0; col < columns; col += 1) {
-      const bx = originX + col * (footW + spacing)
-      const by = originY + row * (footH + spacing)
+      const bx = originX + col * (footW + spacingX)
+      const by = originY + row * (footH + spacingY)
       slots.push({
         bleed: { x: bx, y: by, width: footW, height: footH },
         cut: { x: bx + bleed, y: by + bleed, width: cutW, height: cutH }

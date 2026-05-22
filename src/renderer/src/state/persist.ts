@@ -2,6 +2,7 @@ import type { AppState } from '@shared/appState'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore } from '@renderer/state/uiStore'
+import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 
 /** Restores persisted state into the stores. Call once at startup. */
 export async function loadPersistedState(): Promise<void> {
@@ -15,6 +16,7 @@ export async function loadPersistedState(): Promise<void> {
 
   if (state.theme) useUiStore.getState().setTheme(state.theme)
   if (state.deck) useDeckStore.getState().setItems(state.deck)
+  if (state.pageSetup) usePageSetupStore.getState().replace(state.pageSetup)
   // showSource is intentionally not restored — the view always starts on
   // "Original" so a saved "Upscaled" preference can't auto-upscale on launch.
   if (state.upscale) {
@@ -29,7 +31,8 @@ function snapshot(): AppState {
   return {
     deck: deck.items,
     upscale: { model: upscale.model, scale: upscale.scale },
-    theme: ui.theme
+    theme: ui.theme,
+    pageSetup: usePageSetupStore.getState().options
   }
 }
 
@@ -47,7 +50,8 @@ export function startPersisting(): () => void {
   const unsubscribers = [
     useDeckStore.subscribe(schedule),
     useUpscaleStore.subscribe(schedule),
-    useUiStore.subscribe(schedule)
+    useUiStore.subscribe(schedule),
+    usePageSetupStore.subscribe(schedule)
   ]
 
   return () => {
