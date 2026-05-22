@@ -39,13 +39,11 @@ function sanitizeName(value: string): string {
 export class ExportService {
   constructor(private readonly deps: ExportServiceDeps) {}
 
-  private async expandSlots(cards: ExportRequestCard[]): Promise<SlotSpec[]> {
+  private expandSlots(cards: ExportRequestCard[]): SlotSpec[] {
     const slots: SlotSpec[] = []
     for (const entry of cards) {
-      const card = await this.deps.resolveCard(entry.id)
-      const faceCount = Math.max(1, card.faces.length)
-      for (let copy = 0; copy < entry.quantity; copy += 1) {
-        for (let faceIndex = 0; faceIndex < faceCount; faceIndex += 1) {
+      for (let faceIndex = 0; faceIndex < entry.quantities.length; faceIndex += 1) {
+        for (let copy = 0; copy < entry.quantities[faceIndex]!; copy += 1) {
           slots.push({ cardId: entry.id, faceIndex, upscale: entry.upscale })
         }
       }
@@ -58,7 +56,7 @@ export class ExportService {
     options: ExportOptions,
     savePath: string
   ): Promise<{ path: string; cardCount: number; pageCount: number }> {
-    const slots = await this.expandSlots(cards)
+    const slots = this.expandSlots(cards)
     const slotKey = (slot: SlotSpec): string =>
       `${slot.upscale ? 'u' : 's'} ${slot.faceIndex} ${slot.cardId}`
 
@@ -115,8 +113,9 @@ export class ExportService {
 
     for (const entry of cards) {
       const card = await this.deps.resolveCard(entry.id)
-      const faceCount = Math.max(1, card.faces.length)
-      for (let faceIndex = 0; faceIndex < faceCount; faceIndex += 1) {
+      const multiFace = card.faces.length > 1
+      for (let faceIndex = 0; faceIndex < entry.quantities.length; faceIndex += 1) {
+        if (entry.quantities[faceIndex]! <= 0) continue
         const key = `${entry.id} ${faceIndex}`
         if (seen.has(key)) continue
         seen.add(key)
@@ -127,7 +126,7 @@ export class ExportService {
           setCode: card.setCode,
           collectorNumber: card.collectorNumber,
           name: card.name,
-          multiFace: faceCount > 1
+          multiFace
         })
       }
     }

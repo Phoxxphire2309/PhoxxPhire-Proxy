@@ -7,22 +7,36 @@ import { ExportDialog } from '@renderer/components/ExportDialog'
 import { PrintPreview } from '@renderer/components/PrintPreview'
 import { PageSetup } from '@renderer/components/PageSetup'
 
-function DeckItemRow({ item }: { item: DeckItem }): React.JSX.Element {
-  const setQuantity = useDeckStore((state) => state.setQuantity)
+function facesOf(item: DeckItem): number {
+  return Math.max(1, item.card.faces.length)
+}
+
+function DeckFaceRow({
+  item,
+  faceIndex
+}: {
+  item: DeckItem
+  faceIndex: number
+}): React.JSX.Element {
+  const setFaceQuantity = useDeckStore((state) => state.setFaceQuantity)
   const remove = useDeckStore((state) => state.remove)
-  const status = useUpscaleStore((state) => state.statuses[faceKey(item.card.id, 0)])
+  const status = useUpscaleStore((state) => state.statuses[faceKey(item.card.id, faceIndex)])
+
+  const multiFace = item.card.faces.length > 1
+  const faceName = multiFace ? (item.card.faces[faceIndex]?.name ?? item.card.name) : item.card.name
+  const quantity = item.quantities[faceIndex] ?? 0
 
   return (
     <li className="ditem">
       <img
         className="ditem__thumb"
-        src={faceImageUrl(item.card.id, 0, 'source')}
-        alt={item.card.name}
+        src={faceImageUrl(item.card.id, faceIndex, 'source')}
+        alt={faceName}
         loading="lazy"
         draggable={false}
       />
       <div className="ditem__info">
-        <span className="ditem__name">{item.card.name}</span>
+        <span className="ditem__name">{faceName}</span>
         <span className="ditem__meta">
           {item.card.setCode.toUpperCase()} · {formatUsd(bestUsd(item.card.prices))}
           {status === 'ready' ? ' · 4×' : status === 'upscaling' ? ' · …' : ''}
@@ -31,16 +45,16 @@ function DeckItemRow({ item }: { item: DeckItem }): React.JSX.Element {
       <div className="ditem__qty">
         <button
           type="button"
-          onClick={() => setQuantity(item.card.id, item.quantity - 1)}
-          aria-label={`Decrease ${item.card.name}`}
+          onClick={() => setFaceQuantity(item.card.id, faceIndex, quantity - 1)}
+          aria-label={`Decrease ${faceName}`}
         >
           −
         </button>
-        <span className="ditem__count">{item.quantity}</span>
+        <span className="ditem__count">{quantity}</span>
         <button
           type="button"
-          onClick={() => setQuantity(item.card.id, item.quantity + 1)}
-          aria-label={`Increase ${item.card.name}`}
+          onClick={() => setFaceQuantity(item.card.id, faceIndex, quantity + 1)}
+          aria-label={`Increase ${faceName}`}
         >
           +
         </button>
@@ -49,7 +63,8 @@ function DeckItemRow({ item }: { item: DeckItem }): React.JSX.Element {
         className="ditem__remove"
         type="button"
         onClick={() => remove(item.card.id)}
-        aria-label={`Remove ${item.card.name}`}
+        aria-label={`Remove ${faceName}`}
+        title="Remove card"
       >
         ✕
       </button>
@@ -72,9 +87,9 @@ export function DeckPanel(): React.JSX.Element {
   const [showPreview, setShowPreview] = useState(false)
   const [showPageSetup, setShowPageSetup] = useState(false)
 
-  const total = items.reduce((sum, item) => sum + item.quantity, 0)
+  const total = items.reduce((sum, item) => sum + item.quantities.reduce((a, b) => a + b, 0), 0)
   const totalPrice = items.reduce(
-    (sum, item) => sum + (bestUsd(item.card.prices) ?? 0) * item.quantity,
+    (sum, item) => sum + (bestUsd(item.card.prices) ?? 0) * Math.max(...item.quantities),
     0
   )
 
@@ -147,9 +162,11 @@ export function DeckPanel(): React.JSX.Element {
         <p className="deck__empty">No cards yet. Add from search, or import a list.</p>
       ) : (
         <ul className="deck__list">
-          {items.map((item) => (
-            <DeckItemRow key={item.card.id} item={item} />
-          ))}
+          {items.flatMap((item) =>
+            Array.from({ length: facesOf(item) }, (_unused, faceIndex) => (
+              <DeckFaceRow key={`${item.card.id}:${faceIndex}`} item={item} faceIndex={faceIndex} />
+            ))
+          )}
         </ul>
       )}
 

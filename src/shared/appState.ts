@@ -5,7 +5,7 @@ export type ThemeName = 'dark' | 'light'
 
 /** Persisted application state, restored on launch. */
 export interface AppState {
-  deck?: { card: Card; quantity: number }[]
+  deck?: { card: Card; quantities: number[] }[]
   upscale?: { model: string; scale: number }
   showSource?: boolean
   theme?: ThemeName

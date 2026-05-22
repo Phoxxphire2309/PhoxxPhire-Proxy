@@ -6,7 +6,12 @@ import { toast } from '@renderer/state/toastStore'
 
 export interface DeckItem {
   card: Card
-  quantity: number
+  quantities: number[]
+}
+
+/** Number of printable faces a card has (1 for normal cards, 2 for double-faced). */
+function facesOf(card: Card): number {
+  return Math.max(1, card.faces.length)
 }
 
 interface DeckState {
@@ -15,7 +20,7 @@ interface DeckState {
   importErrors: string[]
   add: (card: Card, quantity?: number) => void
   setItems: (items: DeckItem[]) => void
-  setQuantity: (cardId: string, quantity: number) => void
+  setFaceQuantity: (cardId: string, faceIndex: number, quantity: number) => void
   remove: (cardId: string) => void
   clear: () => void
   importText: (text: string) => Promise<void>
@@ -27,16 +32,28 @@ interface DeckState {
 
 /** Adds resolved items into an existing list, merging by card id (immutably). */
 function mergeItems(existing: DeckItem[], incoming: DeckItem[]): DeckItem[] {
-  const merged = existing.map((item) => ({ ...item }))
+  const merged = existing.map((item) => ({ ...item, quantities: [...item.quantities] }))
   for (const item of incoming) {
     const found = merged.find((candidate) => candidate.card.id === item.card.id)
     if (found) {
-      found.quantity += item.quantity
+      // Same card → same face count, so sum element-wise by index.
+      found.quantities = found.quantities.map(
+        (value, index) => value + (item.quantities[index] ?? 0)
+      )
     } else {
-      merged.push({ ...item })
+      merged.push({ ...item, quantities: [...item.quantities] })
     }
   }
   return merged
+}
+
+/** Normalizes a possibly-legacy saved item ({ quantity }) to the per-face shape. */
+function normalizeItem(item: DeckItem | { card: Card; quantity: number }): DeckItem {
+  if ('quantities' in item && Array.isArray(item.quantities)) {
+    return { card: item.card, quantities: [...item.quantities] }
+  }
+  const quantity = 'quantity' in item ? item.quantity : 1
+  return { card: item.card, quantities: Array(facesOf(item.card)).fill(quantity) }
 }
 
 export const useDeckStore = create<DeckState>((set, get) => ({
@@ -45,17 +62,31 @@ export const useDeckStore = create<DeckState>((set, get) => ({
   importErrors: [],
 
   add: (card, quantity = 1) =>
-    set((state) => ({ items: mergeItems(state.items, [{ card, quantity }]) })),
-
-  setItems: (items) => set({ items }),
-
-  setQuantity: (cardId, quantity) =>
     set((state) => ({
-      items:
-        quantity <= 0
-          ? state.items.filter((item) => item.card.id !== cardId)
-          : state.items.map((item) => (item.card.id === cardId ? { ...item, quantity } : item))
+      items: mergeItems(state.items, [{ card, quantities: Array(facesOf(card)).fill(quantity) }])
     })),
+
+  setItems: (items) => set({ items: items.map(normalizeItem) }),
+
+  setFaceQuantity: (cardId, faceIndex, quantity) =>
+    set((state) => {
+      const next = quantity < 0 ? 0 : quantity
+      const items: DeckItem[] = []
+      for (const item of state.items) {
+        if (item.card.id !== cardId) {
+          items.push(item)
+          continue
+        }
+        const quantities = item.quantities.map((value, index) =>
+          index === faceIndex ? next : value
+        )
+        // Drop the card entirely once every face is at zero.
+        if (quantities.some((value) => value > 0)) {
+          items.push({ ...item, quantities })
+        }
+      }
+      return { items }
+    }),
 
   remove: (cardId) =>
     set((state) => ({ items: state.items.filter((item) => item.card.id !== cardId) })),
@@ -80,7 +111,7 @@ export const useDeckStore = create<DeckState>((set, get) => ({
     try {
       const outcome = await window.phoxx.loadDeck()
       if (outcome.canceled) return
-      set({ items: outcome.deck.items, importErrors: [] })
+      set({ items: outcome.deck.items.map(normalizeItem), importErrors: [] })
       toast(`Loaded ${outcome.deck.items.length} card(s)`, 'success')
     } catch (error) {
       toast(error instanceof Error ? error.message : 'Could not load deck', 'error')
@@ -108,8 +139,12 @@ async function runImport(
   set({ importing: true, importErrors: [] })
   try {
     const result = await fetchResult()
+    const incoming: DeckItem[] = result.items.map((item) => ({
+      card: item.card,
+      quantities: Array(facesOf(item.card)).fill(item.quantity)
+    }))
     set({
-      items: mergeItems(useDeckStore.getState().items, result.items),
+      items: mergeItems(useDeckStore.getState().items, incoming),
       importErrors: result.errors,
       importing: false
     })

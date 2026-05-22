@@ -55,11 +55,11 @@ describe('ExportService.export', () => {
     })
 
     const savePath = join(dir, 'out.pdf')
-    // 2× single face + 1× double-faced (2 faces) = 2 + 2 = 4 card slots.
+    // 2× single face + 1×+1× double-faced (2 faces) = 2 + 2 = 4 card slots.
     const result = await service.export(
       [
-        { id: 'single', quantity: 2, upscale: true },
-        { id: 'dfc', quantity: 1, upscale: false }
+        { id: 'single', quantities: [2], upscale: true },
+        { id: 'dfc', quantities: [1, 1], upscale: false }
       ],
       DEFAULT_EXPORT_OPTIONS,
       savePath
@@ -93,8 +93,8 @@ describe('ExportService.export', () => {
 
     const result = await service.exportImages(
       [
-        { id: 'single', quantity: 3, upscale: false },
-        { id: 'dfc', quantity: 1, upscale: false }
+        { id: 'single', quantities: [3], upscale: false },
+        { id: 'dfc', quantities: [1, 1], upscale: false }
       ],
       outDir
     )
@@ -103,5 +103,29 @@ describe('ExportService.export', () => {
     expect(result.count).toBe(3)
     const files = (await readdir(outDir)).sort()
     expect(files).toEqual(['tst-1-dfc-1.png', 'tst-1-dfc-2.png', 'tst-1-single.png'])
+  })
+
+  it('omits a face whose quantity is zero', async () => {
+    const cards: Record<string, Card> = { dfc: card('dfc', 2) }
+    const ensureImage = vi.fn(async () => imagePath)
+    const events: ExportProgress[] = []
+
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage,
+      emit: (progress) => events.push(progress)
+    })
+
+    const savePath = join(dir, 'out.pdf')
+    // Only the front face is printed (2 copies); the back face is omitted.
+    const result = await service.export(
+      [{ id: 'dfc', quantities: [2, 0], upscale: false }],
+      DEFAULT_EXPORT_OPTIONS,
+      savePath
+    )
+
+    expect(result.cardCount).toBe(2)
+    expect(ensureImage).toHaveBeenCalledWith('dfc', 0, false)
+    expect(ensureImage).not.toHaveBeenCalledWith('dfc', 1, false)
   })
 })

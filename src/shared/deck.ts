@@ -1,10 +1,10 @@
 import type { Card } from './scryfall'
 
-export const DECK_FILE_VERSION = 1
+export const DECK_FILE_VERSION = 2
 
 export interface SavedDeckItem {
   card: Card
-  quantity: number
+  quantities: number[]
 }
 
 export interface SavedDeck {

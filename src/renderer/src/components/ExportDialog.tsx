@@ -33,12 +33,12 @@ export function ExportDialog({
   }, [onClose, phase])
 
   const totalCards = items.reduce(
-    (sum, item) => sum + item.quantity * Math.max(1, item.card.faces.length),
+    (sum, item) => sum + item.quantities.reduce((a, b) => a + b, 0),
     0
   )
   const cards = items.map((item) => ({
     id: item.card.id,
-    quantity: item.quantity,
+    quantities: item.quantities,
     upscale: Boolean(upscaledSet[item.card.id])
   }))
   const upscaledCount = cards.filter((card) => card.upscale).length
