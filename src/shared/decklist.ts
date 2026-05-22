@@ -1,0 +1,72 @@
+/**
+ * Decklist parsing + deck resolution types, shared between processes.
+ *
+ * The parser is intentionally forgiving: it accepts plain lists (`4 Lightning
+ * Bolt`), the `x` quantity form (`4x Lightning Bolt`), and the MTG Arena /
+ * Moxfield form with set + collector number (`4 Lightning Bolt (M21) 159`).
+ */
+
+import type { Card } from './scryfall'
+
+export interface DeckLine {
+  quantity: number
+  name: string
+  setCode?: string
+  collectorNumber?: string
+}
+
+export interface DeckResolvedItem {
+  card: Card
+  quantity: number
+}
+
+export interface DeckResolution {
+  items: DeckResolvedItem[]
+  /** Human-readable messages for lines that could not be resolved. */
+  errors: string[]
+}
+
+/** Section headers emitted by various exporters; ignored when on their own line. */
+const SECTION_HEADERS = new Set([
+  'deck',
+  'sideboard',
+  'commander',
+  'companion',
+  'maybeboard',
+  'about'
+])
+
+// qty (optional) | name (lazy) | optional "(SET) NUMBER" suffix
+const LINE_RE = /^(?:(\d+)\s*[xX]?\s+)?(.+?)(?:\s+\(([0-9A-Za-z]+)\)(?:\s+([0-9A-Za-z-]+))?)?$/
+
+function parseLine(line: string): DeckLine | null {
+  // Drop trailing foil/condition markers such as "*F*".
+  const cleaned = line.replace(/\s*\*[^*]*\*\s*$/g, '').trim()
+  const match = LINE_RE.exec(cleaned)
+  if (!match) return null
+
+  const [, qtyRaw, nameRaw, setRaw, numberRaw] = match
+  const name = nameRaw?.trim()
+  if (!name) return null
+
+  const quantity = qtyRaw ? Math.max(1, Number.parseInt(qtyRaw, 10)) : 1
+  return {
+    quantity,
+    name,
+    ...(setRaw ? { setCode: setRaw } : {}),
+    ...(numberRaw ? { collectorNumber: numberRaw } : {})
+  }
+}
+
+export function parseDecklist(text: string): DeckLine[] {
+  const lines: DeckLine[] = []
+  for (const rawLine of text.split(/\r?\n/)) {
+    const line = rawLine.trim()
+    if (!line) continue
+    if (line.startsWith('#') || line.startsWith('//')) continue
+    if (SECTION_HEADERS.has(line.toLowerCase())) continue
+    const parsed = parseLine(line)
+    if (parsed) lines.push(parsed)
+  }
+  return lines
+}

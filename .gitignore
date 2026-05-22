@@ -1,0 +1,28 @@
+# Dependencies
+node_modules
+
+# Build output
+out
+dist
+*.tsbuildinfo
+
+# Test / coverage
+coverage
+
+# Vendored upscaler binaries + models (downloaded, not committed)
+resources/vendor/*
+!resources/vendor/README.md
+
+# Local caches (downloaded + upscaled card images)
+.cache
+
+# Editor / OS
+.DS_Store
+*.log
+.idea
+.vscode/*
+!.vscode/extensions.json
+
+# Env
+.env
+.env.local

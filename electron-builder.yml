@@ -1,0 +1,30 @@
+appId: com.phoxxphire.proxy
+productName: PhoxxPhire Proxy
+directories:
+  output: dist
+  buildResources: build
+files:
+  - out/**
+  - package.json
+extraResources:
+  - from: resources/vendor
+    to: vendor
+    filter:
+      - '**/*'
+      - '!README.md'
+asar: true
+# sharp ships a native binary that must run from outside the asar archive.
+asarUnpack:
+  - '**/node_modules/sharp/**'
+  - '**/node_modules/@img/**'
+mac:
+  target:
+    - dmg
+  category: public.app-category.graphics-design
+win:
+  target:
+    - nsis
+linux:
+  target:
+    - AppImage
+  category: Graphics

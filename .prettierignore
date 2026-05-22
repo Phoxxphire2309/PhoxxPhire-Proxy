@@ -1,0 +1,6 @@
+out
+dist
+coverage
+node_modules
+resources/vendor
+*.md

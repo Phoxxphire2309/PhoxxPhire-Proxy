@@ -1,0 +1,46 @@
+import { contextBridge, ipcRenderer } from 'electron'
+import { IpcChannel, type PhoxxApi, type UpscaleStatusEvent } from '@shared/ipc'
+import type { ExportProgress } from '@shared/layout'
+
+const api: PhoxxApi = {
+  getVersion: () => ipcRenderer.invoke(IpcChannel.AppGetVersion),
+  searchCards: (query) => ipcRenderer.invoke(IpcChannel.ScryfallSearch, query),
+  autocomplete: (query) => ipcRenderer.invoke(IpcChannel.ScryfallAutocomplete, query),
+  getPrintings: (oracleId) => ipcRenderer.invoke(IpcChannel.ScryfallPrints, oracleId),
+  resolveDeck: (text) => ipcRenderer.invoke(IpcChannel.ScryfallResolveDeck, text),
+  importDeckUrl: (url) => ipcRenderer.invoke(IpcChannel.ScryfallImportUrl, url),
+  saveDeck: (deck) => ipcRenderer.invoke(IpcChannel.DeckSave, deck),
+  loadDeck: () => ipcRenderer.invoke(IpcChannel.DeckLoad),
+  importCustomCard: () => ipcRenderer.invoke(IpcChannel.CustomCardImport),
+  getAppState: () => ipcRenderer.invoke(IpcChannel.StateGet),
+  setAppState: (state) => ipcRenderer.invoke(IpcChannel.StateSet, state),
+  exportPdf: (request) => ipcRenderer.invoke(IpcChannel.ExportPdf, request),
+  exportImages: (cards) => ipcRenderer.invoke(IpcChannel.ExportImages, cards),
+  exportCalibration: (options) => ipcRenderer.invoke(IpcChannel.ExportCalibration, options),
+  onExportProgress: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: ExportProgress): void =>
+      listener(data)
+    ipcRenderer.on(IpcChannel.ExportProgress, handler)
+    return () => ipcRenderer.removeListener(IpcChannel.ExportProgress, handler)
+  },
+  isUpscalerAvailable: () => ipcRenderer.invoke(IpcChannel.UpscaleAvailable),
+  getUpscaleSettings: () => ipcRenderer.invoke(IpcChannel.UpscaleGetSettings),
+  setUpscaleSettings: (settings) => ipcRenderer.invoke(IpcChannel.UpscaleSetSettings, settings),
+  getCacheInfo: () => ipcRenderer.invoke(IpcChannel.CacheInfo),
+  clearCache: () => ipcRenderer.invoke(IpcChannel.CacheClear),
+  onUpscaleStatus: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, data: UpscaleStatusEvent): void =>
+      listener(data)
+    ipcRenderer.on(IpcChannel.UpscaleStatus, handler)
+    return () => ipcRenderer.removeListener(IpcChannel.UpscaleStatus, handler)
+  }
+}
+
+// With context isolation on (the default and only safe mode), the renderer can
+// only reach main-process functionality through this explicitly exposed bridge.
+if (process.contextIsolated) {
+  contextBridge.exposeInMainWorld('phoxx', api)
+} else {
+  // Should never happen given our webPreferences, but fail loudly if it does.
+  throw new Error('contextIsolation is disabled; refusing to expose the IPC bridge unsafely.')
+}

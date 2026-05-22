@@ -1,0 +1,47 @@
+import type { Card } from '@shared/scryfall'
+import { useSearchStore } from '@renderer/state/searchStore'
+import { usePrintingStore } from '@renderer/state/printingStore'
+import { useDeckStore } from '@renderer/state/deckStore'
+import { CardTile } from '@renderer/components/CardTile'
+
+function GridItem({ card }: { card: Card }): React.JSX.Element {
+  const override = usePrintingStore((state) => state.overrides[card.id])
+  const open = usePrintingStore((state) => state.open)
+  const add = useDeckStore((state) => state.add)
+  const displayed = override ?? card
+  return <CardTile card={displayed} onOpen={() => open(card.id)} onAdd={() => add(displayed)} />
+}
+
+export function CardGrid(): React.JSX.Element {
+  const status = useSearchStore((state) => state.status)
+  const error = useSearchStore((state) => state.error)
+  const cards = useSearchStore((state) => state.cards)
+  const totalCards = useSearchStore((state) => state.totalCards)
+
+  if (status === 'error') {
+    return <p className="grid__message grid__message--error">{error}</p>
+  }
+
+  if (status === 'loading') {
+    return <p className="grid__message">Searching Scryfall…</p>
+  }
+
+  if (cards.length === 0) {
+    return <p className="grid__message">No cards yet — try a search above.</p>
+  }
+
+  return (
+    <>
+      <p className="grid__count">
+        Showing {cards.length} of {totalCards} card{totalCards === 1 ? '' : 's'}
+      </p>
+      <ul className="grid">
+        {cards.map((card) => (
+          <li key={card.id} className="grid__item">
+            <GridItem card={card} />
+          </li>
+        ))}
+      </ul>
+    </>
+  )
+}
