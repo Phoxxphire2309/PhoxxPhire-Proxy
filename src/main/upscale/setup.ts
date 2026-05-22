@@ -1,10 +1,11 @@
-import { access } from 'node:fs/promises'
 import { BrowserWindow, ipcMain } from 'electron'
 import { IpcChannel, type UpscaleStatusEvent } from '@shared/ipc'
+import type { InstallPhase } from '@shared/upscaleInstall'
 import type { CardCache } from '../scryfall/cache'
 import type { ScryfallService } from '../scryfall/service'
 import { finalizeUpscaled } from '../image/processor'
-import { binaryPath, modelsDir, type VendorLocation } from './paths'
+import { installUpscaler } from './installer'
+import { installVendorDir, resolveVendor, type VendorLocation } from './paths'
 import { Semaphore } from './semaphore'
 import { UpscaleService } from './service'
 import { Upscaler } from './upscaler'
@@ -23,20 +24,19 @@ export interface UpscaleSetupOptions {
   scryfall: ScryfallService
 }
 
-async function fileExists(path: string): Promise<boolean> {
-  try {
-    await access(path)
-    return true
-  } catch {
-    return false
-  }
-}
-
 /** Pushes a status event to every open renderer window. */
 function broadcastStatus(event: UpscaleStatusEvent): void {
   for (const window of BrowserWindow.getAllWindows()) {
     if (!window.isDestroyed()) {
       window.webContents.send(IpcChannel.UpscaleStatus, event)
+    }
+  }
+}
+
+function broadcastInstallPhase(phase: InstallPhase): void {
+  for (const window of BrowserWindow.getAllWindows()) {
+    if (!window.isDestroyed()) {
+      window.webContents.send(IpcChannel.UpscaleInstallProgress, phase)
     }
   }
 }
@@ -48,11 +48,9 @@ function broadcastStatus(event: UpscaleStatusEvent): void {
  * images and the app keeps working.
  */
 export async function initUpscale(options: UpscaleSetupOptions): Promise<UpscaleService> {
-  const binary = binaryPath(options.location)
-  const present = await fileExists(binary)
-
-  const upscaler = present
-    ? new Upscaler({ binaryPath: binary, modelsDir: modelsDir(options.location) })
+  const resolved = await resolveVendor(options.location)
+  const upscaler = resolved
+    ? new Upscaler({ binaryPath: resolved.binary, modelsDir: resolved.models })
     : null
 
   const service = new UpscaleService({
@@ -80,6 +78,16 @@ export async function initUpscale(options: UpscaleSetupOptions): Promise<Upscale
   ipcMain.handle(IpcChannel.CacheClear, async () => {
     await options.cache.clear()
     return { bytes: await options.cache.sizeBytes() }
+  })
+
+  ipcMain.handle(IpcChannel.UpscaleInstall, async () => {
+    await installUpscaler(installVendorDir(options.location), broadcastInstallPhase)
+    const installed = await resolveVendor(options.location)
+    if (!installed) {
+      throw new Error('Install finished but the upscaler binary could not be located.')
+    }
+    service.setUpscaler(new Upscaler({ binaryPath: installed.binary, modelsDir: installed.models }))
+    return service.getSettings()
   })
 
   return service

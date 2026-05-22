@@ -12,6 +12,7 @@ import { initExport } from './export/setup'
 import { initDeckIo } from './deck/setup'
 import { initCustomCards } from './custom/setup'
 import { initPersistence } from './persist/setup'
+import { initAutoUpdate } from './update/setup'
 
 const isDev = !app.isPackaged
 
@@ -66,7 +67,8 @@ app.whenReady().then(async () => {
     location: {
       isPackaged: app.isPackaged,
       appPath: app.getAppPath(),
-      resourcesPath: process.resourcesPath
+      resourcesPath: process.resourcesPath,
+      userDataDir: app.getPath('userData')
     },
     cache,
     scryfall
@@ -87,6 +89,7 @@ app.whenReady().then(async () => {
   initPersistence()
 
   createWindow()
+  initAutoUpdate(isDev)
 
   app.on('activate', () => {
     if (BrowserWindow.getAllWindows().length === 0) createWindow()

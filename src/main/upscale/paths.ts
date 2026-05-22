@@ -1,3 +1,4 @@
+import { access } from 'node:fs/promises'
 import { join } from 'node:path'
 
 /** Default Real-ESRGAN model and effective output scale. */
@@ -12,30 +13,55 @@ export interface VendorLocation {
   appPath: string
   /** `process.resourcesPath` — only meaningful when packaged. */
   resourcesPath: string
+  /** `app.getPath('userData')` — writable location for in-app installs. */
+  userDataDir: string
 }
 
-/**
- * Locates the vendored upscaler directory. In development it sits in the repo
- * (`resources/vendor`); in a packaged build electron-builder copies it to the
- * app's resources directory via `extraResources`.
- */
-export function vendorDir(location: VendorLocation): string {
-  return location.isPackaged
-    ? join(location.resourcesPath, 'vendor')
-    : join(location.appPath, 'resources', 'vendor')
+export interface ResolvedVendor {
+  binary: string
+  models: string
 }
 
 export function binaryName(platform: NodeJS.Platform = process.platform): string {
   return platform === 'win32' ? 'realesrgan-ncnn-vulkan.exe' : 'realesrgan-ncnn-vulkan'
 }
 
-export function binaryPath(
-  location: VendorLocation,
-  platform: NodeJS.Platform = process.platform
-): string {
-  return join(vendorDir(location), binaryName(platform))
+/** Writable directory the one-click installer downloads into. */
+export function installVendorDir(location: VendorLocation): string {
+  return join(location.userDataDir, 'vendor')
 }
 
-export function modelsDir(location: VendorLocation): string {
-  return join(vendorDir(location), 'models')
+/**
+ * Candidate vendor directories, in priority order: a user-installed copy first,
+ * then the dev repo copy, then the packaged (extraResources) copy.
+ */
+function candidateVendorDirs(location: VendorLocation): string[] {
+  return [
+    installVendorDir(location),
+    join(location.appPath, 'resources', 'vendor'),
+    join(location.resourcesPath, 'vendor')
+  ]
+}
+
+async function exists(path: string): Promise<boolean> {
+  try {
+    await access(path)
+    return true
+  } catch {
+    return false
+  }
+}
+
+/** Returns the first vendor location that actually contains the binary, or null. */
+export async function resolveVendor(
+  location: VendorLocation,
+  platform: NodeJS.Platform = process.platform
+): Promise<ResolvedVendor | null> {
+  for (const dir of candidateVendorDirs(location)) {
+    const binary = join(dir, binaryName(platform))
+    if (await exists(binary)) {
+      return { binary, models: join(dir, 'models') }
+    }
+  }
+  return null
 }

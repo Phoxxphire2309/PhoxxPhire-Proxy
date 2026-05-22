@@ -30,6 +30,7 @@ export interface UpscaleServiceDeps {
 export class UpscaleService {
   private readonly inFlight = new Map<string, Promise<string>>()
   private readonly finalize: (tmpPath: string, destPath: string, scale: number) => Promise<void>
+  private upscaler: Upscaler | null
   private model: string
   private scale: number
 
@@ -37,10 +38,16 @@ export class UpscaleService {
     this.model = deps.model ?? DEFAULT_MODEL
     this.scale = deps.scale ?? DEFAULT_SCALE
     this.finalize = deps.finalize ?? ((tmpPath, destPath) => rename(tmpPath, destPath))
+    this.upscaler = deps.upscaler
   }
 
   available(): boolean {
-    return this.deps.upscaler !== null
+    return this.upscaler !== null
+  }
+
+  /** Swap in a freshly-installed upscaler (after a one-click install). */
+  setUpscaler(upscaler: Upscaler): void {
+    this.upscaler = upscaler
   }
 
   getSettings(): { model: string; scale: number; available: boolean } {
@@ -55,7 +62,8 @@ export class UpscaleService {
 
   /** Path to the upscaled image for a face, producing it on first request. */
   ensureUpscaled(cardId: string, faceIndex: number): Promise<string> {
-    const { cache, upscaler } = this.deps
+    const { cache } = this.deps
+    const upscaler = this.upscaler
     if (!upscaler) {
       return Promise.reject(new Error('Upscaler is not available'))
     }

@@ -1,6 +1,7 @@
 import { contextBridge, ipcRenderer } from 'electron'
 import { IpcChannel, type PhoxxApi, type UpscaleStatusEvent } from '@shared/ipc'
 import type { ExportProgress } from '@shared/layout'
+import type { InstallPhase } from '@shared/upscaleInstall'
 
 const api: PhoxxApi = {
   getVersion: () => ipcRenderer.invoke(IpcChannel.AppGetVersion),
@@ -26,6 +27,13 @@ const api: PhoxxApi = {
   isUpscalerAvailable: () => ipcRenderer.invoke(IpcChannel.UpscaleAvailable),
   getUpscaleSettings: () => ipcRenderer.invoke(IpcChannel.UpscaleGetSettings),
   setUpscaleSettings: (settings) => ipcRenderer.invoke(IpcChannel.UpscaleSetSettings, settings),
+  installUpscaler: () => ipcRenderer.invoke(IpcChannel.UpscaleInstall),
+  onUpscaleInstallProgress: (listener) => {
+    const handler = (_event: Electron.IpcRendererEvent, phase: InstallPhase): void =>
+      listener(phase)
+    ipcRenderer.on(IpcChannel.UpscaleInstallProgress, handler)
+    return () => ipcRenderer.removeListener(IpcChannel.UpscaleInstallProgress, handler)
+  },
   getCacheInfo: () => ipcRenderer.invoke(IpcChannel.CacheInfo),
   clearCache: () => ipcRenderer.invoke(IpcChannel.CacheClear),
   onUpscaleStatus: (listener) => {

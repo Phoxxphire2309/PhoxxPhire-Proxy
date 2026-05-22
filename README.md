@@ -47,10 +47,11 @@ Built in phases:
 
 - Node.js **>= 22.12**
 - A GPU with Vulkan support (Metal on macOS). CPU fallback works but is slow.
-- The `realesrgan-ncnn-vulkan` binary + models. Provision them once with
-  `npm run setup:upscaler` (downloads the upstream release for your platform into
-  `resources/vendor`). Without it the app still runs, but shows original Scryfall art
-  instead of upscaled images. See [`resources/vendor/README.md`](resources/vendor/README.md).
+- The `realesrgan-ncnn-vulkan` binary + models. The app can fetch these for you —
+  click **Install upscaler** in the header when it reports the upscaler is missing.
+  (For dev you can also pre-provision with `npm run setup:upscaler`.) Without it the
+  app still runs, just showing original Scryfall art. See
+  [`resources/vendor/README.md`](resources/vendor/README.md).
 
 ## Scripts
 

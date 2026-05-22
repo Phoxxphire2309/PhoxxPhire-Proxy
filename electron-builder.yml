@@ -1,5 +1,11 @@
 appId: com.phoxxphire.proxy
 productName: PhoxxPhire Proxy
+# Auto-update source. electron-updater reads releases published here; updates
+# only apply to code-signed builds, so this is inert until signing is set up.
+publish:
+  provider: github
+  owner: Phoxxphire2309
+  repo: PhoxxPhire-Proxy
 directories:
   output: dist
   buildResources: build

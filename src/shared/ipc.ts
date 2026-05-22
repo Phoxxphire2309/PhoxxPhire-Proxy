@@ -19,6 +19,7 @@ import type {
   ExportRequestCard
 } from './layout'
 import type { Card, SearchResult } from './scryfall'
+import type { InstallPhase } from './upscaleInstall'
 
 export const IpcChannel = {
   AppGetVersion: 'app:getVersion',
@@ -35,10 +36,13 @@ export const IpcChannel = {
   UpscaleAvailable: 'upscale:available',
   UpscaleGetSettings: 'upscale:getSettings',
   UpscaleSetSettings: 'upscale:setSettings',
+  UpscaleInstall: 'upscale:install',
   CacheInfo: 'cache:info',
   CacheClear: 'cache:clear',
   /** Main → renderer push channel for per-face upscale progress. */
   UpscaleStatus: 'upscale:status',
+  /** Main → renderer push channel for one-click install progress. */
+  UpscaleInstallProgress: 'upscale:installProgress',
   ExportPdf: 'export:pdf',
   ExportImages: 'export:images',
   ExportCalibration: 'export:calibration',
@@ -109,6 +113,10 @@ export interface PhoxxApi {
   getUpscaleSettings(): Promise<UpscaleSettings>
   /** Update the upscale model + scale; returns the applied settings. */
   setUpscaleSettings(settings: { model: string; scale: number }): Promise<UpscaleSettings>
+  /** Download + install the Real-ESRGAN binary; resolves with the new settings. */
+  installUpscaler(): Promise<UpscaleSettings>
+  /** Subscribe to install progress; returns an unsubscribe function. */
+  onUpscaleInstallProgress(listener: (phase: InstallPhase) => void): () => void
   /** Total size of the on-disk image/metadata cache. */
   getCacheInfo(): Promise<CacheInfo>
   /** Delete the on-disk cache; returns the (near-zero) size afterwards. */

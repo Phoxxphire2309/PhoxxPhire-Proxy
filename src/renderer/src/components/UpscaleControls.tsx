@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { UPSCALE_MODELS } from '@shared/ipc'
+import type { InstallPhase } from '@shared/upscaleInstall'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
+import { toast } from '@renderer/state/toastStore'
 
 function formatBytes(bytes: number): string {
   if (bytes < 1024) return `${bytes} B`
@@ -21,9 +23,11 @@ export function UpscaleControls(): React.JSX.Element {
   const model = useUpscaleStore((state) => state.model)
   const scale = useUpscaleStore((state) => state.scale)
   const setSettings = useUpscaleStore((state) => state.setSettings)
+  const loadSettings = useUpscaleStore((state) => state.loadSettings)
 
   const [cacheBytes, setCacheBytes] = useState<number | null>(null)
   const [clearing, setClearing] = useState(false)
+  const [installPhase, setInstallPhase] = useState<InstallPhase | null>(null)
 
   const refreshCache = (): void => {
     window.phoxx
@@ -34,11 +38,39 @@ export function UpscaleControls(): React.JSX.Element {
 
   useEffect(refreshCache, [])
 
+  useEffect(() => window.phoxx.onUpscaleInstallProgress(setInstallPhase), [])
+
+  const installUpscaler = async (): Promise<void> => {
+    setInstallPhase('downloading')
+    try {
+      await window.phoxx.installUpscaler()
+      await loadSettings()
+      refreshCache()
+      toast('Upscaler installed', 'success')
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Install failed', 'error')
+    } finally {
+      setInstallPhase(null)
+    }
+  }
+
   if (available === false) {
+    const labels: Record<InstallPhase, string> = {
+      downloading: 'Downloading…',
+      extracting: 'Extracting…',
+      installing: 'Installing…',
+      done: 'Finishing…'
+    }
     return (
-      <span className="app__note" title="Run: npm run setup:upscaler">
-        Upscaler not installed — showing original art
-      </span>
+      <button
+        className="toggle"
+        type="button"
+        onClick={() => void installUpscaler()}
+        disabled={installPhase !== null}
+        title="Download the Real-ESRGAN upscaler (~50 MB)"
+      >
+        {installPhase ? labels[installPhase] : 'Install upscaler'}
+      </button>
     )
   }
 
