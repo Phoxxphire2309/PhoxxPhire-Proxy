@@ -4,6 +4,7 @@ import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 import { ImportDialog } from '@renderer/components/ImportDialog'
 import { ExportDialog } from '@renderer/components/ExportDialog'
+import { PrintPreview } from '@renderer/components/PrintPreview'
 
 function DeckItemRow({ item }: { item: DeckItem }): React.JSX.Element {
   const setQuantity = useDeckStore((state) => state.setQuantity)
@@ -65,6 +66,7 @@ export function DeckPanel(): React.JSX.Element {
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
   const [showImport, setShowImport] = useState(false)
   const [showExport, setShowExport] = useState(false)
+  const [showPreview, setShowPreview] = useState(false)
 
   const total = items.reduce((sum, item) => sum + item.quantity, 0)
   const totalPrice = items.reduce(
@@ -88,45 +90,49 @@ export function DeckPanel(): React.JSX.Element {
         <h2 className="deck__title">
           Deck <span className="deck__count">{total}</span>
         </h2>
-        <div className="deck__actions">
-          <button className="toggle" type="button" onClick={() => setShowImport(true)}>
-            Import
+        {items.length > 0 && (
+          <span className="deck__total" title="Estimated market price from Scryfall, updated daily">
+            {formatUsd(totalPrice)}
+          </span>
+        )}
+      </div>
+
+      <div className="deck__toolbar">
+        <button className="toggle" type="button" onClick={() => setShowImport(true)}>
+          Import
+        </button>
+        <button className="toggle" type="button" onClick={() => void loadDeck()}>
+          Load
+        </button>
+        <button className="toggle" type="button" onClick={() => void addCustomCard()}>
+          Custom
+        </button>
+        {items.length > 0 && (
+          <button className="toggle" type="button" onClick={() => void saveDeck()}>
+            Save
           </button>
-          <button className="toggle" type="button" onClick={() => void loadDeck()}>
-            Load
+        )}
+        {items.length > 0 && (
+          <button className="toggle" type="button" onClick={clear}>
+            Clear
           </button>
-          <button className="toggle" type="button" onClick={() => void addCustomCard()}>
-            + Custom
-          </button>
-          {items.length > 0 && (
-            <button className="toggle" type="button" onClick={() => void saveDeck()}>
-              Save
-            </button>
-          )}
-          {items.length > 0 && (
-            <button className="toggle" type="button" onClick={clear}>
-              Clear
-            </button>
-          )}
-        </div>
+        )}
       </div>
 
       {items.length > 0 && (
-        <p className="deck__total" title="Estimated market price from Scryfall, updated daily">
-          Est. value <strong>{formatUsd(totalPrice)}</strong>
-        </p>
-      )}
-
-      {items.length > 0 && (
-        <button className="deck__export" type="button" onClick={() => setShowExport(true)}>
-          Export PDF
-        </button>
-      )}
-
-      {upscalerAvailable && items.length > 0 && (
-        <button className="deck__prewarm" type="button" onClick={preUpscale}>
-          Pre-upscale all
-        </button>
+        <div className="deck__primary">
+          <button className="deck__preview" type="button" onClick={() => setShowPreview(true)}>
+            Print preview
+          </button>
+          <button className="deck__export" type="button" onClick={() => setShowExport(true)}>
+            Export PDF
+          </button>
+          {upscalerAvailable && (
+            <button className="deck__prewarm" type="button" onClick={preUpscale}>
+              Pre-upscale all
+            </button>
+          )}
+        </div>
       )}
 
       {items.length === 0 ? (
@@ -152,6 +158,7 @@ export function DeckPanel(): React.JSX.Element {
 
       {showImport && <ImportDialog onClose={() => setShowImport(false)} />}
       {showExport && <ExportDialog onClose={() => setShowExport(false)} />}
+      {showPreview && <PrintPreview onClose={() => setShowPreview(false)} />}
     </section>
   )
 }

@@ -23,7 +23,9 @@ interface UpscaleState {
 
 export const useUpscaleStore = create<UpscaleState>((set, get) => ({
   available: null,
-  showSource: false,
+  // Default to original art so the app never auto-upscales every card on render;
+  // upscaling happens on demand (the toggle, the detail compare, or export).
+  showSource: true,
   model: 'realesrgan-x4plus',
   scale: 2,
   settingsVersion: 0,

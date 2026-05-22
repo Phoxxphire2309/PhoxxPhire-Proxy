@@ -984,3 +984,81 @@ body {
 .toast--info {
   border-left-color: var(--muted);
 }
+
+/* Deck toolbar + primary actions (Pack-4 layout fix) */
+.deck__total {
+  margin: 0;
+  font-size: 13px;
+  font-weight: 700;
+  color: var(--accent);
+  font-variant-numeric: tabular-nums;
+}
+
+.deck__toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  margin-bottom: 12px;
+}
+
+.deck__toolbar .toggle {
+  padding: 6px 10px;
+  font-size: 12px;
+}
+
+.deck__primary {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.deck__primary > button {
+  width: 100%;
+  margin: 0;
+}
+
+.deck__preview {
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
+/* Print preview modal */
+.preview {
+  width: min(900px, 100%);
+}
+
+.preview__meta {
+  font-size: 13px;
+  font-weight: 500;
+  color: var(--muted);
+}
+
+.preview__pages {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 18px;
+  margin-top: 14px;
+  max-height: 70vh;
+  overflow-y: auto;
+}
+
+.preview__page {
+  position: relative;
+  width: min(520px, 100%);
+  background: #ffffff;
+  border: 1px solid var(--border);
+  box-shadow: 0 6px 20px rgba(0, 0, 0, 0.3);
+}
+
+.preview__card {
+  position: absolute;
+  object-fit: cover;
+}

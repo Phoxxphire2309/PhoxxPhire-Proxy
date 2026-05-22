@@ -15,9 +15,8 @@ export async function loadPersistedState(): Promise<void> {
 
   if (state.theme) useUiStore.getState().setTheme(state.theme)
   if (state.deck) useDeckStore.getState().setItems(state.deck)
-  if (typeof state.showSource === 'boolean') {
-    useUpscaleStore.getState().setShowSource(state.showSource)
-  }
+  // showSource is intentionally not restored — the view always starts on
+  // "Original" so a saved "Upscaled" preference can't auto-upscale on launch.
   if (state.upscale) {
     await useUpscaleStore.getState().setSettings(state.upscale)
   }
@@ -30,7 +29,6 @@ function snapshot(): AppState {
   return {
     deck: deck.items,
     upscale: { model: upscale.model, scale: upscale.scale },
-    showSource: upscale.showSource,
     theme: ui.theme
   }
 }
