@@ -26,19 +26,12 @@ export async function finalizeUpscaled(
   await rm(tmpPngPath, { force: true })
 }
 
-/** Light feather radius (sharp blur sigma) for a bleed of `border` px per side. */
-function featherSigma(border: number): number {
-  return Math.min(12, Math.max(1, border / 3))
-}
-
 /**
  * Adds a bleed border by extending each edge pixel straight outward
  * (edge-replicate), so a printed card has real bleed content. Unlike a mirror
  * reflection, replication never duplicates edge features and never produces the
  * 4-fold "kaleidoscope" at corners (where a mirror reflects on both axes at
- * once). The replicated streaks are then feathered with a light blur, and the
- * crisp original is composited back over the card area so only the bleed ring is
- * softened. Returns the input unchanged for 'zoom' mode or when there's no bleed.
+ * once). Returns the input unchanged for 'zoom' mode or when there's no bleed.
  */
 export async function extendBleed(
   imageBytes: Uint8Array,
@@ -57,13 +50,8 @@ export async function extendBleed(
   const top = Math.round((height * bleedMm) / CARD_HEIGHT_MM)
   if (left <= 0 && top <= 0) return imageBytes
 
-  const extended = await image
+  const out = await image
     .extend({ top, bottom: top, left, right: left, extendWith: 'copy' })
-    .toBuffer()
-
-  const out = await sharp(extended)
-    .blur(featherSigma(Math.max(left, top)))
-    .composite([{ input: Buffer.from(imageBytes), left, top }])
     .jpeg({ quality: JPEG_QUALITY })
     .toBuffer()
   return new Uint8Array(out)
