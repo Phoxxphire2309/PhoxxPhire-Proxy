@@ -169,6 +169,21 @@ describe('isNonFoil / nonFoilPrintings', () => {
     expect(isNonFoil(withFinishes('d'))).toBe(true) // unknown finishes
   })
 
+  it('treats an identical regular and foil price as foil-only', () => {
+    const foilOnly: Card = {
+      ...card('a'),
+      finishes: ['nonfoil', 'foil'],
+      prices: prices({ usd: 4.5, usdFoil: 4.5 })
+    }
+    expect(isNonFoil(foilOnly)).toBe(false)
+    const genuine: Card = {
+      ...card('b'),
+      finishes: ['nonfoil', 'foil'],
+      prices: prices({ usd: 2, usdFoil: 9 })
+    }
+    expect(isNonFoil(genuine)).toBe(true)
+  })
+
   it('filters to non-foil printings, keeping all when none are non-foil', () => {
     const cards = [withFinishes('a', ['foil']), withFinishes('b', ['nonfoil', 'foil'])]
     expect(nonFoilPrintings(cards).map((c) => c.id)).toEqual(['b'])

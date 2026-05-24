@@ -130,9 +130,14 @@ export interface Card {
 /**
  * Whether a printing is available in a regular non-foil finish. Foil-only and
  * etched-only printings can scan/print poorly, so bulk selection avoids them.
- * Printings with unknown finishes (older cache) are treated as non-foil.
+ * Detected two ways: the `finishes` list lacking 'nonfoil', or an identical
+ * regular and foil price (a tell-tale of a foil-only listing). Printings with
+ * unknown finishes and no matching prices are treated as non-foil.
  */
-export function isNonFoil(card: Pick<Card, 'finishes'>): boolean {
+export function isNonFoil(card: Pick<Card, 'finishes' | 'prices'>): boolean {
+  const { usd, usdFoil } = card.prices
+  // Identical regular and foil prices indicate a foil-only listing.
+  if (usd !== null && usdFoil !== null && usd === usdFoil) return false
   return card.finishes === undefined || card.finishes.includes('nonfoil')
 }
 
