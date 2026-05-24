@@ -16,6 +16,7 @@ export interface AppState {
   upscale?: { model: string; scale: number }
   showSource?: boolean
   theme?: ThemeName
+  onboarded?: boolean
   pageSetup?: ExportOptions
   collection?: { owned: string[]; skipOwned: boolean }
 }

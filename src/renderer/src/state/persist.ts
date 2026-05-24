@@ -17,6 +17,7 @@ export async function loadPersistedState(): Promise<void> {
   if (!state) return
 
   if (state.theme) useUiStore.getState().setTheme(state.theme)
+  if (state.onboarded) useUiStore.getState().setOnboarded(true)
   if (state.decks && state.decks.length > 0) {
     useDecksStore.getState().restore(state.decks, state.activeDeckId ?? state.decks[0]!.id)
   } else if (state.deck) {
@@ -45,6 +46,7 @@ function snapshot(): AppState {
     activeDeckId: activeId,
     upscale: { model: upscale.model, scale: upscale.scale },
     theme: ui.theme,
+    onboarded: ui.onboarded,
     pageSetup: usePageSetupStore.getState().options,
     collection: {
       owned: Object.keys(useCollectionStore.getState().owned),

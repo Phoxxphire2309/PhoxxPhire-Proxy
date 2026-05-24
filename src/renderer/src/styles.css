@@ -630,6 +630,21 @@ body {
   cursor: pointer;
 }
 
+/* Onboarding */
+.onboard__list {
+  margin: 12px 0 4px;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  font-size: 13px;
+  line-height: 1.45;
+}
+
+.onboard__list strong {
+  color: var(--accent);
+}
+
 /* Collection ownership indicators */
 .ditem__owned {
   margin-left: 6px;

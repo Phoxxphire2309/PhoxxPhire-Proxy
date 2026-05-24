@@ -1,4 +1,4 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import { SearchBar } from '@renderer/components/SearchBar'
 import { Filters } from '@renderer/components/Filters'
 import { CardGrid } from '@renderer/components/CardGrid'
@@ -9,6 +9,7 @@ import { UpscaleControls } from '@renderer/components/UpscaleControls'
 import { ToastContainer } from '@renderer/components/ToastContainer'
 import { UpscaleProgress } from '@renderer/components/UpscaleProgress'
 import { PrintPartner } from '@renderer/components/PrintPartner'
+import { Onboarding } from '@renderer/components/Onboarding'
 import logo from '@renderer/assets/phoxxphire-logo.png'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore } from '@renderer/state/uiStore'
@@ -19,6 +20,8 @@ export function App(): React.JSX.Element {
   const applyStatus = useUpscaleStore((state) => state.applyStatus)
   const theme = useUiStore((state) => state.theme)
   const toggleTheme = useUiStore((state) => state.toggleTheme)
+  const setOnboarded = useUiStore((state) => state.setOnboarded)
+  const [showOnboarding, setShowOnboarding] = useState(false)
 
   // Load settings + persisted state, then begin persisting changes.
   useEffect(() => {
@@ -28,12 +31,19 @@ export function App(): React.JSX.Element {
       await loadSettings()
       await loadPersistedState()
       stop = startPersisting()
+      // First-run guide, once we know whether it's been seen.
+      if (!useUiStore.getState().onboarded) setShowOnboarding(true)
     })()
     return () => {
       unsubscribeStatus()
       stop?.()
     }
   }, [loadSettings, applyStatus])
+
+  const dismissOnboarding = (): void => {
+    setOnboarded(true)
+    setShowOnboarding(false)
+  }
 
   // Cmd/Ctrl+K focuses the search box.
   useEffect(() => {
@@ -65,6 +75,15 @@ export function App(): React.JSX.Element {
           >
             {theme === 'dark' ? '☾' : '☀'}
           </button>
+          <button
+            className="toggle"
+            type="button"
+            onClick={() => setShowOnboarding(true)}
+            aria-label="Help / quick tour"
+            title="Quick tour"
+          >
+            ?
+          </button>
         </div>
       </header>
 
@@ -81,6 +100,7 @@ export function App(): React.JSX.Element {
       <CardDetail />
       <ToastContainer />
       <UpscaleProgress />
+      {showOnboarding && <Onboarding onClose={dismissOnboarding} />}
     </div>
   )
 }
