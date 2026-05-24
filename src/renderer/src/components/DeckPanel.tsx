@@ -5,6 +5,7 @@ import { usePrintingStore } from '@renderer/state/printingStore'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 import { ImportDialog } from '@renderer/components/ImportDialog'
 import { TokenDialog } from '@renderer/components/TokenDialog'
+import { DeckStats } from '@renderer/components/DeckStats'
 import { ExportDialog } from '@renderer/components/ExportDialog'
 import { PrintPreview } from '@renderer/components/PrintPreview'
 import { PageSetup } from '@renderer/components/PageSetup'
@@ -102,6 +103,7 @@ export function DeckPanel(): React.JSX.Element {
   const runUpscale = useUpscaleStore((state) => state.runUpscale)
   const [showImport, setShowImport] = useState(false)
   const [showTokens, setShowTokens] = useState(false)
+  const [showStats, setShowStats] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [showPageSetup, setShowPageSetup] = useState(false)
@@ -166,6 +168,14 @@ export function DeckPanel(): React.JSX.Element {
           <button className="deck__preview" type="button" onClick={() => setShowTokens(true)}>
             Tokens
           </button>
+          <button
+            className="deck__preview"
+            type="button"
+            onClick={() => setShowStats((value) => !value)}
+            aria-pressed={showStats}
+          >
+            {showStats ? 'Hide stats' : 'Stats'}
+          </button>
           <button className="deck__export" type="button" onClick={() => setShowExport(true)}>
             Export PDF
           </button>
@@ -176,6 +186,8 @@ export function DeckPanel(): React.JSX.Element {
           )}
         </div>
       )}
+
+      {items.length > 0 && showStats && <DeckStats />}
 
       {items.length === 0 ? (
         <p className="deck__empty">No cards yet. Add from search, or import a list.</p>

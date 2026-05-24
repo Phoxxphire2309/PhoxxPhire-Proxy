@@ -58,6 +58,9 @@ export interface ScryfallCard {
   lang: string
   layout: string
   image_status?: string
+  cmc?: number
+  type_line?: string
+  colors?: string[]
   image_uris?: ScryfallImageUris
   card_faces?: ScryfallCardFace[]
   prices?: ScryfallPrices
@@ -113,6 +116,12 @@ export interface Card {
   relatedTokens: RelatedToken[]
   /** Scryfall's image-quality rating for this printing (drives best-source selection). */
   imageStatus?: ImageStatus
+  /** Converted mana cost / mana value, for the deck mana curve. */
+  cmc?: number
+  /** Full type line, e.g. "Legendary Creature — Goblin". */
+  typeLine?: string
+  /** Colour letters present on the card (W/U/B/R/G). */
+  colors?: string[]
 }
 
 /** Higher is better. Used to pick the highest-quality printing to upscale from. */

@@ -63,7 +63,10 @@ export function normalizeCard(raw: ScryfallCard): Card {
     faces: extractFaces(raw),
     prices: extractPrices(raw.prices),
     relatedTokens: extractRelatedTokens(raw),
-    ...(imageStatus ? { imageStatus } : {})
+    ...(imageStatus ? { imageStatus } : {}),
+    ...(typeof raw.cmc === 'number' ? { cmc: raw.cmc } : {}),
+    ...(raw.type_line !== undefined ? { typeLine: raw.type_line } : {}),
+    ...(Array.isArray(raw.colors) ? { colors: raw.colors } : {})
   }
 }
 
