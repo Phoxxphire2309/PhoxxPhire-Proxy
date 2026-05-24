@@ -22,6 +22,8 @@ const api: PhoxxApi = {
   },
   saveDeck: (deck) => ipcRenderer.invoke(IpcChannel.DeckSave, deck),
   loadDeck: () => ipcRenderer.invoke(IpcChannel.DeckLoad),
+  exportDecklist: (format, content) =>
+    ipcRenderer.invoke(IpcChannel.DecklistExport, format, content),
   saveProject: (project) => ipcRenderer.invoke(IpcChannel.ProjectSave, project),
   loadProject: () => ipcRenderer.invoke(IpcChannel.ProjectLoad),
   importCustomCard: () => ipcRenderer.invoke(IpcChannel.CustomCardImport),

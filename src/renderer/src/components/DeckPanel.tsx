@@ -6,6 +6,7 @@ import {
   isPrintableSection,
   type DeckSection
 } from '@shared/deck'
+import type { DecklistFormat } from '@shared/decklistExport'
 import { useDeckStore, type BulkPrintingMode, type DeckItem } from '@renderer/state/deckStore'
 import { useCollectionStore } from '@renderer/state/collectionStore'
 import { useRotateStore } from '@renderer/state/rotateStore'
@@ -165,6 +166,7 @@ export function DeckPanel(): React.JSX.Element {
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
   const runUpscale = useUpscaleStore((state) => state.runUpscale)
   const bulkSwitchPrintings = useDeckStore((state) => state.bulkSwitchPrintings)
+  const exportDecklist = useDeckStore((state) => state.exportDecklist)
   const bulkRunning = useDeckStore((state) => state.bulkRunning)
   const undo = useDeckStore((state) => state.undo)
   const redo = useDeckStore((state) => state.redo)
@@ -277,6 +279,26 @@ export function DeckPanel(): React.JSX.Element {
           <button className="toggle" type="button" onClick={() => void saveProject()}>
             Save project
           </button>
+        )}
+        {items.length > 0 && (
+          <select
+            className="deck__bulk"
+            value=""
+            onChange={(event) => {
+              const format = event.target.value
+              event.target.value = ''
+              if (format) void exportDecklist(format as DecklistFormat)
+            }}
+            aria-label="Export decklist as a file"
+            title="Export the decklist as text, MTG Arena, or CSV"
+          >
+            <option value="" disabled>
+              Export list →
+            </option>
+            <option value="text">Text (.txt)</option>
+            <option value="mtga">MTG Arena (.txt)</option>
+            <option value="csv">CSV (.csv)</option>
+          </select>
         )}
         {items.length > 0 && (
           <button className="toggle" type="button" onClick={clear}>

@@ -16,6 +16,7 @@ import type {
   SavedProject
 } from './deck'
 import type { DeckResolution, ImportProgress } from './decklist'
+import type { DecklistExportOutcome, DecklistFormat } from './decklistExport'
 import type {
   CalibrationOutcome,
   ExportImagesOutcome,
@@ -41,6 +42,7 @@ export const IpcChannel = {
   ScryfallImportProgress: 'scryfall:importProgress',
   DeckSave: 'deck:save',
   DeckLoad: 'deck:load',
+  DecklistExport: 'decklist:export',
   ProjectSave: 'project:save',
   ProjectLoad: 'project:load',
   CustomCardImport: 'custom:import',
@@ -119,6 +121,8 @@ export interface PhoxxApi {
   saveDeck(deck: SavedDeck): Promise<DeckSaveOutcome>
   /** Load a deck from a JSON file (prompts for a file). */
   loadDeck(): Promise<DeckLoadOutcome>
+  /** Save the deck as a decklist file in the given format (prompts for a path). */
+  exportDecklist(format: DecklistFormat, content: string): Promise<DecklistExportOutcome>
   /** Save a full project (deck + page setup) to a file (prompts for a path). */
   saveProject(project: SavedProject): Promise<ProjectSaveOutcome>
   /** Load a project (deck + page setup) from a file (prompts for a file). */

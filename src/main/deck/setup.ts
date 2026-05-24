@@ -9,6 +9,11 @@ import type {
   SavedDeck,
   SavedProject
 } from '@shared/deck'
+import {
+  DECKLIST_FILE,
+  type DecklistExportOutcome,
+  type DecklistFormat
+} from '@shared/decklistExport'
 
 function isSavedDeck(value: unknown): value is SavedDeck {
   return (
@@ -55,6 +60,21 @@ export function initDeckIo(): void {
     }
     return { canceled: false, deck: parsed }
   })
+
+  ipcMain.handle(
+    IpcChannel.DecklistExport,
+    async (_event, format: DecklistFormat, content: string): Promise<DecklistExportOutcome> => {
+      const { extension } = DECKLIST_FILE[format]
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Export decklist',
+        defaultPath: `decklist.${extension}`,
+        filters: [{ name: DECKLIST_FILE[format].label, extensions: [extension] }]
+      })
+      if (canceled || !filePath) return { canceled: true }
+      await writeFile(filePath, content, 'utf8')
+      return { canceled: false, path: filePath }
+    }
+  )
 
   ipcMain.handle(
     IpcChannel.ProjectSave,

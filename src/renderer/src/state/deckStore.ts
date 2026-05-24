@@ -3,12 +3,14 @@ import { DECK_FILE_VERSION, PROJECT_FILE_VERSION, type DeckSection } from '@shar
 import type { DeckResolution } from '@shared/decklist'
 import {
   bestPrinting,
+  bestUsd,
   cheapestPrinting,
   mostExpensivePrinting,
   newestPrinting,
   nonFoilPrintings,
   type Card
 } from '@shared/scryfall'
+import { formatDecklist, type DecklistCard, type DecklistFormat } from '@shared/decklistExport'
 import { toast } from '@renderer/state/toastStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 
@@ -60,6 +62,7 @@ interface DeckState {
   remove: (cardId: string) => void
   clear: () => void
   bulkSwitchPrintings: (mode: BulkPrintingMode) => Promise<void>
+  exportDecklist: (format: DecklistFormat) => Promise<void>
   importText: (text: string, excludeFoils?: boolean) => Promise<void>
   importUrl: (url: string, excludeFoils?: boolean) => Promise<void>
   saveDeck: () => Promise<void>
@@ -242,6 +245,26 @@ export const useDeckStore = create<DeckState>((set, get) => ({
       toast(error instanceof Error ? error.message : 'Bulk switch failed', 'error')
     } finally {
       set({ bulkRunning: false, bulkJob: null })
+    }
+  },
+
+  exportDecklist: async (format) => {
+    const cards: DecklistCard[] = get()
+      .items.map((item) => ({
+        name: item.card.name,
+        setCode: item.card.setCode,
+        collectorNumber: item.card.collectorNumber,
+        quantity: item.quantities[0] ?? 0,
+        section: item.section,
+        usd: bestUsd(item.card.prices)
+      }))
+      .filter((card) => card.quantity > 0)
+    if (cards.length === 0) return
+    try {
+      const outcome = await window.phoxx.exportDecklist(format, formatDecklist(cards, format))
+      if (!outcome.canceled) toast(`Exported decklist to ${outcome.path}`, 'success')
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Decklist export failed', 'error')
     }
   },
 
