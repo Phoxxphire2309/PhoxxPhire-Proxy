@@ -104,6 +104,12 @@ export function ExportDialog({
         : `Saved ${outcome.cardCount} cards across ${outcome.pageCount} page(s) to ${outcome.path}`
     })
 
+  const printDeck = (): Promise<void> =>
+    runGuarded(async () => {
+      const outcome = await window.phoxx.printPdf({ slots: exportSlots, options })
+      return outcome.canceled ? null : `Sent ${outcome.cardCount} cards to the printer`
+    })
+
   const exportImages = (): Promise<void> =>
     runGuarded(async () => {
       const outcome = await window.phoxx.exportImages(exportSlots)
@@ -259,6 +265,15 @@ export function ExportDialog({
                 onClick={() => void exportPdf()}
               >
                 {running ? 'Exporting…' : 'Export PDF'}
+              </button>
+              <button
+                className="search__button"
+                type="button"
+                disabled={running || items.length === 0}
+                onClick={() => void printDeck()}
+                title="Send the proxy sheet straight to a printer"
+              >
+                {running ? 'Working…' : 'Print'}
               </button>
             </div>
 

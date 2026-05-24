@@ -1,5 +1,6 @@
-import { writeFile } from 'node:fs/promises'
-import { BrowserWindow, dialog, ipcMain } from 'electron'
+import { rm, writeFile } from 'node:fs/promises'
+import { join } from 'node:path'
+import { app, BrowserWindow, dialog, ipcMain } from 'electron'
 import { IpcChannel } from '@shared/ipc'
 import type {
   CalibrationOutcome,
@@ -8,7 +9,8 @@ import type {
   ExportOutcome,
   ExportProgress,
   ExportRequest,
-  ExportSlot
+  ExportSlot,
+  PrintOutcome
 } from '@shared/layout'
 import type { MpcCard, MpcExportOutcome } from '@shared/mpc'
 import type { CardBackManager } from '../cardback/setup'
@@ -30,6 +32,38 @@ function broadcastProgress(progress: ExportProgress): void {
       window.webContents.send(IpcChannel.ExportProgress, progress)
     }
   }
+}
+
+/**
+ * Loads a PDF in an offscreen window (Chromium's PDF viewer needs `plugins`)
+ * and opens the OS print dialog. Resolves true if the job was sent, false if the
+ * user cancelled the dialog; rejects on a genuine load/print failure.
+ */
+function printPdfFile(pdfPath: string): Promise<boolean> {
+  return new Promise<boolean>((resolve, reject) => {
+    const win = new BrowserWindow({ show: false, webPreferences: { plugins: true } })
+    const cleanup = (): void => {
+      if (!win.isDestroyed()) win.close()
+    }
+
+    win.webContents.once('did-finish-load', () => {
+      win.webContents.print({ silent: false, printBackground: true }, (success, failureReason) => {
+        cleanup()
+        // A user-cancelled dialog isn't an error; anything else is.
+        if (success || /cancel/i.test(failureReason)) resolve(success)
+        else reject(new Error(failureReason || 'Printing failed'))
+      })
+    })
+    win.webContents.once('did-fail-load', (_event, _code, description) => {
+      cleanup()
+      reject(new Error(`Could not open the document for printing: ${description}`))
+    })
+
+    win.loadFile(pdfPath).catch((error: unknown) => {
+      cleanup()
+      reject(error instanceof Error ? error : new Error('Could not open the document for printing'))
+    })
+  })
 }
 
 /** Wires the PDF export IPC handler. Call after `app.whenReady()`. */
@@ -64,6 +98,21 @@ export function initExport(options: ExportSetupOptions): void {
 
       const result = await service.export(request.slots, request.options, filePath)
       return { canceled: false, ...result }
+    }
+  )
+
+  ipcMain.handle(
+    IpcChannel.ExportPrint,
+    async (_event, request: ExportRequest): Promise<PrintOutcome> => {
+      // Render to a temp PDF, print it, then clean up regardless of outcome.
+      const tmpPath = join(app.getPath('temp'), `phoxx-print-${Date.now()}.pdf`)
+      try {
+        const result = await service.export(request.slots, request.options, tmpPath)
+        const printed = await printPdfFile(tmpPath)
+        return printed ? { canceled: false, cardCount: result.cardCount } : { canceled: true }
+      } finally {
+        await rm(tmpPath, { force: true })
+      }
     }
   )
 

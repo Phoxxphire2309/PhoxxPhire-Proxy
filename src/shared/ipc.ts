@@ -24,7 +24,8 @@ import type {
   ExportOutcome,
   ExportProgress,
   ExportRequest,
-  ExportSlot
+  ExportSlot,
+  PrintOutcome
 } from './layout'
 import type { MpcCard, MpcExportOutcome } from './mpc'
 import type { Card, SearchResult } from './scryfall'
@@ -61,6 +62,7 @@ export const IpcChannel = {
   /** Main → renderer push channel for one-click install progress. */
   UpscaleInstallProgress: 'upscale:installProgress',
   ExportPdf: 'export:pdf',
+  ExportPrint: 'export:print',
   ExportImages: 'export:images',
   ExportZip: 'export:zip',
   ExportMpc: 'export:mpc',
@@ -139,6 +141,8 @@ export interface PhoxxApi {
   setAppState(state: AppState): Promise<void>
   /** Render the given cards into a print-ready PDF (prompts for a save path). */
   exportPdf(request: ExportRequest): Promise<ExportOutcome>
+  /** Render the proxy sheet and send it straight to a printer (shows the OS print dialog). */
+  printPdf(request: ExportRequest): Promise<PrintOutcome>
   /** Export each unique card face as a PNG into a chosen folder. */
   exportImages(slots: ExportSlot[]): Promise<ExportImagesOutcome>
   /** Bundle every unique card face (upscaled or source) into a single ZIP file. */

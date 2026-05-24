@@ -32,6 +32,7 @@ const api: PhoxxApi = {
   getAppState: () => ipcRenderer.invoke(IpcChannel.StateGet),
   setAppState: (state) => ipcRenderer.invoke(IpcChannel.StateSet, state),
   exportPdf: (request) => ipcRenderer.invoke(IpcChannel.ExportPdf, request),
+  printPdf: (request) => ipcRenderer.invoke(IpcChannel.ExportPrint, request),
   exportImages: (slots) => ipcRenderer.invoke(IpcChannel.ExportImages, slots),
   exportZip: (slots) => ipcRenderer.invoke(IpcChannel.ExportZip, slots),
   exportMpc: (cards) => ipcRenderer.invoke(IpcChannel.ExportMpc, cards),

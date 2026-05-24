@@ -202,6 +202,9 @@ export type ExportImagesOutcome =
 
 export type CalibrationOutcome = { canceled: true } | { canceled: false; path: string }
 
+/** Result of sending the proxy sheet straight to a printer. */
+export type PrintOutcome = { canceled: true } | { canceled: false; cardCount: number }
+
 export interface ExportProgress {
   phase: 'preparing' | 'rendering' | 'done'
   completed: number
