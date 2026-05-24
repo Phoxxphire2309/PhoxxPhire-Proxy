@@ -7,11 +7,13 @@ import {
   type DeckSection
 } from '@shared/deck'
 import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
+import { useCollectionStore } from '@renderer/state/collectionStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 import { ImportDialog } from '@renderer/components/ImportDialog'
 import { TokenDialog } from '@renderer/components/TokenDialog'
 import { BasicLandDialog } from '@renderer/components/BasicLandDialog'
+import { CollectionDialog } from '@renderer/components/CollectionDialog'
 import { DeckStats } from '@renderer/components/DeckStats'
 import { ExportDialog } from '@renderer/components/ExportDialog'
 import { PrintPreview } from '@renderer/components/PrintPreview'
@@ -33,6 +35,12 @@ function DeckFaceRow({
   const remove = useDeckStore((state) => state.remove)
   const openDeck = usePrintingStore((state) => state.openDeck)
   const status = useUpscaleStore((state) => state.statuses[faceKey(item.card.id, faceIndex)])
+  const owned = useCollectionStore(
+    (state) => state.owned[item.card.name.trim().toLowerCase()] === true
+  )
+  const skipOwned = useCollectionStore((state) => state.skipOwned)
+  const forced = useCollectionStore((state) => state.forcePrint[item.card.id] === true)
+  const toggleForce = useCollectionStore((state) => state.toggleForce)
 
   const multiFace = item.card.faces.length > 1
   const faceName = multiFace ? (item.card.faces[faceIndex]?.name ?? item.card.name) : item.card.name
@@ -67,6 +75,7 @@ function DeckFaceRow({
           <span className="ditem__meta">
             {item.card.setCode.toUpperCase()} · {formatUsd(bestUsd(item.card.prices))}
             {status === 'ready' ? ' · 4×' : status === 'upscaling' ? ' · …' : ''}
+            {owned && <span className="ditem__owned">owned</span>}
           </span>
         </div>
       </div>
@@ -102,6 +111,20 @@ function DeckFaceRow({
           ))}
         </select>
       )}
+      {faceIndex === 0 && owned && skipOwned && (
+        <button
+          type="button"
+          className={`ditem__force${forced ? ' is-on' : ''}`}
+          onClick={() => toggleForce(item.card.id)}
+          title={
+            forced
+              ? 'Printing this owned card anyway — click to skip it'
+              : 'Owned: skipped on export — click to print anyway'
+          }
+        >
+          {forced ? 'printing' : 'skipped'}
+        </button>
+      )}
       <button
         className="ditem__remove"
         type="button"
@@ -136,6 +159,7 @@ export function DeckPanel(): React.JSX.Element {
   const [showTokens, setShowTokens] = useState(false)
   const [showStats, setShowStats] = useState(false)
   const [showLands, setShowLands] = useState(false)
+  const [showCollection, setShowCollection] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [showPageSetup, setShowPageSetup] = useState(false)
@@ -225,6 +249,9 @@ export function DeckPanel(): React.JSX.Element {
         </button>
         <button className="toggle" type="button" onClick={() => setShowLands(true)}>
           Lands
+        </button>
+        <button className="toggle" type="button" onClick={() => setShowCollection(true)}>
+          Collection
         </button>
         {items.length > 0 && (
           <button className="toggle" type="button" onClick={() => void saveDeck()}>
@@ -327,6 +354,7 @@ export function DeckPanel(): React.JSX.Element {
       {showImport && <ImportDialog onClose={() => setShowImport(false)} />}
       {showTokens && <TokenDialog onClose={() => setShowTokens(false)} />}
       {showLands && <BasicLandDialog onClose={() => setShowLands(false)} />}
+      {showCollection && <CollectionDialog onClose={() => setShowCollection(false)} />}
       {showExport && (
         <ExportDialog
           onClose={() => setShowExport(false)}

@@ -17,4 +17,5 @@ export interface AppState {
   showSource?: boolean
   theme?: ThemeName
   pageSetup?: ExportOptions
+  collection?: { owned: string[]; skipOwned: boolean }
 }

@@ -630,6 +630,35 @@ body {
   cursor: pointer;
 }
 
+/* Collection ownership indicators */
+.ditem__owned {
+  margin-left: 6px;
+  padding: 0 5px;
+  font-size: 9px;
+  font-weight: 700;
+  text-transform: uppercase;
+  color: #0c1f12;
+  background: #4ade80;
+  border-radius: 4px;
+}
+
+.ditem__force {
+  padding: 2px 7px;
+  font-size: 10px;
+  font-weight: 600;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ditem__force.is-on {
+  color: #1a1206;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 /* Deck sections */
 .deck__group {
   margin-bottom: 6px;

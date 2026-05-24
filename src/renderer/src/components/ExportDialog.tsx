@@ -4,6 +4,7 @@ import { useDeckStore } from '@renderer/state/deckStore'
 import { useOrderStore } from '@renderer/state/orderStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
+import { useCollectionStore } from '@renderer/state/collectionStore'
 import { PrintPartner } from '@renderer/components/PrintPartner'
 
 type Phase = 'configure' | 'running' | 'done' | 'error'
@@ -20,6 +21,7 @@ export function ExportDialog({
   const syncFromDeck = useOrderStore((state) => state.syncFromDeck)
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
   const options = usePageSetupStore((state) => state.options)
+  const collection = useCollectionStore()
   const [phase, setPhase] = useState<Phase>('configure')
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   const [message, setMessage] = useState<string>('')
@@ -47,11 +49,22 @@ export function ExportDialog({
     }
   }, [onClose, phase])
 
-  const exportSlots: ExportSlot[] = slots.map((slot) => ({
-    ...slot,
-    upscale: Boolean(upscaledSet[slot.cardId])
-  }))
+  // Cards to skip because you own them (unless you've forced "print anyway").
+  const skipIds = new Set(
+    collection.skipOwned
+      ? items
+          .filter(
+            (item) => collection.isOwned(item.card.name) && !collection.forcePrint[item.card.id]
+          )
+          .map((item) => item.card.id)
+      : []
+  )
+
+  const exportSlots: ExportSlot[] = slots
+    .filter((slot) => !skipIds.has(slot.cardId))
+    .map((slot) => ({ ...slot, upscale: Boolean(upscaledSet[slot.cardId]) }))
   const totalCards = exportSlots.length
+  const skippedCount = slots.length - exportSlots.length
   const upscaledCount = items.filter((item) => upscaledSet[item.card.id]).length
 
   const runGuarded = async (action: () => Promise<string | null>): Promise<void> => {
@@ -104,7 +117,7 @@ export function ExportDialog({
   // One physical card per deck card; double-faced cards pair front + back, so the
   // front-face quantity drives the copy count.
   const mpcCards = items
-    .filter((item) => item.section !== 'maybeboard')
+    .filter((item) => item.section !== 'maybeboard' && !skipIds.has(item.card.id))
     .map((item) => ({
       cardId: item.card.id,
       quantity: item.quantities[0] ?? 0,
@@ -163,6 +176,12 @@ export function ExportDialog({
                 Edit page setup
               </button>
             </p>
+            {skippedCount > 0 && (
+              <p className="detail__hint">
+                {skippedCount} card image(s) skipped because you own them (toggle individual cards
+                in the deck to print anyway).
+              </p>
+            )}
             <p className="detail__hint">
               {upscaledCount === 0
                 ? 'All cards export at original quality (use the Upscale buttons first).'
