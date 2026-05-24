@@ -94,8 +94,10 @@ async function solidRect(color: Rgb, size: number): Promise<Buffer> {
 /**
  * Squares off the transparent rounded corners by filling each corner with its
  * border colour — found by walking diagonally in from the corner to the first
- * opaque pixel (the card's edge/border, not the art further in, like
- * MTGProxyPrinter) — then compositing the card on top so only the rounded gap
+ * *fully* opaque pixel (the card's edge/border). Requiring full opacity skips
+ * the antialiased fringe at the rounded edge, which is a misleading light blend;
+ * a small extra step lands solidly on the border without reaching the art
+ * further in (~7%). The card then composites on top, so only the rounded gap
  * shows the fill. Clean for any card: black-bordered keeps black corners,
  * white-bordered keeps white, full-art/custom take their edge tone. A no-op for
  * images without an alpha channel.
@@ -113,15 +115,22 @@ export async function squareOffCorners(imageBytes: Uint8Array): Promise<Uint8Arr
     .toBuffer({ resolveWithObject: true })
   const ch = info.channels
   const maxScan = Math.round(Math.min(width, height) * 0.15)
+  // Once past the antialiased fringe, step in a touch more to sit on the border.
+  const settle = Math.max(1, Math.round(Math.min(width, height) * 0.01))
 
-  // From a corner, step diagonally inward to the first opaque pixel — the border.
+  // From a corner, step diagonally inward to the first fully opaque pixel — the
+  // border — skipping the partially transparent antialiased edge, then settle.
   const borderColor = (cx: number, cy: number, dx: number, dy: number): Rgb => {
     for (let k = 0; k <= maxScan; k += 1) {
       const x = cx + dx * k
       const y = cy + dy * k
       if (x < 0 || y < 0 || x >= width || y >= height) break
-      const i = (y * width + x) * ch
-      if (data[i + 3]! > 128) return { r: data[i]!, g: data[i + 1]!, b: data[i + 2]! }
+      if (data[(y * width + x) * ch + 3]! === 255) {
+        const sx = Math.min(width - 1, Math.max(0, x + dx * settle))
+        const sy = Math.min(height - 1, Math.max(0, y + dy * settle))
+        const i = (sy * width + sx) * ch
+        return { r: data[i]!, g: data[i + 1]!, b: data[i + 2]! }
+      }
     }
     return { r: 0, g: 0, b: 0 }
   }

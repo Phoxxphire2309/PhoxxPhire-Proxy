@@ -475,6 +475,7 @@ body {
 .ditem__open {
   flex: 1;
   min-width: 0;
+  overflow: hidden;
   display: flex;
   align-items: center;
   gap: 10px;
@@ -511,6 +512,19 @@ body {
   font-size: 11px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+/* The controls after the card info keep their size; only the info column
+   shrinks, so a long/foreign card name can never slide under the buttons. */
+.ditem__qty,
+.ditem__section,
+.ditem__rotate,
+.ditem__force,
+.ditem__remove {
+  flex-shrink: 0;
 }
 
 .ditem__qty {
