@@ -66,6 +66,7 @@ export interface ScryfallCard {
   card_faces?: ScryfallCardFace[]
   prices?: ScryfallPrices
   all_parts?: ScryfallRelatedCard[]
+  legalities?: Record<string, string>
 }
 
 /** Generic Scryfall paginated list envelope. */
@@ -125,6 +126,8 @@ export interface Card {
   colors?: string[]
   /** Available finishes for this printing: 'nonfoil' | 'foil' | 'etched'. */
   finishes?: string[]
+  /** Per-format legality from Scryfall, e.g. { modern: 'legal', vintage: 'restricted' }. */
+  legalities?: Record<string, string>
 }
 
 /**
