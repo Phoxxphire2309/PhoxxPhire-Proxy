@@ -14,8 +14,11 @@ const COLOR_META: { key: ManaColor; label: string; swatch: string }[] = [
 /** Mana curve, colour, and type breakdown for the current deck. */
 export function DeckStats(): React.JSX.Element {
   const items = useDeckStore((state) => state.items)
+  // Stats describe the deck that prints — the maybeboard is a holding area.
   const stats = computeDeckStats(
-    items.map((item) => ({ card: item.card, count: item.quantities[0] ?? 0 }))
+    items
+      .filter((item) => item.section !== 'maybeboard')
+      .map((item) => ({ card: item.card, count: item.quantities[0] ?? 0 }))
   )
   const curveMax = Math.max(1, ...stats.curve)
   const types = Object.entries(stats.types).sort((a, b) => b[1] - a[1])

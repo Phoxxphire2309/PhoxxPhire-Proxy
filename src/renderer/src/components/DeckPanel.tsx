@@ -1,5 +1,11 @@
 import { useState } from 'react'
 import { bestUsd, faceImageUrl, formatUsd } from '@shared/scryfall'
+import {
+  DECK_SECTIONS,
+  DECK_SECTION_LABELS,
+  isPrintableSection,
+  type DeckSection
+} from '@shared/deck'
 import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
@@ -23,6 +29,7 @@ function DeckFaceRow({
   faceIndex: number
 }): React.JSX.Element {
   const setFaceQuantity = useDeckStore((state) => state.setFaceQuantity)
+  const setSection = useDeckStore((state) => state.setSection)
   const remove = useDeckStore((state) => state.remove)
   const openDeck = usePrintingStore((state) => state.openDeck)
   const status = useUpscaleStore((state) => state.statuses[faceKey(item.card.id, faceIndex)])
@@ -80,6 +87,21 @@ function DeckFaceRow({
           +
         </button>
       </div>
+      {faceIndex === 0 && (
+        <select
+          className="ditem__section"
+          value={item.section}
+          onChange={(event) => setSection(item.card.id, event.target.value as DeckSection)}
+          aria-label={`Section for ${item.card.name}`}
+          title="Move to section"
+        >
+          {DECK_SECTIONS.map((section) => (
+            <option key={section} value={section}>
+              {DECK_SECTION_LABELS[section]}
+            </option>
+          ))}
+        </select>
+      )}
       <button
         className="ditem__remove"
         type="button"
@@ -117,6 +139,16 @@ export function DeckPanel(): React.JSX.Element {
     (sum, item) => sum + (bestUsd(item.card.prices) ?? 0) * Math.max(...item.quantities),
     0
   )
+
+  const usedSections = DECK_SECTIONS.filter((section) =>
+    items.some((item) => item.section === section)
+  )
+  const renderRows = (list: DeckItem[]): React.JSX.Element[] =>
+    list.flatMap((item) =>
+      Array.from({ length: facesOf(item) }, (_unused, faceIndex) => (
+        <DeckFaceRow key={`${item.card.id}:${faceIndex}`} item={item} faceIndex={faceIndex} />
+      ))
+    )
 
   // Mark every deck card upscaled (so preview/export use it) and warm the cache.
   const preUpscale = (): void =>
@@ -216,14 +248,22 @@ export function DeckPanel(): React.JSX.Element {
 
       {items.length === 0 ? (
         <p className="deck__empty">No cards yet. Add from search, or import a list.</p>
+      ) : usedSections.length > 1 ? (
+        usedSections.map((section) => {
+          const sectionItems = items.filter((item) => item.section === section)
+          const count = sectionItems.reduce((sum, item) => sum + (item.quantities[0] ?? 0), 0)
+          return (
+            <div className="deck__group" key={section}>
+              <h3 className="deck__section">
+                {DECK_SECTION_LABELS[section]} <span className="deck__count">{count}</span>
+                {!isPrintableSection(section) && <span className="deck__noprint">not printed</span>}
+              </h3>
+              <ul className="deck__list">{renderRows(sectionItems)}</ul>
+            </div>
+          )
+        })
       ) : (
-        <ul className="deck__list">
-          {items.flatMap((item) =>
-            Array.from({ length: facesOf(item) }, (_unused, faceIndex) => (
-              <DeckFaceRow key={`${item.card.id}:${faceIndex}`} item={item} faceIndex={faceIndex} />
-            ))
-          )}
-        </ul>
+        <ul className="deck__list">{renderRows(items)}</ul>
       )}
 
       {importErrors.length > 0 && (

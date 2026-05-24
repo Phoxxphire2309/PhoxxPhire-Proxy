@@ -1,5 +1,5 @@
 import { create } from 'zustand'
-import { DECK_FILE_VERSION } from '@shared/deck'
+import { DECK_FILE_VERSION, type DeckSection } from '@shared/deck'
 import type { DeckResolution } from '@shared/decklist'
 import { bestPrinting, cheapestPrinting, type Card } from '@shared/scryfall'
 import { toast } from '@renderer/state/toastStore'
@@ -7,6 +7,15 @@ import { toast } from '@renderer/state/toastStore'
 export interface DeckItem {
   card: Card
   quantities: number[]
+  section: DeckSection
+}
+
+/** A loosely-typed item from disk/persistence (legacy `quantity`, optional section). */
+type LoadableItem = {
+  card: Card
+  quantities?: number[]
+  quantity?: number
+  section?: DeckSection
 }
 
 /** Number of printable faces a card has (1 for normal cards, 2 for double-faced). */
@@ -22,8 +31,9 @@ interface DeckState {
   importErrors: string[]
   bulkRunning: boolean
   add: (card: Card, quantity?: number) => void
-  setItems: (items: DeckItem[]) => void
+  setItems: (items: LoadableItem[]) => void
   setFaceQuantity: (cardId: string, faceIndex: number, quantity: number) => void
+  setSection: (cardId: string, section: DeckSection) => void
   replaceCard: (oldCardId: string, newCard: Card) => void
   remove: (cardId: string) => void
   clear: () => void
@@ -52,13 +62,14 @@ function mergeItems(existing: DeckItem[], incoming: DeckItem[]): DeckItem[] {
   return merged
 }
 
-/** Normalizes a possibly-legacy saved item ({ quantity }) to the per-face shape. */
-function normalizeItem(item: DeckItem | { card: Card; quantity: number }): DeckItem {
-  if ('quantities' in item && Array.isArray(item.quantities)) {
-    return { card: item.card, quantities: [...item.quantities] }
+/** Normalizes a possibly-legacy saved item to the current shape (defaulting section). */
+function normalizeItem(item: LoadableItem): DeckItem {
+  const section: DeckSection = item.section ?? 'main'
+  if (Array.isArray(item.quantities)) {
+    return { card: item.card, quantities: [...item.quantities], section }
   }
-  const quantity = 'quantity' in item ? item.quantity : 1
-  return { card: item.card, quantities: Array(facesOf(item.card)).fill(quantity) }
+  const quantity = typeof item.quantity === 'number' ? item.quantity : 1
+  return { card: item.card, quantities: Array(facesOf(item.card)).fill(quantity), section }
 }
 
 export const useDeckStore = create<DeckState>((set, get) => ({
@@ -69,7 +80,9 @@ export const useDeckStore = create<DeckState>((set, get) => ({
 
   add: (card, quantity = 1) =>
     set((state) => ({
-      items: mergeItems(state.items, [{ card, quantities: Array(facesOf(card)).fill(quantity) }])
+      items: mergeItems(state.items, [
+        { card, quantities: Array(facesOf(card)).fill(quantity), section: 'main' }
+      ])
     })),
 
   setItems: (items) => set({ items: items.map(normalizeItem) }),
@@ -94,6 +107,11 @@ export const useDeckStore = create<DeckState>((set, get) => ({
       return { items }
     }),
 
+  setSection: (cardId, section) =>
+    set((state) => ({
+      items: state.items.map((item) => (item.card.id === cardId ? { ...item, section } : item))
+    })),
+
   replaceCard: (oldCardId, newCard) =>
     set((state) => ({
       items: state.items.map((item) => {
@@ -103,7 +121,7 @@ export const useDeckStore = create<DeckState>((set, get) => ({
           { length: facesOf(newCard) },
           (_unused, index) => oldQuantities[index] ?? oldQuantities[0] ?? 1
         )
-        return { card: newCard, quantities: resized }
+        return { card: newCard, quantities: resized, section: item.section }
       })
     })),
 
@@ -194,7 +212,8 @@ async function runImport(
     const result = await fetchResult()
     const incoming: DeckItem[] = result.items.map((item) => ({
       card: item.card,
-      quantities: Array(facesOf(item.card)).fill(item.quantity)
+      quantities: Array(facesOf(item.card)).fill(item.quantity),
+      section: 'main'
     }))
     set({
       items: mergeItems(useDeckStore.getState().items, incoming),

@@ -104,6 +104,7 @@ export function ExportDialog({
   // One physical card per deck card; double-faced cards pair front + back, so the
   // front-face quantity drives the copy count.
   const mpcCards = items
+    .filter((item) => item.section !== 'maybeboard')
     .map((item) => ({
       cardId: item.card.id,
       quantity: item.quantities[0] ?? 0,

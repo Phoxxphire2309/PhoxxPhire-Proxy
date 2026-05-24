@@ -552,6 +552,43 @@ body {
   padding-left: 16px;
 }
 
+/* Deck sections */
+.deck__group {
+  margin-bottom: 6px;
+}
+
+.deck__section {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  margin: 12px 0 6px;
+  font-size: 12px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.deck__noprint {
+  margin-left: auto;
+  padding: 1px 7px;
+  font-size: 10px;
+  letter-spacing: 0;
+  text-transform: none;
+  color: var(--muted);
+  border: 1px dashed var(--border);
+  border-radius: 999px;
+}
+
+.ditem__section {
+  max-width: 92px;
+  padding: 3px 4px;
+  font-size: 11px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+}
+
 /* Deck statistics panel */
 .stats {
   margin-top: 4px;

@@ -24,10 +24,11 @@ function signature(slots: OrderSlot[]): string {
     .join('|')
 }
 
-/** Expands a deck into one slot per copy per face, in deck order. */
+/** Expands a deck into one slot per copy per face, in deck order. Maybeboard is skipped. */
 function expand(items: DeckItem[]): OrderSlot[] {
   const slots: OrderSlot[] = []
   for (const item of items) {
+    if (item.section === 'maybeboard') continue
     for (let faceIndex = 0; faceIndex < item.quantities.length; faceIndex += 1) {
       for (let copy = 0; copy < item.quantities[faceIndex]!; copy += 1) {
         slots.push({ cardId: item.card.id, faceIndex })
