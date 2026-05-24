@@ -1,7 +1,14 @@
 import { create } from 'zustand'
 import { DECK_FILE_VERSION, PROJECT_FILE_VERSION, type DeckSection } from '@shared/deck'
 import type { DeckResolution } from '@shared/decklist'
-import { bestPrinting, cheapestPrinting, type Card } from '@shared/scryfall'
+import {
+  bestPrinting,
+  cheapestPrinting,
+  mostExpensivePrinting,
+  newestPrinting,
+  nonFoilPrintings,
+  type Card
+} from '@shared/scryfall'
 import { toast } from '@renderer/state/toastStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 
@@ -24,7 +31,14 @@ function facesOf(card: Card): number {
   return Math.max(1, card.faces.length)
 }
 
-export type BulkPrintingMode = 'highres' | 'cheapest'
+export type BulkPrintingMode = 'highres' | 'cheapest' | 'expensive' | 'newest'
+
+const BULK_LABELS: Record<BulkPrintingMode, string> = {
+  highres: 'highest-resolution',
+  cheapest: 'cheapest',
+  expensive: 'most expensive',
+  newest: 'newest'
+}
 
 interface DeckState {
   items: DeckItem[]
@@ -175,7 +189,16 @@ export const useDeckStore = create<DeckState>((set, get) => ({
           continue
         }
         if (printings.length === 0) continue
-        const pick = mode === 'highres' ? bestPrinting(printings) : cheapestPrinting(printings)
+        // Prefer non-foil printings — foil/etched scans can print poorly.
+        const pool = nonFoilPrintings(printings)
+        const pick =
+          mode === 'highres'
+            ? bestPrinting(pool)
+            : mode === 'cheapest'
+              ? cheapestPrinting(pool)
+              : mode === 'expensive'
+                ? mostExpensivePrinting(pool)
+                : newestPrinting(pool)
         if (pick && pick.id !== item.card.id) {
           get().replaceCard(item.card.id, pick)
           changed += 1
@@ -183,7 +206,7 @@ export const useDeckStore = create<DeckState>((set, get) => ({
       }
       toast(
         changed > 0
-          ? `Switched ${changed} card(s) to the ${mode === 'highres' ? 'highest-resolution' : 'cheapest'} printing`
+          ? `Switched ${changed} card(s) to the ${BULK_LABELS[mode]} printing`
           : 'No cards needed switching',
         'success'
       )

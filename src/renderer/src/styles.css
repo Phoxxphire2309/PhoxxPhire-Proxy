@@ -1663,6 +1663,17 @@ body {
   cursor: pointer;
 }
 
+.deck__bulk {
+  padding: 10px;
+  font-size: 14px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 /* Print preview modal */
 .preview {
   width: min(900px, 100%);

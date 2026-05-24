@@ -61,6 +61,7 @@ export interface ScryfallCard {
   cmc?: number
   type_line?: string
   colors?: string[]
+  finishes?: string[]
   image_uris?: ScryfallImageUris
   card_faces?: ScryfallCardFace[]
   prices?: ScryfallPrices
@@ -122,6 +123,23 @@ export interface Card {
   typeLine?: string
   /** Colour letters present on the card (W/U/B/R/G). */
   colors?: string[]
+  /** Available finishes for this printing: 'nonfoil' | 'foil' | 'etched'. */
+  finishes?: string[]
+}
+
+/**
+ * Whether a printing is available in a regular non-foil finish. Foil-only and
+ * etched-only printings can scan/print poorly, so bulk selection avoids them.
+ * Printings with unknown finishes (older cache) are treated as non-foil.
+ */
+export function isNonFoil(card: Pick<Card, 'finishes'>): boolean {
+  return card.finishes === undefined || card.finishes.includes('nonfoil')
+}
+
+/** Non-foil printings, or all of them when none are non-foil (so a pick is always possible). */
+export function nonFoilPrintings(cards: Card[]): Card[] {
+  const nonFoil = cards.filter(isNonFoil)
+  return nonFoil.length > 0 ? nonFoil : cards
 }
 
 /** Higher is better. Used to pick the highest-quality printing to upscale from. */
@@ -161,20 +179,47 @@ export function bestPrinting(cards: Card[]): Card | null {
 }
 
 /**
- * The cheapest printing (lowest best USD price) among the given cards; printings
- * with no known price are considered most expensive. Keeps the first on ties.
+ * The cheapest printing by NON-FOIL (`usd`) price; foil-only printings (no
+ * regular price) are deprioritised so bulk-switching doesn't pick foils, which
+ * can print poorly. Keeps the first on ties; falls back to the first card.
  */
 export function cheapestPrinting(cards: Card[]): Card | null {
   let cheapest: Card | null = null
   let lowest = Infinity
   for (const card of cards) {
-    const price = bestUsd(card.prices) ?? Infinity
+    const price = card.prices.usd ?? Infinity
     if (price < lowest) {
       cheapest = card
       lowest = price
     }
   }
   return cheapest ?? cards[0] ?? null
+}
+
+/**
+ * The most expensive printing by NON-FOIL (`usd`) price; foil-only printings
+ * rank lowest so foils aren't chosen. Keeps the first on ties; falls back to the
+ * first card.
+ */
+export function mostExpensivePrinting(cards: Card[]): Card | null {
+  let best: Card | null = null
+  let highest = -Infinity
+  for (const card of cards) {
+    const price = card.prices.usd ?? -Infinity
+    if (price > highest) {
+      best = card
+      highest = price
+    }
+  }
+  return best ?? cards[0] ?? null
+}
+
+/**
+ * The newest printing, assuming `cards` is ordered oldest→newest (which is how
+ * `getPrintings` returns them, sorted by release date ascending).
+ */
+export function newestPrinting(cards: Card[]): Card | null {
+  return cards[cards.length - 1] ?? null
 }
 
 /** Best available non-foil USD price, falling back to etched/foil. */

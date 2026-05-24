@@ -6,7 +6,7 @@ import {
   isPrintableSection,
   type DeckSection
 } from '@shared/deck'
-import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
+import { useDeckStore, type BulkPrintingMode, type DeckItem } from '@renderer/state/deckStore'
 import { useCollectionStore } from '@renderer/state/collectionStore'
 import { useRotateStore } from '@renderer/state/rotateStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
@@ -312,24 +312,26 @@ export function DeckPanel(): React.JSX.Element {
               Pre-upscale all
             </button>
           )}
-          <button
-            className="deck__preview"
-            type="button"
+          <select
+            className="deck__bulk"
             disabled={bulkRunning}
-            onClick={() => void bulkSwitchPrintings('highres')}
-            title="Switch every card to its highest-resolution printing"
+            value=""
+            onChange={(event) => {
+              const mode = event.target.value
+              event.target.value = ''
+              if (mode) void bulkSwitchPrintings(mode as BulkPrintingMode)
+            }}
+            aria-label="Switch all cards to a printing"
+            title="Switch every card to a chosen printing"
           >
-            {bulkRunning ? 'Switching…' : 'All → best scan'}
-          </button>
-          <button
-            className="deck__preview"
-            type="button"
-            disabled={bulkRunning}
-            onClick={() => void bulkSwitchPrintings('cheapest')}
-            title="Switch every card to its cheapest printing"
-          >
-            All → cheapest
-          </button>
+            <option value="" disabled>
+              {bulkRunning ? 'Switching…' : 'All cards →'}
+            </option>
+            <option value="highres">Best scan</option>
+            <option value="cheapest">Cheapest</option>
+            <option value="expensive">Most expensive</option>
+            <option value="newest">Newest</option>
+          </select>
         </div>
       )}
 

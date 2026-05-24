@@ -7,7 +7,11 @@ import {
   formatUsd,
   imageStatusRank,
   isHighRes,
+  isNonFoil,
   IMAGE_PROTOCOL,
+  mostExpensivePrinting,
+  newestPrinting,
+  nonFoilPrintings,
   type Card,
   type CardPrices,
   type ImageStatus
@@ -125,5 +129,50 @@ describe('cheapestPrinting', () => {
 
   it('returns null for an empty list', () => {
     expect(cheapestPrinting([])).toBeNull()
+  })
+})
+
+describe('mostExpensivePrinting', () => {
+  const priced = (id: string, usd: number | null): Card => ({
+    ...card(id),
+    prices: prices({ usd })
+  })
+
+  it('picks the highest non-foil price, ignoring unpriced printings', () => {
+    expect(mostExpensivePrinting([priced('a', 2), priced('b', 9), priced('c', null)])?.id).toBe('b')
+  })
+
+  it('ignores foil-only prices (uses usd, not foil)', () => {
+    const foilOnly: Card = { ...card('foil'), prices: prices({ usd: null, usdFoil: 999 }) }
+    const normal = priced('normal', 5)
+    expect(mostExpensivePrinting([normal, foilOnly])?.id).toBe('normal')
+  })
+})
+
+describe('newestPrinting', () => {
+  it('returns the last (most recent) printing', () => {
+    expect(newestPrinting([card('old'), card('mid'), card('new')])?.id).toBe('new')
+    expect(newestPrinting([])).toBeNull()
+  })
+})
+
+describe('isNonFoil / nonFoilPrintings', () => {
+  const withFinishes = (id: string, finishes?: string[]): Card => ({
+    ...card(id),
+    ...(finishes ? { finishes } : {})
+  })
+
+  it('treats printings with a nonfoil finish (or unknown) as non-foil', () => {
+    expect(isNonFoil(withFinishes('a', ['nonfoil', 'foil']))).toBe(true)
+    expect(isNonFoil(withFinishes('b', ['foil']))).toBe(false)
+    expect(isNonFoil(withFinishes('c', ['etched']))).toBe(false)
+    expect(isNonFoil(withFinishes('d'))).toBe(true) // unknown finishes
+  })
+
+  it('filters to non-foil printings, keeping all when none are non-foil', () => {
+    const cards = [withFinishes('a', ['foil']), withFinishes('b', ['nonfoil', 'foil'])]
+    expect(nonFoilPrintings(cards).map((c) => c.id)).toEqual(['b'])
+    const allFoil = [withFinishes('x', ['foil']), withFinishes('y', ['etched'])]
+    expect(nonFoilPrintings(allFoil)).toHaveLength(2)
   })
 })
