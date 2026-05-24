@@ -45,6 +45,8 @@ interface DeckState {
   importing: boolean
   importErrors: string[]
   bulkRunning: boolean
+  /** Active bulk printing-switch job (drives the progress popup), or null when idle. */
+  bulkJob: { total: number; done: number } | null
   /** Undo/redo history of the `items` list (oldest first in `past`). */
   past: DeckItem[][]
   future: DeckItem[][]
@@ -99,6 +101,7 @@ export const useDeckStore = create<DeckState>((set, get) => ({
   importing: false,
   importErrors: [],
   bulkRunning: false,
+  bulkJob: null,
   past: [],
   future: [],
 
@@ -177,10 +180,13 @@ export const useDeckStore = create<DeckState>((set, get) => ({
   bulkSwitchPrintings: async (mode) => {
     const snapshot = get().items
     if (snapshot.length === 0 || get().bulkRunning) return
-    set({ bulkRunning: true })
+    set({ bulkRunning: true, bulkJob: { total: snapshot.length, done: 0 } })
     let changed = 0
+    let done = 0
     try {
       for (const item of snapshot) {
+        done += 1
+        set({ bulkJob: { total: snapshot.length, done } })
         if (!item.card.oracleId) continue
         let printings: Card[]
         try {
@@ -213,7 +219,7 @@ export const useDeckStore = create<DeckState>((set, get) => ({
     } catch (error) {
       toast(error instanceof Error ? error.message : 'Bulk switch failed', 'error')
     } finally {
-      set({ bulkRunning: false })
+      set({ bulkRunning: false, bulkJob: null })
     }
   },
 
