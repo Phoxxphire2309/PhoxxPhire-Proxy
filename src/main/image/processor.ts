@@ -84,52 +84,69 @@ export async function sampleBorderColor(imageBytes: Uint8Array): Promise<Rgb> {
   }
 }
 
+/** Averages a small sample patch into a single RGB colour. */
+async function sampleColorAt(
+  imageBytes: Uint8Array,
+  left: number,
+  top: number,
+  size: number
+): Promise<Rgb> {
+  const { data } = await sharp(imageBytes, { limitInputPixels: false })
+    .extract({ left, top, width: size, height: size })
+    .removeAlpha()
+    .resize(1, 1)
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  return { r: data[0]!, g: data[1]!, b: data[2]! }
+}
+
+/** A solid RGB rectangle as PNG bytes, for compositing. */
+async function solidRect(color: Rgb, size: number): Promise<Buffer> {
+  return sharp({ create: { width: size, height: size, channels: 3, background: color } })
+    .png()
+    .toBuffer()
+}
+
 /**
- * Squares off the transparent rounded corners of a card image by extending the
- * surrounding artwork into them: each transparent pixel takes the colour of its
- * nearest opaque neighbour, propagated one ring at a time. This lets the bleed /
- * edge art flow into the corners (rather than a flat colour patch), so a
- * black-bordered card keeps black corners and a full-art card continues its art.
- * A no-op for images without an alpha channel (already square).
+ * Squares off the transparent rounded corners by filling each corner with a
+ * solid colour sampled just inside that corner (≈3% in), then compositing the
+ * card on top — so only the rounded gap shows the fill, matching the card's
+ * local edge tone at each corner (per MTGProxyPrinter's corner approach). This
+ * is clean for any card — black-bordered, full-art, or custom — with no streaks
+ * or whole-image colour cast. A no-op for images without an alpha channel.
  */
 export async function squareOffCorners(imageBytes: Uint8Array): Promise<Uint8Array> {
-  const base = sharp(imageBytes, { limitInputPixels: false })
-  const meta = await base.metadata()
+  const meta = await sharp(imageBytes, { limitInputPixels: false }).metadata()
   const width = meta.width ?? 0
   const height = meta.height ?? 0
-  if (!width || !height || !meta.hasAlpha) return imageBytes
+  // Too small to sample corners meaningfully (also guards tiny test fixtures).
+  if (!width || !height || !meta.hasAlpha || Math.min(width, height) < 24) return imageBytes
 
-  const { data } = await base.ensureAlpha().raw().toBuffer({ resolveWithObject: true })
-  const opaque = new Uint8Array(width * height)
-  for (let i = 0; i < width * height; i += 1) opaque[i] = data[i * 4 + 3]! > 128 ? 1 : 0
+  // Sample past the corner radius (~4%) so we read opaque art, not the gap.
+  const inset = Math.max(2, Math.round(Math.min(width, height) * 0.07))
+  const sample = Math.max(4, Math.round(Math.min(width, height) * 0.02))
+  // Patch must cover the corner radius so the whole rounded gap is filled.
+  const patch = Math.max(8, Math.round(Math.min(width, height) * 0.06))
 
-  // The transparent area is only the small corner curves; a few rings past the
-  // corner radius (~4% of the card) fills them from the adjacent edge pixels.
-  const maxPasses = Math.ceil(Math.max(width, height) * 0.05)
-  for (let pass = 0; pass < maxPasses; pass += 1) {
-    let changed = false
-    for (let y = 0; y < height; y += 1) {
-      for (let x = 0; x < width; x += 1) {
-        const p = y * width + x
-        if (opaque[p]) continue
-        let n = -1
-        if (x > 0 && opaque[p - 1]) n = p - 1
-        else if (x < width - 1 && opaque[p + 1]) n = p + 1
-        else if (y > 0 && opaque[p - width]) n = p - width
-        else if (y < height - 1 && opaque[p + width]) n = p + width
-        if (n >= 0) {
-          data[p * 4] = data[n * 4]!
-          data[p * 4 + 1] = data[n * 4 + 1]!
-          data[p * 4 + 2] = data[n * 4 + 2]!
-          opaque[p] = 1
-          changed = true
-        }
-      }
-    }
-    if (!changed) break
-  }
+  const [tl, tr, bl, br] = await Promise.all([
+    sampleColorAt(imageBytes, inset, inset, sample),
+    sampleColorAt(imageBytes, width - inset - sample, inset, sample),
+    sampleColorAt(imageBytes, inset, height - inset - sample, sample),
+    sampleColorAt(imageBytes, width - inset - sample, height - inset - sample, sample)
+  ])
 
-  const out = await sharp(Buffer.from(data), { raw: { width, height, channels: 4 } })
+  const out = await sharp({
+    create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
+  })
+    .composite([
+      { input: await solidRect(tl, patch), left: 0, top: 0 },
+      { input: await solidRect(tr, patch), left: width - patch, top: 0 },
+      { input: await solidRect(bl, patch), left: 0, top: height - patch },
+      { input: await solidRect(br, patch), left: width - patch, top: height - patch },
+      // Card on top: only its rounded-corner gaps reveal the fills beneath.
+      { input: Buffer.from(imageBytes) }
+    ])
+    .flatten({ background: { r: 0, g: 0, b: 0 } })
     .removeAlpha()
     .png()
     .toBuffer()

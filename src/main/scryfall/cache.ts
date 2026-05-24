@@ -44,7 +44,7 @@ async function dirSize(dir: string): Promise<number> {
  * Bumped whenever cached image processing changes (e.g. corner squaring), so
  * stale images are dropped once and re-fetched / re-upscaled with current logic.
  */
-const IMAGE_CACHE_VERSION = 2
+const IMAGE_CACHE_VERSION = 3
 
 export class CardCache {
   private readonly cardsDir: string
