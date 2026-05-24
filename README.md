@@ -44,15 +44,20 @@ proxy tools do.
 - **Card detail** view: zoom, flip double-faced cards, switch between every **printing/set**, and see per-printing **prices**.
 
 **Deck building**
-- Import a decklist by **paste** (plain text / MTG Arena format) or by **URL** (Archidekt, Moxfield).
+- Import a decklist by **paste** (plain text / MTG Arena format) or by **URL** (Archidekt, Moxfield), with an option to **exclude foils** so cheaper non-foil scans are chosen.
+- Export the decklist back out as **text**, **MTG Arena**, or **CSV** (with prices).
 - **Custom card upload** — drop in your own art and it's treated like any card (upscaled, bled, printed).
-- Save / load decks, quantities, running deck price, and one-click "pre-upscale all".
+- Deck **sections** (commander / main / sideboard / maybeboard), **undo/redo**, deck **stats**, a **collection / wishlist**, and **basic-land** helper.
+- **Switch every card's printing** in one click — best scan, cheapest, newest, or most expensive (non-foils preferred) — with a progress popup.
+- **Pre-upscale all** (asks whether to do every card or only the low-res ones) and a **sample opening hand** playtest draw.
+- Save / load decks and full projects, with a running deck price.
 
 **Print & export**
-- Page sizes A4 / Letter / Legal / A3 / custom, portrait or landscape.
-- Configurable **bleed**, **cut guides** (outline / corner marks), and **duplex card backs**.
+- Page sizes A4 / Letter / Legal / A3 / custom, portrait or landscape, with per-edge margins and scale calibration.
+- Configurable **bleed** (extend / solid / zoom), **cut guides** (outline / corner marks), and **duplex card backs** (double-faced cards print their real second face).
+- **WYSIWYG print preview** with drag-to-reorder and spacers.
 - **Calibration page** to verify your printer isn't silently scaling.
-- Export print-ready **PDF** or per-card **PNG**s.
+- **Print directly** to a printer, or export a print-ready **PDF**, per-card **PNG**s, a **ZIP** bundle, or a **MakePlayingCards (MPC Autofill)** order.
 
 **App**
 - Persists your deck, settings, and theme across sessions.
@@ -173,10 +178,10 @@ resources/
 
 ## Testing
 
-102 unit tests (Vitest) cover the pure logic — Scryfall client + rate limiter, card
-normalization, decklist + deck-source parsing, query composition, layout maths, PDF generation,
-the upscale service, and the image processor. CI runs lint, type-check, tests + coverage,
-Prettier, and `npm audit` on every push.
+200+ unit tests (Vitest) cover the pure logic — Scryfall client + rate limiter, card
+normalization, decklist parsing + export, deck-source parsing, query composition, layout maths,
+PDF generation, sample-hand shuffling, the upscale service, and the image processor. CI runs
+lint, type-check, Prettier, tests + coverage, a full build, and `npm audit` on every push.
 
 ```bash
 npm test

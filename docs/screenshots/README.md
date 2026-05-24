@@ -17,7 +17,8 @@ capture them from the running app and drop them in this folder with the exact fi
 | `search.png` | A search (e.g. `lightning bolt` or `set:mh3`) with the result grid filled, the Filters panel open, and a deck started in the right panel. |
 | `upscale-compare.png` | A card open in the detail view with the **before/after slider** mid-drag — the original vs upscaled split is the headline shot. Pick a card with lots of fine text/border for maximum effect. |
 | `card-detail.png` | The detail view showing the **printings strip** (a card with many printings, e.g. a staple) with per-printing **prices** visible. |
-| `deck-export.png` | The deck panel with several cards + the running price total, and the **Export** dialog open showing the page/bleed/cut-guide options. |
+| `deck-export.png` | The deck panel with several cards + the running price total, and the **Export** dialog open showing the page/bleed/cut-guide options and the **Print** button. |
+| `sample-hand.png` | The **Sample hand** modal with seven cards drawn (optional, but a nice playtest shot). |
 
 ## Tips
 
