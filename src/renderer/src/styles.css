@@ -80,20 +80,7 @@ body {
   gap: 20px;
 }
 
-.app__logo {
-  height: 126px;
-  width: auto;
-  display: block;
-  flex-shrink: 0;
-  /* The logo art is white-on-transparent; invert it in light theme for contrast. */
-  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
-}
-
-:root[data-theme='light'] .app__logo {
-  filter: invert(1) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
-}
-
-/* Single toolbar row beside the logo: search fills the gap, then filters + controls. */
+/* Single toolbar row: search fills the gap, then filters + controls. */
 .app__toolbar {
   flex: 1;
   min-width: 0;
