@@ -183,33 +183,55 @@ export const useDeckStore = create<DeckState>((set, get) => ({
     set({ bulkRunning: true, bulkJob: { total: snapshot.length, done: 0 } })
     let changed = 0
     let done = 0
-    try {
-      for (const item of snapshot) {
+
+    // Process several cards at once: Scryfall's own rate limiter (in the main
+    // process) still caps actual traffic, but overlapping the network round-trips
+    // turns a long sequential crawl into a few quick passes.
+    const CONCURRENCY = 6
+    const queue = [...snapshot]
+
+    const pickFor = (printings: Card[]): Card | null => {
+      // Prefer non-foil printings — foil/etched scans can print poorly.
+      const pool = nonFoilPrintings(printings)
+      switch (mode) {
+        case 'highres':
+          return bestPrinting(pool)
+        case 'cheapest':
+          return cheapestPrinting(pool)
+        case 'expensive':
+          return mostExpensivePrinting(pool)
+        default:
+          return newestPrinting(pool)
+      }
+    }
+
+    const worker = async (): Promise<void> => {
+      for (;;) {
+        const item = queue.shift()
+        if (!item) return
+        try {
+          if (item.card.oracleId) {
+            const printings = await window.phoxx.getPrintings(item.card.oracleId)
+            if (printings.length > 0) {
+              const pick = pickFor(printings)
+              if (pick && pick.id !== item.card.id) {
+                get().replaceCard(item.card.id, pick)
+                changed += 1
+              }
+            }
+          }
+        } catch {
+          // A card whose printings can't be fetched is left unchanged.
+        }
         done += 1
         set({ bulkJob: { total: snapshot.length, done } })
-        if (!item.card.oracleId) continue
-        let printings: Card[]
-        try {
-          printings = await window.phoxx.getPrintings(item.card.oracleId)
-        } catch {
-          continue
-        }
-        if (printings.length === 0) continue
-        // Prefer non-foil printings — foil/etched scans can print poorly.
-        const pool = nonFoilPrintings(printings)
-        const pick =
-          mode === 'highres'
-            ? bestPrinting(pool)
-            : mode === 'cheapest'
-              ? cheapestPrinting(pool)
-              : mode === 'expensive'
-                ? mostExpensivePrinting(pool)
-                : newestPrinting(pool)
-        if (pick && pick.id !== item.card.id) {
-          get().replaceCard(item.card.id, pick)
-          changed += 1
-        }
       }
+    }
+
+    try {
+      await Promise.all(
+        Array.from({ length: Math.min(CONCURRENCY, snapshot.length) }, () => worker())
+      )
       toast(
         changed > 0
           ? `Switched ${changed} card(s) to the ${BULK_LABELS[mode]} printing`

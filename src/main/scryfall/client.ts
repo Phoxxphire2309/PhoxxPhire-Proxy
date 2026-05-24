@@ -144,16 +144,43 @@ export class ScryfallClient {
       await this.limiter.acquire()
 
       const controller = new AbortController()
+      // The timeout must cover reading the body too: fetch() resolves as soon as
+      // the headers arrive, so a stalled response body would otherwise hang the
+      // call forever. Keeping the timer until after response.json() lets the
+      // abort signal tear down a stuck stream, surfacing as a retry/timeout.
       const timer = setTimeout(() => controller.abort(), this.timeoutMs)
 
-      let response: Response
       try {
-        response = await this.fetchFn(url, {
+        const response = await this.fetchFn(url, {
           headers: { 'User-Agent': this.userAgent, Accept: ACCEPT },
           signal: controller.signal
         })
+
+        // Retry transient failures (rate limiting, server errors) with backoff.
+        if ((response.status === 429 || response.status >= 500) && attempt < this.maxRetries) {
+          attempt += 1
+          const retryAfter = Number(response.headers.get('retry-after'))
+          const waitMs =
+            Number.isFinite(retryAfter) && retryAfter > 0
+              ? retryAfter * 1000
+              : this.backoffMs(attempt)
+          clearTimeout(timer)
+          await this.sleepFn(waitMs)
+          continue
+        }
+
+        if (!response.ok) {
+          const message =
+            response.status >= 500
+              ? `Scryfall is temporarily unavailable (HTTP ${response.status}) — try again shortly.`
+              : `Scryfall request failed (HTTP ${response.status})`
+          throw new ScryfallError(message, response.status)
+        }
+
+        return (await response.json()) as T
       } catch (error) {
-        clearTimeout(timer)
+        // A definitive HTTP error (e.g. 4xx) shouldn't be retried as if transient.
+        if (error instanceof ScryfallError) throw error
         // `controller.signal.aborted` is only ever set by our own timeout timer.
         const timedOut = controller.signal.aborted
         if (attempt < this.maxRetries) {
@@ -172,28 +199,6 @@ export class ScryfallClient {
       } finally {
         clearTimeout(timer)
       }
-
-      // Retry transient failures (rate limiting, server errors) with backoff.
-      if ((response.status === 429 || response.status >= 500) && attempt < this.maxRetries) {
-        attempt += 1
-        const retryAfter = Number(response.headers.get('retry-after'))
-        const waitMs =
-          Number.isFinite(retryAfter) && retryAfter > 0
-            ? retryAfter * 1000
-            : this.backoffMs(attempt)
-        await this.sleepFn(waitMs)
-        continue
-      }
-
-      if (!response.ok) {
-        const message =
-          response.status >= 500
-            ? `Scryfall is temporarily unavailable (HTTP ${response.status}) — try again shortly.`
-            : `Scryfall request failed (HTTP ${response.status})`
-        throw new ScryfallError(message, response.status)
-      }
-
-      return (await response.json()) as T
     }
   }
 }

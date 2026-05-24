@@ -22,6 +22,14 @@ import { fetchDeckLines } from './deck-sources'
 
 const IMAGE_DOWNLOAD_TIMEOUT_MS = 20_000
 
+/**
+ * How long a card's fetched printings stay fresh in memory. Bulk printing
+ * switches re-query every card, often several modes in a row (cheapest, then
+ * newest, …); caching the printings keeps the second run instant and stops the
+ * deck from appearing to stall on a long sequence of network round-trips.
+ */
+const PRINTINGS_TTL_MS = 10 * 60 * 1000
+
 /** Downloads an image into the given face slot of the cache. */
 async function downloadImage(
   url: string,
@@ -47,6 +55,9 @@ async function downloadImage(
  * and `ensureFaceImage` lazily downloads (once) the source image for a face.
  */
 export class ScryfallService {
+  /** In-memory printings cache keyed by oracle id, with a fetch timestamp. */
+  private readonly printingsCache = new Map<string, { cards: Card[]; at: number }>()
+
   constructor(
     private readonly client: ScryfallClient,
     private readonly cache: CardCache,
@@ -81,8 +92,12 @@ export class ScryfallService {
   }
 
   async getPrintings(oracleId: string): Promise<Card[]> {
+    const hit = this.printingsCache.get(oracleId)
+    if (hit && Date.now() - hit.at < PRINTINGS_TTL_MS) return hit.cards
+
     const cards = await this.client.getPrintings(oracleId)
     await Promise.all(cards.map((card) => this.cache.putCard(card)))
+    this.printingsCache.set(oracleId, { cards, at: Date.now() })
     return cards
   }
 

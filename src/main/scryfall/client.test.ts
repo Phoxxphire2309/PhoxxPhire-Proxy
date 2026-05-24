@@ -111,6 +111,30 @@ describe('ScryfallClient', () => {
     await expect(client.search('bolt')).rejects.toThrow(/didn't respond within/)
   })
 
+  it('times out when the response body stalls after the headers arrive', async () => {
+    // fetch() resolves on headers, but reading the body never settles until the
+    // timeout aborts it. The abort must surface as a timeout, not hang forever.
+    const fetchFn = ((_url: string | URL, init?: RequestInit) =>
+      Promise.resolve({
+        status: 200,
+        ok: true,
+        headers: new Headers(),
+        json: () =>
+          new Promise((_resolve, reject) => {
+            init?.signal?.addEventListener('abort', () => reject(new Error('aborted')))
+          })
+      } as unknown as Response)) as typeof fetch
+    const client = new ScryfallClient({
+      userAgent: 'PhoxxPhireProxy/test',
+      limiter: new RateLimiter(0),
+      sleepFn: async () => {},
+      maxRetries: 0,
+      timeoutMs: 5,
+      fetchFn
+    })
+    await expect(client.getById('id-1')).rejects.toThrow(/didn't respond within/)
+  })
+
   it('returns autocomplete suggestions and short-circuits empty queries', async () => {
     const fetchFn = vi.fn<typeof fetch>(async () => jsonResponse({ data: ['Bolt', 'Boltography'] }))
     const client = makeClient(fetchFn)
