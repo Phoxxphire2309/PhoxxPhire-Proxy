@@ -1,11 +1,39 @@
-import { useEffect, useRef } from 'react'
-import { computePageLayout, pageCountFor, type ExportSlot } from '@shared/layout'
+import { Fragment, useEffect, useRef } from 'react'
+import {
+  computePageLayout,
+  pageCountFor,
+  type CutGuideStyle,
+  type ExportSlot,
+  type Rect
+} from '@shared/layout'
 import { faceImageUrl } from '@shared/scryfall'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useOrderStore } from '@renderer/state/orderStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 import { toast } from '@renderer/state/toastStore'
+
+/** A cut-guide overlay at the trim rectangle, matching the export style. */
+function CutGuide({
+  style,
+  kind
+}: {
+  style: React.CSSProperties
+  kind: CutGuideStyle
+}): React.JSX.Element | null {
+  if (kind === 'none') return null
+  if (kind === 'outline') {
+    return <div className="preview__cut preview__cut--outline" style={style} aria-hidden="true" />
+  }
+  return (
+    <div className="preview__cut" style={style} aria-hidden="true">
+      <span className="preview__cut-mark preview__cut-mark--tl" />
+      <span className="preview__cut-mark preview__cut-mark--tr" />
+      <span className="preview__cut-mark preview__cut-mark--bl" />
+      <span className="preview__cut-mark preview__cut-mark--br" />
+    </div>
+  )
+}
 
 export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.Element {
   const items = useDeckStore((state) => state.items)
@@ -42,6 +70,24 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
   const layout = computePageLayout(options)
   const { pageWidthPt: pw, pageHeightPt: ph } = layout
   const pageCount = pageCountFor(slots.length, layout.perPage)
+  // Cards with more than one face print their second face on the duplex back.
+  const faceCounts = new Map(
+    items.map((item) => [item.card.id, Math.max(1, item.card.faces.length)])
+  )
+  const pct = (value: number, total: number): string => `${(value / total) * 100}%`
+  const rectStyle = (r: Rect): React.CSSProperties => ({
+    left: pct(r.x, pw),
+    top: pct(r.y, ph),
+    width: pct(r.width, pw),
+    height: pct(r.height, ph)
+  })
+  // Backs are X-mirrored so they line up with fronts under duplex printing.
+  const mirrorStyle = (r: Rect): React.CSSProperties => ({
+    left: pct(pw - (r.x + r.width), pw),
+    top: pct(r.y, ph),
+    width: pct(r.width, pw),
+    height: pct(r.height, ph)
+  })
 
   const exportPdf = async (): Promise<void> => {
     const exportSlots: ExportSlot[] = slots.map((slot) => ({
@@ -72,76 +118,116 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
           </span>
         </h2>
         <p className="detail__hint">
-          Drag cards to reorder. Reflects your Page setup; cards you’ve upscaled show upscaled here,
-          the rest stay original.
+          Drag cards to reorder. Shows bleed and cut guides exactly as exported
+          {duplex
+            ? '; back pages show the duplex reverse (two-faced cards use their second face).'
+            : '.'}
         </p>
 
         <div className="preview__pages">
           {Array.from({ length: pageCount }).map((_, page) => (
-            <div key={page} className="preview__page" style={{ aspectRatio: `${pw} / ${ph}` }}>
-              {layout.slots.map((slot, slotIndex) => {
-                const globalIndex = page * layout.perPage + slotIndex
-                if (globalIndex >= slots.length) return null
-                const spec = slots[globalIndex]!
-                const isUpscaled = !spec.spacer && Boolean(upscaledSet[spec.cardId])
-                const position = {
-                  left: `${(slot.bleed.x / pw) * 100}%`,
-                  top: `${(slot.bleed.y / ph) * 100}%`,
-                  width: `${(slot.bleed.width / pw) * 100}%`,
-                  height: `${(slot.bleed.height / ph) * 100}%`
-                }
-                const dragProps = {
-                  draggable: true,
-                  onDragStart: () => {
-                    dragIndex.current = globalIndex
-                  },
-                  onDragOver: (event: React.DragEvent) => event.preventDefault(),
-                  onDrop: () => {
-                    if (dragIndex.current !== null) reorder(dragIndex.current, globalIndex)
-                    dragIndex.current = null
-                  },
-                  onDragEnd: () => {
-                    dragIndex.current = null
+            <Fragment key={page}>
+              <div className="preview__page" style={{ aspectRatio: `${pw} / ${ph}` }}>
+                {layout.slots.map((slot, slotIndex) => {
+                  const globalIndex = page * layout.perPage + slotIndex
+                  if (globalIndex >= slots.length) return null
+                  const spec = slots[globalIndex]!
+                  const isUpscaled = !spec.spacer && Boolean(upscaledSet[spec.cardId])
+                  const dragProps = {
+                    draggable: true,
+                    onDragStart: () => {
+                      dragIndex.current = globalIndex
+                    },
+                    onDragOver: (event: React.DragEvent) => event.preventDefault(),
+                    onDrop: () => {
+                      if (dragIndex.current !== null) reorder(dragIndex.current, globalIndex)
+                      dragIndex.current = null
+                    },
+                    onDragEnd: () => {
+                      dragIndex.current = null
+                    }
                   }
-                }
-                if (spec.spacer) {
                   return (
-                    <div
-                      key={slotIndex}
-                      className="preview__spacer"
-                      style={position}
-                      {...dragProps}
-                    >
-                      <button
-                        type="button"
-                        className="preview__spacer-remove"
-                        onClick={() => removeAt(globalIndex)}
-                        aria-label="Remove spacer"
-                        title="Remove spacer"
-                      >
-                        ✕
-                      </button>
-                    </div>
+                    <Fragment key={slotIndex}>
+                      {spec.spacer ? (
+                        <div
+                          className="preview__spacer"
+                          style={rectStyle(slot.bleed)}
+                          {...dragProps}
+                        >
+                          <button
+                            type="button"
+                            className="preview__spacer-remove"
+                            onClick={() => removeAt(globalIndex)}
+                            aria-label="Remove spacer"
+                            title="Remove spacer"
+                          >
+                            ✕
+                          </button>
+                        </div>
+                      ) : (
+                        <img
+                          className="preview__card"
+                          src={faceImageUrl(
+                            spec.cardId,
+                            spec.faceIndex,
+                            isUpscaled ? 'upscaled' : 'source',
+                            isUpscaled ? settingsVersion : undefined
+                          )}
+                          alt=""
+                          loading="lazy"
+                          {...dragProps}
+                          style={rectStyle(slot.bleed)}
+                        />
+                      )}
+                      {!spec.spacer && (
+                        <CutGuide style={rectStyle(slot.cut)} kind={options.cutGuideStyle} />
+                      )}
+                    </Fragment>
                   )
-                }
-                return (
-                  <img
-                    key={slotIndex}
-                    className="preview__card"
-                    src={faceImageUrl(
-                      spec.cardId,
-                      spec.faceIndex,
-                      isUpscaled ? 'upscaled' : 'source',
-                      isUpscaled ? settingsVersion : undefined
-                    )}
-                    alt=""
-                    loading="lazy"
-                    {...dragProps}
-                    style={position}
-                  />
-                )
-              })}
-            </div>
+                })}
+              </div>
+
+              {duplex && (
+                <div
+                  className="preview__page preview__page--back"
+                  style={{ aspectRatio: `${pw} / ${ph}` }}
+                >
+                  <span className="preview__page-tag">Back</span>
+                  {layout.slots.map((slot, slotIndex) => {
+                    const globalIndex = page * layout.perPage + slotIndex
+                    if (globalIndex >= slots.length) return null
+                    const spec = slots[globalIndex]!
+                    if (spec.spacer) return null
+                    const isUpscaled = Boolean(upscaledSet[spec.cardId])
+                    const isDfc = (faceCounts.get(spec.cardId) ?? 1) > 1
+                    return (
+                      <Fragment key={slotIndex}>
+                        {isDfc ? (
+                          <img
+                            className="preview__card"
+                            src={faceImageUrl(
+                              spec.cardId,
+                              1,
+                              isUpscaled ? 'upscaled' : 'source',
+                              isUpscaled ? settingsVersion : undefined
+                            )}
+                            alt=""
+                            loading="lazy"
+                            style={mirrorStyle(slot.bleed)}
+                          />
+                        ) : (
+                          <div className="preview__back" style={mirrorStyle(slot.bleed)}>
+                            {options.cardBack === 'custom' ? 'Custom back' : 'Back'}
+                          </div>
+                        )}
+                        <CutGuide style={mirrorStyle(slot.cut)} kind={options.cutGuideStyle} />
+                      </Fragment>
+                    )
+                  })}
+                </div>
+              )}
+            </Fragment>
           ))}
         </div>
 

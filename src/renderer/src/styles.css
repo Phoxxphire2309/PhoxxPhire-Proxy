@@ -1717,6 +1717,77 @@ body {
   cursor: grabbing;
 }
 
+/* Cut-guide overlays in the preview (match the exported style). */
+.preview__cut {
+  position: absolute;
+  pointer-events: none;
+}
+
+.preview__cut--outline {
+  border: 1px solid rgba(150, 150, 150, 0.7);
+}
+
+.preview__cut-mark {
+  position: absolute;
+  width: 7px;
+  height: 7px;
+}
+
+.preview__cut-mark--tl {
+  top: 0;
+  left: 0;
+  border-top: 1px solid rgba(150, 150, 150, 0.85);
+  border-left: 1px solid rgba(150, 150, 150, 0.85);
+}
+
+.preview__cut-mark--tr {
+  top: 0;
+  right: 0;
+  border-top: 1px solid rgba(150, 150, 150, 0.85);
+  border-right: 1px solid rgba(150, 150, 150, 0.85);
+}
+
+.preview__cut-mark--bl {
+  bottom: 0;
+  left: 0;
+  border-bottom: 1px solid rgba(150, 150, 150, 0.85);
+  border-left: 1px solid rgba(150, 150, 150, 0.85);
+}
+
+.preview__cut-mark--br {
+  bottom: 0;
+  right: 0;
+  border-bottom: 1px solid rgba(150, 150, 150, 0.85);
+  border-right: 1px solid rgba(150, 150, 150, 0.85);
+}
+
+/* Duplex back page in the preview. */
+.preview__page--back {
+  outline: 1px dashed var(--border);
+}
+
+.preview__page-tag {
+  position: absolute;
+  top: 4px;
+  left: 6px;
+  z-index: 2;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.preview__back {
+  position: absolute;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 10px;
+  color: var(--muted);
+  background: #121316;
+  border-radius: 4px;
+}
+
 /* Blank layout spacer in the preview. */
 .preview__spacer {
   position: absolute;
