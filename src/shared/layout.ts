@@ -17,8 +17,9 @@ export type CutGuideStyle = 'none' | 'outline' | 'corners'
 export type CardBackStyle = 'none' | 'plain' | 'custom'
 /**
  * How the bleed border is produced:
- *  - 'solid'  — a flat band of the card's sampled border colour (default).
- *  - 'extend' — each edge pixel replicated straight outward.
+ *  - 'extend' — each edge pixel replicated straight outward (default; keeps the
+ *               artwork going, best for full-art cards).
+ *  - 'solid'  — a flat band of the card's sampled border colour.
  *  - 'zoom'   — no border; the card is enlarged at layout time to fill the bleed.
  */
 export type BleedMode = 'solid' | 'zoom' | 'extend'
@@ -77,7 +78,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   rowSpacingMm: 0,
   cutGuideStyle: 'outline',
   cardBack: 'none',
-  bleedMode: 'solid',
+  bleedMode: 'extend',
   scalePercent: 100,
   colorProfile: 'none',
   watermark: false

@@ -134,10 +134,9 @@ export async function finalizeUpscaled(
 /**
  * Adds a bleed border around a card. Corners are squared first (filled with the
  * sampled border colour). The border itself is then either:
- *  - 'solid'  — a flat band of the card's sampled border colour (the default;
- *               clean for any border, no streaks or mirror artifacts), or
- *  - 'extend' — each edge pixel replicated straight outward (carries edge art,
- *               but can streak on busy full-art edges).
+ *  - 'extend' — each edge pixel replicated straight outward (the default; keeps
+ *               the artwork going, best for full-art cards), or
+ *  - 'solid'  — a flat band of the card's sampled border colour.
  * Returns the input unchanged for 'zoom' mode or when there's no bleed (zoom
  * enlarges the card at layout time instead of adding a border).
  */
