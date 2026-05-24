@@ -28,6 +28,13 @@ export function ConfirmHost(): React.JSX.Element | null {
       <div className="confirm__panel">
         <h2 className="confirm__title">{request.title}</h2>
         {request.message && <p className="confirm__message">{request.message}</p>}
+        {request.list && request.list.length > 0 && (
+          <ul className="confirm__list">
+            {request.list.map((entry, index) => (
+              <li key={`${entry}:${index}`}>{entry}</li>
+            ))}
+          </ul>
+        )}
         <div className="confirm__actions">
           {request.options.map((option) => (
             <button

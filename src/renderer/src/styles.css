@@ -1679,6 +1679,19 @@ body {
   color: var(--muted);
 }
 
+.confirm__list {
+  max-height: 180px;
+  margin: 0 0 18px;
+  padding: 8px 12px 8px 28px;
+  overflow-y: auto;
+  font-size: 12px;
+  line-height: 1.6;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
 .confirm__actions {
   display: flex;
   flex-wrap: wrap;
@@ -1904,6 +1917,27 @@ body {
 .preview__footer {
   margin-top: 16px;
   justify-content: flex-end;
+}
+
+/* Sample opening hand */
+.hand {
+  width: min(900px, 100%);
+}
+
+.hand__cards {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  gap: 12px;
+  margin-top: 8px;
+}
+
+.hand__card {
+  width: 150px;
+  aspect-ratio: 745 / 1040;
+  object-fit: cover;
+  border-radius: 8px;
+  box-shadow: 0 6px 16px rgba(0, 0, 0, 0.4);
 }
 
 /* Page setup modal */

@@ -21,6 +21,7 @@ import { DeckStats } from '@renderer/components/DeckStats'
 import { ExportDialog } from '@renderer/components/ExportDialog'
 import { PrintPreview } from '@renderer/components/PrintPreview'
 import { PageSetup } from '@renderer/components/PageSetup'
+import { SampleHand } from '@renderer/components/SampleHand'
 
 function facesOf(item: DeckItem): number {
   return Math.max(1, item.card.faces.length)
@@ -180,6 +181,7 @@ export function DeckPanel(): React.JSX.Element {
   const [showExport, setShowExport] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [showPageSetup, setShowPageSetup] = useState(false)
+  const [showSampleHand, setShowSampleHand] = useState(false)
 
   const total = items.reduce((sum, item) => sum + item.quantities.reduce((a, b) => a + b, 0), 0)
   const totalPrice = items.reduce(
@@ -314,6 +316,9 @@ export function DeckPanel(): React.JSX.Element {
           <button className="deck__preview" type="button" onClick={() => setShowTokens(true)}>
             Tokens
           </button>
+          <button className="deck__preview" type="button" onClick={() => setShowSampleHand(true)}>
+            Sample hand
+          </button>
           <button
             className="deck__preview"
             type="button"
@@ -401,6 +406,7 @@ export function DeckPanel(): React.JSX.Element {
       )}
       {showPreview && <PrintPreview onClose={() => setShowPreview(false)} />}
       {showPageSetup && <PageSetup onClose={() => setShowPageSetup(false)} />}
+      {showSampleHand && <SampleHand onClose={() => setShowSampleHand(false)} />}
     </section>
   )
 }

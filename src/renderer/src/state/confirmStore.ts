@@ -11,6 +11,8 @@ export interface ConfirmOption {
 export interface ConfirmRequest {
   title: string
   message?: string
+  /** Optional scrollable list shown under the message (e.g. affected cards). */
+  list?: string[]
   options: ConfirmOption[]
 }
 

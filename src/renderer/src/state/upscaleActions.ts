@@ -37,6 +37,7 @@ export async function preUpscaleDeckWithConfirm(cards: Card[]): Promise<void> {
   const choice = await confirm({
     title: 'Pre-upscale deck',
     message: `Upscale all ${cards.length} cards, or only the ${lowRes.length} that aren't already high-resolution?`,
+    list: lowRes.map((card) => card.name),
     options: [
       { id: 'low', label: `Only low-res (${lowRes.length})`, primary: true },
       { id: 'all', label: `All ${cards.length}` }
