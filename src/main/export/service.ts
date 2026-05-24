@@ -60,9 +60,10 @@ export class ExportService {
     const slotKey = (slot: ExportSlot): string =>
       `${slot.upscale ? 'u' : 's'} ${slot.faceIndex} ${slot.cardId}`
 
-    // Prepare each unique image (per card / face / quality) exactly once.
+    // Prepare each unique image (per card / face / quality) exactly once. Blank
+    // spacer slots carry no image and map to index -1.
     const uniqueSlots = new Map<string, ExportSlot>()
-    for (const slot of slots) uniqueSlots.set(slotKey(slot), slot)
+    for (const slot of slots) if (!slot.spacer) uniqueSlots.set(slotKey(slot), slot)
     const keys = [...uniqueSlots.keys()]
     const keyToIndex = new Map(keys.map((key, index) => [key, index]))
     const uniqueImages: Uint8Array[] = []
@@ -79,7 +80,9 @@ export class ExportService {
       this.deps.emit({ phase: 'preparing', completed, total: keys.length })
     }
 
-    const slotImageIndices = slots.map((slot) => keyToIndex.get(slotKey(slot))!)
+    const slotImageIndices = slots.map((slot) =>
+      slot.spacer ? -1 : keyToIndex.get(slotKey(slot))!
+    )
 
     // Custom card back (when selected and available): square its corners first
     // (always — even for backs set before squaring existed, and regardless of
@@ -114,7 +117,7 @@ export class ExportService {
 
     return {
       path: savePath,
-      cardCount: slots.length,
+      cardCount: slots.filter((slot) => !slot.spacer).length,
       pageCount: pageCountFor(slots.length, layout.perPage)
     }
   }

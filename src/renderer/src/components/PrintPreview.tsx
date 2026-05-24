@@ -11,6 +11,8 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
   const items = useDeckStore((state) => state.items)
   const slots = useOrderStore((state) => state.slots)
   const reorder = useOrderStore((state) => state.reorder)
+  const addSpacer = useOrderStore((state) => state.addSpacer)
+  const removeAt = useOrderStore((state) => state.removeAt)
   const syncFromDeck = useOrderStore((state) => state.syncFromDeck)
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
@@ -81,7 +83,47 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
                 const globalIndex = page * layout.perPage + slotIndex
                 if (globalIndex >= slots.length) return null
                 const spec = slots[globalIndex]!
-                const isUpscaled = Boolean(upscaledSet[spec.cardId])
+                const isUpscaled = !spec.spacer && Boolean(upscaledSet[spec.cardId])
+                const position = {
+                  left: `${(slot.bleed.x / pw) * 100}%`,
+                  top: `${(slot.bleed.y / ph) * 100}%`,
+                  width: `${(slot.bleed.width / pw) * 100}%`,
+                  height: `${(slot.bleed.height / ph) * 100}%`
+                }
+                const dragProps = {
+                  draggable: true,
+                  onDragStart: () => {
+                    dragIndex.current = globalIndex
+                  },
+                  onDragOver: (event: React.DragEvent) => event.preventDefault(),
+                  onDrop: () => {
+                    if (dragIndex.current !== null) reorder(dragIndex.current, globalIndex)
+                    dragIndex.current = null
+                  },
+                  onDragEnd: () => {
+                    dragIndex.current = null
+                  }
+                }
+                if (spec.spacer) {
+                  return (
+                    <div
+                      key={slotIndex}
+                      className="preview__spacer"
+                      style={position}
+                      {...dragProps}
+                    >
+                      <button
+                        type="button"
+                        className="preview__spacer-remove"
+                        onClick={() => removeAt(globalIndex)}
+                        aria-label="Remove spacer"
+                        title="Remove spacer"
+                      >
+                        ✕
+                      </button>
+                    </div>
+                  )
+                }
                 return (
                   <img
                     key={slotIndex}
@@ -94,24 +136,8 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
                     )}
                     alt=""
                     loading="lazy"
-                    draggable
-                    onDragStart={() => {
-                      dragIndex.current = globalIndex
-                    }}
-                    onDragOver={(event) => event.preventDefault()}
-                    onDrop={() => {
-                      if (dragIndex.current !== null) reorder(dragIndex.current, globalIndex)
-                      dragIndex.current = null
-                    }}
-                    onDragEnd={() => {
-                      dragIndex.current = null
-                    }}
-                    style={{
-                      left: `${(slot.bleed.x / pw) * 100}%`,
-                      top: `${(slot.bleed.y / ph) * 100}%`,
-                      width: `${(slot.bleed.width / pw) * 100}%`,
-                      height: `${(slot.bleed.height / ph) * 100}%`
-                    }}
+                    {...dragProps}
+                    style={position}
                   />
                 )
               })}
@@ -120,6 +146,9 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
         </div>
 
         <div className="import__actions preview__footer">
+          <button className="toggle" type="button" onClick={addSpacer}>
+            Add spacer
+          </button>
           <button
             className="search__button"
             type="button"

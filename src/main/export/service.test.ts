@@ -188,6 +188,31 @@ describe('ExportService.export', () => {
     expect(doc.getPageCount()).toBe(1)
   })
 
+  it('renders a blank spacer slot without an image and excludes it from the card count', async () => {
+    const cards: Record<string, Card> = { a: card('a', 1) }
+    const ensureImage = vi.fn(async () => imagePath)
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage,
+      emit: () => {}
+    })
+    const savePath = join(dir, 'spacer.pdf')
+    const result = await service.export(
+      [
+        { cardId: 'a', faceIndex: 0, upscale: false },
+        { cardId: '', faceIndex: 0, upscale: false, spacer: true },
+        { cardId: 'a', faceIndex: 0, upscale: false }
+      ],
+      DEFAULT_EXPORT_OPTIONS,
+      savePath
+    )
+    // Two real cards (spacer excluded), and no image fetched for the spacer.
+    expect(result.cardCount).toBe(2)
+    expect(ensureImage).toHaveBeenCalledTimes(1) // the two 'a' slots dedupe to one image
+    const doc = await PDFDocument.load(await readFile(savePath))
+    expect(doc.getPageCount()).toBe(1)
+  })
+
   it('renders a valid PDF when a slot is flagged to rotate', async () => {
     const cards: Record<string, Card> = { a: card('a', 1) }
     const service = new ExportService({

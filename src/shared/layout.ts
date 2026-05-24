@@ -181,6 +181,8 @@ export interface ExportSlot {
   upscale: boolean
   /** Rotate this card 180° when drawn (e.g. flip/Aftermath cards or alignment). */
   rotate?: boolean
+  /** A blank layout spacer — occupies a grid cell but prints nothing. */
+  spacer?: boolean
 }
 
 export interface ExportRequest {

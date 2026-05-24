@@ -129,13 +129,22 @@ export async function buildProxyPdf(
   for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
     const page = doc.addPage([layout.pageWidthPt, layout.pageHeightPt])
     let slotsOnPage = 0
+    const blankOnPage: boolean[] = []
 
     for (let slotIndex = 0; slotIndex < layout.perPage; slotIndex += 1) {
       const globalIndex = pageIndex * layout.perPage + slotIndex
       if (globalIndex >= slotImageIndices.length) break
 
       const slot = layout.slots[slotIndex]!
-      const image = embedded[slotImageIndices[globalIndex]!]!
+      const imageIndex = slotImageIndices[globalIndex]!
+      // A spacer (index < 0) occupies the grid cell but prints nothing.
+      if (imageIndex < 0) {
+        blankOnPage[slotIndex] = true
+        slotsOnPage += 1
+        continue
+      }
+      blankOnPage[slotIndex] = false
+      const image = embedded[imageIndex]!
       const drawY = layout.pageHeightPt - (slot.bleed.y + slot.bleed.height)
       if (slotRotations[globalIndex]) {
         // 180° rotation pivots at the bottom-left, so shift the origin to the
@@ -163,6 +172,7 @@ export async function buildProxyPdf(
     if (options.cardBack !== 'none') {
       const backPage = doc.addPage([layout.pageWidthPt, layout.pageHeightPt])
       for (let slotIndex = 0; slotIndex < slotsOnPage; slotIndex += 1) {
+        if (blankOnPage[slotIndex]) continue // no back for a spacer cell
         const slot = layout.slots[slotIndex]!
         if (backEmbed) {
           // Mirror the X position so backs line up with fronts under duplex printing.

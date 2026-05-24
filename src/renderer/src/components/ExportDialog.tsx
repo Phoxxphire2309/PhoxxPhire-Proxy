@@ -63,12 +63,17 @@ export function ExportDialog({
   )
 
   const exportSlots: ExportSlot[] = slots
-    .filter((slot) => !skipIds.has(slot.cardId))
-    .map((slot) => ({
-      ...slot,
-      upscale: Boolean(upscaledSet[slot.cardId]),
-      rotate: Boolean(rotated[slot.cardId])
-    }))
+    .filter((slot) => slot.spacer || !skipIds.has(slot.cardId))
+    .map((slot) =>
+      slot.spacer
+        ? { cardId: '', faceIndex: 0, upscale: false, spacer: true }
+        : {
+            cardId: slot.cardId,
+            faceIndex: slot.faceIndex,
+            upscale: Boolean(upscaledSet[slot.cardId]),
+            rotate: Boolean(rotated[slot.cardId])
+          }
+    )
   const totalCards = exportSlots.length
   const skippedCount = slots.length - exportSlots.length
   const upscaledCount = items.filter((item) => upscaledSet[item.card.id]).length

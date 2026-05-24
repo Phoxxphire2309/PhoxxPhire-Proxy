@@ -50,4 +50,25 @@ describe('orderStore.syncFromDeck', () => {
     expect(slots.filter((s) => s.faceIndex === 0)).toHaveLength(2)
     expect(slots.filter((s) => s.faceIndex === 1)).toHaveLength(2)
   })
+
+  it('keeps spacers across a re-sync when the card set is unchanged', () => {
+    const deck = [item('a', 1, 'main')]
+    useOrderStore.getState().syncFromDeck(deck)
+    useOrderStore.getState().addSpacer()
+    expect(useOrderStore.getState().slots).toHaveLength(2)
+    // Same cards → spacer preserved.
+    useOrderStore.getState().syncFromDeck(deck)
+    expect(useOrderStore.getState().slots.filter((s) => s.spacer)).toHaveLength(1)
+  })
+
+  it('drops spacers when the card set changes, and removeAt deletes a slot', () => {
+    useOrderStore.getState().syncFromDeck([item('a', 1, 'main')])
+    useOrderStore.getState().addSpacer()
+    useOrderStore.getState().removeAt(0) // remove the card slot
+    expect(useOrderStore.getState().slots).toHaveLength(1)
+    // Card set changed → rebuild without spacers.
+    useOrderStore.getState().syncFromDeck([item('a', 1, 'main'), item('b', 1, 'main')])
+    expect(useOrderStore.getState().slots.some((s) => s.spacer)).toBe(false)
+    expect(useOrderStore.getState().slots).toHaveLength(2)
+  })
 })

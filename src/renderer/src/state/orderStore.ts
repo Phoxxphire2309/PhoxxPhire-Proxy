@@ -1,24 +1,31 @@
 import { create } from 'zustand'
 import type { DeckItem } from '@renderer/state/deckStore'
 
-/** One printable slot in the preview/export order (one per printed card image). */
+/** One printable slot in the preview/export order (one per printed card image, or a blank spacer). */
 export interface OrderSlot {
   cardId: string
   faceIndex: number
+  /** A blank layout spacer — occupies a grid cell but prints nothing. */
+  spacer?: boolean
 }
 
 interface OrderState {
   /** Fully expanded, user-orderable list of printable slots. */
   slots: OrderSlot[]
-  /** Rebuild the slot list from the deck, preserving manual order when unchanged. */
+  /** Rebuild the slot list from the deck, preserving manual order + spacers when card set is unchanged. */
   syncFromDeck: (items: DeckItem[]) => void
   /** Immutably move the slot at `fromIndex` to `toIndex`. */
   reorder: (fromIndex: number, toIndex: number) => void
+  /** Append a blank spacer to the end of the order. */
+  addSpacer: () => void
+  /** Remove the slot at `index` (used to delete spacers). */
+  removeAt: (index: number) => void
 }
 
-/** The deck-implied set of slots, ignoring order (sorted multiset signature). */
+/** The deck-implied set of card slots (spacers excluded), ignoring order. */
 function signature(slots: OrderSlot[]): string {
   return slots
+    .filter((slot) => !slot.spacer)
     .map((slot) => `${slot.cardId}#${slot.faceIndex}`)
     .sort()
     .join('|')
@@ -64,5 +71,10 @@ export const useOrderStore = create<OrderState>((set, get) => ({
       const [moved] = slots.splice(fromIndex, 1)
       slots.splice(toIndex, 0, moved!)
       return { slots }
-    })
+    }),
+
+  addSpacer: () =>
+    set((state) => ({ slots: [...state.slots, { cardId: '', faceIndex: 0, spacer: true }] })),
+
+  removeAt: (index) => set((state) => ({ slots: state.slots.filter((_slot, i) => i !== index) }))
 }))
