@@ -31,6 +31,11 @@ interface DeckState {
   importing: boolean
   importErrors: string[]
   bulkRunning: boolean
+  /** Undo/redo history of the `items` list (oldest first in `past`). */
+  past: DeckItem[][]
+  future: DeckItem[][]
+  undo: () => void
+  redo: () => void
   add: (card: Card, quantity?: number) => void
   setItems: (items: LoadableItem[]) => void
   setFaceQuantity: (cardId: string, faceIndex: number, quantity: number) => void
@@ -80,6 +85,28 @@ export const useDeckStore = create<DeckState>((set, get) => ({
   importing: false,
   importErrors: [],
   bulkRunning: false,
+  past: [],
+  future: [],
+
+  undo: () =>
+    set((state) => {
+      const previous = state.past[state.past.length - 1]
+      if (previous === undefined) return state
+      applyingHistory = true
+      return {
+        items: previous,
+        past: state.past.slice(0, -1),
+        future: [state.items, ...state.future]
+      }
+    }),
+
+  redo: () =>
+    set((state) => {
+      const next = state.future[0]
+      if (next === undefined) return state
+      applyingHistory = true
+      return { items: next, past: [...state.past, state.items], future: state.future.slice(1) }
+    }),
 
   add: (card, quantity = 1) =>
     set((state) => ({
@@ -231,6 +258,28 @@ export const useDeckStore = create<DeckState>((set, get) => ({
     }
   }
 }))
+
+/** Cap on undo history depth. */
+const MAX_HISTORY = 50
+/** Set while undo/redo applies a snapshot, so the recorder doesn't log that change. */
+let applyingHistory = false
+let lastRecordedItems = useDeckStore.getState().items
+
+// Record every `items` change (except those made by undo/redo) into the past
+// stack, clearing the redo stack on a fresh edit.
+useDeckStore.subscribe((state) => {
+  if (state.items === lastRecordedItems) return
+  const previous = lastRecordedItems
+  lastRecordedItems = state.items
+  if (applyingHistory) {
+    applyingHistory = false
+    return
+  }
+  useDeckStore.setState((current) => ({
+    past: [...current.past, previous].slice(-MAX_HISTORY),
+    future: []
+  }))
+})
 
 /** Shared import flow for text and URL imports. */
 async function runImport(

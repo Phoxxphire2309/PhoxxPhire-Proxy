@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { bestUsd, faceImageUrl, formatUsd } from '@shared/scryfall'
 import {
   DECK_SECTIONS,
@@ -128,6 +128,10 @@ export function DeckPanel(): React.JSX.Element {
   const runUpscale = useUpscaleStore((state) => state.runUpscale)
   const bulkSwitchPrintings = useDeckStore((state) => state.bulkSwitchPrintings)
   const bulkRunning = useDeckStore((state) => state.bulkRunning)
+  const undo = useDeckStore((state) => state.undo)
+  const redo = useDeckStore((state) => state.redo)
+  const canUndo = useDeckStore((state) => state.past.length > 0)
+  const canRedo = useDeckStore((state) => state.future.length > 0)
   const [showImport, setShowImport] = useState(false)
   const [showTokens, setShowTokens] = useState(false)
   const [showStats, setShowStats] = useState(false)
@@ -141,6 +145,19 @@ export function DeckPanel(): React.JSX.Element {
     (sum, item) => sum + (bestUsd(item.card.prices) ?? 0) * Math.max(...item.quantities),
     0
   )
+
+  // Cmd/Ctrl+Z to undo, Shift to redo.
+  useEffect(() => {
+    const onKey = (event: KeyboardEvent): void => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'z') {
+        event.preventDefault()
+        if (event.shiftKey) redo()
+        else undo()
+      }
+    }
+    window.addEventListener('keydown', onKey)
+    return () => window.removeEventListener('keydown', onKey)
+  }, [undo, redo])
 
   const usedSections = DECK_SECTIONS.filter((section) =>
     items.some((item) => item.section === section)
@@ -174,6 +191,26 @@ export function DeckPanel(): React.JSX.Element {
       </div>
 
       <div className="deck__toolbar">
+        <button
+          className="toggle"
+          type="button"
+          onClick={undo}
+          disabled={!canUndo}
+          aria-label="Undo"
+          title="Undo (Cmd/Ctrl+Z)"
+        >
+          ↶
+        </button>
+        <button
+          className="toggle"
+          type="button"
+          onClick={redo}
+          disabled={!canRedo}
+          aria-label="Redo"
+          title="Redo (Shift+Cmd/Ctrl+Z)"
+        >
+          ↷
+        </button>
         <button className="toggle" type="button" onClick={() => setShowImport(true)}>
           Import
         </button>
