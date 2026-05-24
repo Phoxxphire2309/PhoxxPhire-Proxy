@@ -10,6 +10,8 @@ export interface SearchFilters {
   rarity: string
   format: string
   set: string
+  /** Scryfall language code (e.g. ja, de); empty = English/default. */
+  language: string
 }
 
 export const EMPTY_FILTERS: SearchFilters = {
@@ -17,8 +19,24 @@ export const EMPTY_FILTERS: SearchFilters = {
   type: '',
   rarity: '',
   format: '',
-  set: ''
+  set: '',
+  language: ''
 }
+
+/** Scryfall language codes we offer, with display labels. */
+export const LANGUAGES: { code: string; label: string }[] = [
+  { code: '', label: 'English (default)' },
+  { code: 'es', label: 'Spanish' },
+  { code: 'fr', label: 'French' },
+  { code: 'de', label: 'German' },
+  { code: 'it', label: 'Italian' },
+  { code: 'pt', label: 'Portuguese' },
+  { code: 'ja', label: 'Japanese' },
+  { code: 'ko', label: 'Korean' },
+  { code: 'ru', label: 'Russian' },
+  { code: 'zhs', label: 'Chinese (Simplified)' },
+  { code: 'zht', label: 'Chinese (Traditional)' }
+]
 
 function quoteIfNeeded(value: string): string {
   return /\s/.test(value) ? `"${value}"` : value
@@ -34,6 +52,7 @@ export function composeQuery(text: string, filters: SearchFilters): string {
   if (filters.rarity) parts.push(`r:${filters.rarity}`)
   if (filters.format) parts.push(`f:${filters.format}`)
   if (filters.set.trim()) parts.push(`set:${filters.set.trim()}`)
+  if (filters.language) parts.push(`lang:${filters.language}`)
 
   return parts.join(' ')
 }
@@ -45,6 +64,7 @@ export function hasActiveFilters(filters: SearchFilters): boolean {
     filters.type.trim() !== '' ||
     filters.rarity !== '' ||
     filters.format !== '' ||
-    filters.set.trim() !== ''
+    filters.set.trim() !== '' ||
+    filters.language !== ''
   )
 }

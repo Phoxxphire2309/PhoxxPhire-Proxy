@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { hasActiveFilters } from '@shared/scryfallQuery'
+import { hasActiveFilters, LANGUAGES } from '@shared/scryfallQuery'
 import { useSearchStore } from '@renderer/state/searchStore'
 
 const COLORS: { code: string; label: string }[] = [
@@ -108,6 +108,20 @@ export function Filters(): React.JSX.Element {
               onChange={(event) => setFilters({ set: event.target.value })}
               placeholder="set code, e.g. mh3"
             />
+          </label>
+
+          <label className="filters__group">
+            <span className="filters__label">Language</span>
+            <select
+              value={filters.language}
+              onChange={(event) => setFilters({ language: event.target.value })}
+            >
+              {LANGUAGES.map((language) => (
+                <option key={language.code} value={language.code}>
+                  {language.label}
+                </option>
+              ))}
+            </select>
           </label>
 
           <div className="filters__actions">
