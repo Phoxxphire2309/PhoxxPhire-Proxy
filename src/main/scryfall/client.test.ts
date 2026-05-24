@@ -92,6 +92,25 @@ describe('ScryfallClient', () => {
     await expect(makeClient(fetchFn).getById('bad')).rejects.toBeInstanceOf(ScryfallError)
   })
 
+  it('reports a clear timeout message when the request is aborted', async () => {
+    // Reject only when our timeout aborts the request, mimicking a slow server.
+    const fetchFn = ((_url: string | URL, init?: RequestInit) =>
+      new Promise<Response>((_resolve, reject) => {
+        init?.signal?.addEventListener('abort', () =>
+          reject(new Error('This operation was aborted'))
+        )
+      })) as typeof fetch
+    const client = new ScryfallClient({
+      userAgent: 'PhoxxPhireProxy/test',
+      limiter: new RateLimiter(0),
+      sleepFn: async () => {},
+      maxRetries: 0,
+      timeoutMs: 5,
+      fetchFn
+    })
+    await expect(client.search('bolt')).rejects.toThrow(/didn't respond within/)
+  })
+
   it('returns autocomplete suggestions and short-circuits empty queries', async () => {
     const fetchFn = vi.fn<typeof fetch>(async () => jsonResponse({ data: ['Bolt', 'Boltography'] }))
     const client = makeClient(fetchFn)

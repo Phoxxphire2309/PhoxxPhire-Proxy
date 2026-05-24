@@ -5,7 +5,7 @@ import { normalizeCard } from './normalize'
 const DEFAULT_BASE_URL = 'https://api.scryfall.com'
 // Scryfall requires an Accept header; a weighted wildcard is explicitly allowed.
 const ACCEPT = 'application/json;q=0.9,*/*;q=0.8'
-const DEFAULT_TIMEOUT_MS = 10_000
+const DEFAULT_TIMEOUT_MS = 15_000
 const DEFAULT_MAX_RETRIES = 2
 const MAX_BACKOFF_MS = 8_000
 
@@ -154,10 +154,18 @@ export class ScryfallClient {
         })
       } catch (error) {
         clearTimeout(timer)
+        // `controller.signal.aborted` is only ever set by our own timeout timer.
+        const timedOut = controller.signal.aborted
         if (attempt < this.maxRetries) {
           attempt += 1
           await this.sleepFn(this.backoffMs(attempt))
           continue
+        }
+        if (timedOut) {
+          throw new ScryfallError(
+            `Scryfall didn't respond within ${Math.round(this.timeoutMs / 1000)}s — check your connection and try again.`,
+            0
+          )
         }
         const reason = error instanceof Error ? error.message : 'unknown error'
         throw new ScryfallError(`Network error contacting Scryfall: ${reason}`, 0)
