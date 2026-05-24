@@ -3,6 +3,7 @@ import { dirname, join } from 'node:path'
 import { dialog, ipcMain } from 'electron'
 import sharp from 'sharp'
 import { IpcChannel, type CardBackInfo } from '@shared/ipc'
+import { squareOffCorners } from '../image/processor'
 
 /** Lets a user supply their own card-back image for duplex printing and exports. */
 export interface CardBackManager {
@@ -38,7 +39,10 @@ export function initCardBack(userDataDir: string): CardBackManager {
 
     await mkdir(dirname(backPath), { recursive: true })
     const png = await sharp(file, { limitInputPixels: false }).png().toBuffer()
-    await writeFile(backPath, png)
+    // Square any transparent rounded corners now (with the back's border colour),
+    // matching how Scryfall source images are squared on download.
+    const squared = await squareOffCorners(new Uint8Array(png))
+    await writeFile(backPath, squared)
     return { hasCustom: true }
   })
 

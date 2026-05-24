@@ -188,13 +188,16 @@ describe('ExportService.export', () => {
     expect(doc.getPageCount()).toBe(1)
   })
 
-  it('interleaves a back page using the custom card back when selected', async () => {
+  it('interleaves a back page, squaring/bleeding the custom back like the fronts', async () => {
     const cards: Record<string, Card> = { a: card('a', 1) }
     const customCardBack = vi.fn(async () => new Uint8Array(PNG_1X1))
+    // Spy on the shared image pipeline to confirm the back is processed too.
+    const processImage = vi.fn(async (bytes: Uint8Array) => bytes)
     const service = new ExportService({
       resolveCard: async (id) => cards[id]!,
       ensureImage: async () => imagePath,
       customCardBack,
+      processImage,
       emit: () => {}
     })
 
@@ -206,6 +209,8 @@ describe('ExportService.export', () => {
     )
 
     expect(customCardBack).toHaveBeenCalled()
+    // processImage runs for the front face AND the custom back (2 calls).
+    expect(processImage).toHaveBeenCalledTimes(2)
     // One front page + one interleaved back page.
     const doc = await PDFDocument.load(await readFile(savePath))
     expect(doc.getPageCount()).toBe(2)

@@ -81,12 +81,18 @@ export class ExportService {
 
     const slotImageIndices = slots.map((slot) => keyToIndex.get(slotKey(slot))!)
 
-    // Custom card back (when selected and available); export silently uses the
-    // plain back otherwise.
-    const backImage =
-      options.cardBack === 'custom'
-        ? ((await this.deps.customCardBack?.()) ?? undefined)
-        : undefined
+    // Custom card back (when selected and available), run through the same
+    // corner-squaring + bleed + colour pipeline as the fronts so it matches.
+    // Export silently uses the plain back otherwise.
+    let backImage: Uint8Array | undefined
+    if (options.cardBack === 'custom') {
+      const rawBack = (await this.deps.customCardBack?.()) ?? null
+      if (rawBack) {
+        backImage = this.deps.processImage
+          ? await this.deps.processImage(rawBack, options)
+          : rawBack
+      }
+    }
 
     this.deps.emit({ phase: 'rendering', completed: keys.length, total: keys.length })
     const pdf = await buildProxyPdf(uniqueImages, slotImageIndices, options, backImage)
