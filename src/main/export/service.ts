@@ -81,16 +81,19 @@ export class ExportService {
 
     const slotImageIndices = slots.map((slot) => keyToIndex.get(slotKey(slot))!)
 
-    // Custom card back (when selected and available), run through the same
-    // corner-squaring + bleed + colour pipeline as the fronts so it matches.
+    // Custom card back (when selected and available): square its corners first
+    // (always — even for backs set before squaring existed, and regardless of
+    // bleed mode), then run the same bleed + colour pipeline as the fronts.
     // Export silently uses the plain back otherwise.
     let backImage: Uint8Array | undefined
     if (options.cardBack === 'custom') {
       const rawBack = (await this.deps.customCardBack?.()) ?? null
       if (rawBack) {
+        const squareCorners = this.deps.squareCorners ?? squareOffCorners
+        const squaredBack = await squareCorners(rawBack)
         backImage = this.deps.processImage
-          ? await this.deps.processImage(rawBack, options)
-          : rawBack
+          ? await this.deps.processImage(squaredBack, options)
+          : squaredBack
       }
     }
 

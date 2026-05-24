@@ -188,30 +188,34 @@ describe('ExportService.export', () => {
     expect(doc.getPageCount()).toBe(1)
   })
 
-  it('interleaves a back page, squaring/bleeding the custom back like the fronts', async () => {
+  it('squares and processes the custom back, even with zero bleed', async () => {
     const cards: Record<string, Card> = { a: card('a', 1) }
-    const customCardBack = vi.fn(async () => new Uint8Array(PNG_1X1))
-    // Spy on the shared image pipeline to confirm the back is processed too.
+    const backBytes = new Uint8Array(PNG_1X1)
+    const customCardBack = vi.fn(async () => backBytes)
+    const squareCorners = vi.fn(async (bytes: Uint8Array) => bytes)
     const processImage = vi.fn(async (bytes: Uint8Array) => bytes)
     const service = new ExportService({
       resolveCard: async (id) => cards[id]!,
       ensureImage: async () => imagePath,
       customCardBack,
+      squareCorners,
       processImage,
       emit: () => {}
     })
 
     const savePath = join(dir, 'back.pdf')
+    // bleedMm 0 — extendBleed would skip squaring, so the explicit square matters.
     await service.export(
       [{ cardId: 'a', faceIndex: 0, upscale: false }],
-      { ...DEFAULT_EXPORT_OPTIONS, cardBack: 'custom' },
+      { ...DEFAULT_EXPORT_OPTIONS, cardBack: 'custom', bleedMm: 0 },
       savePath
     )
 
     expect(customCardBack).toHaveBeenCalled()
-    // processImage runs for the front face AND the custom back (2 calls).
+    // The back is squared explicitly...
+    expect(squareCorners).toHaveBeenCalledWith(backBytes)
+    // ...and run through the bleed/colour pipeline (front + back = 2 calls).
     expect(processImage).toHaveBeenCalledTimes(2)
-    // One front page + one interleaved back page.
     const doc = await PDFDocument.load(await readFile(savePath))
     expect(doc.getPageCount()).toBe(2)
   })
