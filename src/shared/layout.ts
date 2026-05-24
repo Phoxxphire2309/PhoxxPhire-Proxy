@@ -179,6 +179,8 @@ export interface ExportSlot {
   faceIndex: number
   /** Whether to use the upscaled image for this slot (else the original). */
   upscale: boolean
+  /** Rotate this card 180° when drawn (e.g. flip/Aftermath cards or alignment). */
+  rotate?: boolean
 }
 
 export interface ExportRequest {

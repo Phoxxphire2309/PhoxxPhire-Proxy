@@ -97,8 +97,16 @@ export class ExportService {
       }
     }
 
+    const slotRotations = slots.map((slot) => slot.rotate ?? false)
+
     this.deps.emit({ phase: 'rendering', completed: keys.length, total: keys.length })
-    const pdf = await buildProxyPdf(uniqueImages, slotImageIndices, options, backImage)
+    const pdf = await buildProxyPdf(
+      uniqueImages,
+      slotImageIndices,
+      options,
+      backImage,
+      slotRotations
+    )
     await writeFile(savePath, pdf)
 
     const layout = computePageLayout(options)

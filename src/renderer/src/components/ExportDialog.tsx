@@ -5,6 +5,7 @@ import { useOrderStore } from '@renderer/state/orderStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 import { useCollectionStore } from '@renderer/state/collectionStore'
+import { useRotateStore } from '@renderer/state/rotateStore'
 import { PrintPartner } from '@renderer/components/PrintPartner'
 
 type Phase = 'configure' | 'running' | 'done' | 'error'
@@ -22,6 +23,7 @@ export function ExportDialog({
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
   const options = usePageSetupStore((state) => state.options)
   const collection = useCollectionStore()
+  const rotated = useRotateStore((state) => state.rotated)
   const [phase, setPhase] = useState<Phase>('configure')
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   const [message, setMessage] = useState<string>('')
@@ -62,7 +64,11 @@ export function ExportDialog({
 
   const exportSlots: ExportSlot[] = slots
     .filter((slot) => !skipIds.has(slot.cardId))
-    .map((slot) => ({ ...slot, upscale: Boolean(upscaledSet[slot.cardId]) }))
+    .map((slot) => ({
+      ...slot,
+      upscale: Boolean(upscaledSet[slot.cardId]),
+      rotate: Boolean(rotated[slot.cardId])
+    }))
   const totalCards = exportSlots.length
   const skippedCount = slots.length - exportSlots.length
   const upscaledCount = items.filter((item) => upscaledSet[item.card.id]).length

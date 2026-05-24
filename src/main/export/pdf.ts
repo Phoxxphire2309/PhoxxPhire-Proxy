@@ -109,7 +109,8 @@ export async function buildProxyPdf(
   uniqueImages: Uint8Array[],
   slotImageIndices: number[],
   options: ExportOptions,
-  backImage?: Uint8Array
+  backImage?: Uint8Array,
+  slotRotations: boolean[] = []
 ): Promise<Uint8Array> {
   const layout = computePageLayout(options)
   const doc = await PDFDocument.create()
@@ -136,12 +137,24 @@ export async function buildProxyPdf(
       const slot = layout.slots[slotIndex]!
       const image = embedded[slotImageIndices[globalIndex]!]!
       const drawY = layout.pageHeightPt - (slot.bleed.y + slot.bleed.height)
-      page.drawImage(image, {
-        x: slot.bleed.x,
-        y: drawY,
-        width: slot.bleed.width,
-        height: slot.bleed.height
-      })
+      if (slotRotations[globalIndex]) {
+        // 180° rotation pivots at the bottom-left, so shift the origin to the
+        // opposite corner to keep the card in its slot.
+        page.drawImage(image, {
+          x: slot.bleed.x + slot.bleed.width,
+          y: drawY + slot.bleed.height,
+          width: slot.bleed.width,
+          height: slot.bleed.height,
+          rotate: degrees(180)
+        })
+      } else {
+        page.drawImage(image, {
+          x: slot.bleed.x,
+          y: drawY,
+          width: slot.bleed.width,
+          height: slot.bleed.height
+        })
+      }
       drawCutGuide(page, layout.pageHeightPt, slot.cut, options.cutGuideStyle)
       if (watermarkFont) drawWatermark(page, layout.pageHeightPt, slot.cut, watermarkFont)
       slotsOnPage += 1

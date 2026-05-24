@@ -8,6 +8,7 @@ import {
 } from '@shared/deck'
 import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
 import { useCollectionStore } from '@renderer/state/collectionStore'
+import { useRotateStore } from '@renderer/state/rotateStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 import { ImportDialog } from '@renderer/components/ImportDialog'
@@ -41,6 +42,8 @@ function DeckFaceRow({
   const skipOwned = useCollectionStore((state) => state.skipOwned)
   const forced = useCollectionStore((state) => state.forcePrint[item.card.id] === true)
   const toggleForce = useCollectionStore((state) => state.toggleForce)
+  const rotated = useRotateStore((state) => state.rotated[item.card.id] === true)
+  const toggleRotate = useRotateStore((state) => state.toggle)
 
   const multiFace = item.card.faces.length > 1
   const faceName = multiFace ? (item.card.faces[faceIndex]?.name ?? item.card.name) : item.card.name
@@ -110,6 +113,18 @@ function DeckFaceRow({
             </option>
           ))}
         </select>
+      )}
+      {faceIndex === 0 && (
+        <button
+          type="button"
+          className={`ditem__rotate${rotated ? ' is-on' : ''}`}
+          onClick={() => toggleRotate(item.card.id)}
+          aria-pressed={rotated}
+          aria-label={`Rotate ${item.card.name} 180°`}
+          title="Rotate 180° when printed"
+        >
+          ⟳
+        </button>
       )}
       {faceIndex === 0 && owned && skipOwned && (
         <button

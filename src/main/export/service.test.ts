@@ -188,6 +188,24 @@ describe('ExportService.export', () => {
     expect(doc.getPageCount()).toBe(1)
   })
 
+  it('renders a valid PDF when a slot is flagged to rotate', async () => {
+    const cards: Record<string, Card> = { a: card('a', 1) }
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage: async () => imagePath,
+      emit: () => {}
+    })
+    const savePath = join(dir, 'rot.pdf')
+    const result = await service.export(
+      [{ cardId: 'a', faceIndex: 0, upscale: false, rotate: true }],
+      DEFAULT_EXPORT_OPTIONS,
+      savePath
+    )
+    expect(result.cardCount).toBe(1)
+    const doc = await PDFDocument.load(await readFile(savePath))
+    expect(doc.getPageCount()).toBe(1)
+  })
+
   it('squares and processes the custom back, even with zero bleed', async () => {
     const cards: Record<string, Card> = { a: card('a', 1) }
     const backBytes = new Uint8Array(PNG_1X1)

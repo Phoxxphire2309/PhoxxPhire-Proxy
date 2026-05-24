@@ -668,6 +668,23 @@ body {
   cursor: pointer;
 }
 
+.ditem__rotate {
+  width: 22px;
+  height: 22px;
+  font-size: 13px;
+  color: var(--muted);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.ditem__rotate.is-on {
+  color: #1a1206;
+  background: var(--accent);
+  border-color: var(--accent);
+}
+
 .ditem__force.is-on {
   color: #1a1206;
   background: var(--accent);
