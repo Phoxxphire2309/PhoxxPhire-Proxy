@@ -76,7 +76,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   marginLeftMm: 4,
   columnSpacingMm: 0,
   rowSpacingMm: 0,
-  cutGuideStyle: 'outline',
+  cutGuideStyle: 'corners',
   cardBack: 'none',
   bleedMode: 'extend',
   scalePercent: 100,

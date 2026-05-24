@@ -7,6 +7,7 @@ import {
 } from '@shared/decklist'
 
 type ProgressFn = (progress: ImportProgress) => void
+import { readFile } from 'node:fs/promises'
 import type { Card, SearchResult } from '@shared/scryfall'
 import { squareOffCorners } from '../image/processor'
 import { CardCache } from './cache'
@@ -157,7 +158,13 @@ export class ScryfallService {
   /** Returns the local path to a face's source image, downloading it if absent. */
   async ensureFaceImage(cardId: string, faceIndex: number): Promise<string> {
     if (await this.cache.hasImage(cardId, faceIndex)) {
-      return this.cache.sourceImagePath(cardId, faceIndex)
+      const path = this.cache.sourceImagePath(cardId, faceIndex)
+      // Square images cached before corner-squaring existed (squareOffCorners is
+      // a no-op once the image is already opaque, so this only rewrites once).
+      const bytes = new Uint8Array(await readFile(path))
+      const squared = await squareOffCorners(bytes)
+      if (squared !== bytes) await this.cache.writeImage(cardId, faceIndex, squared)
+      return path
     }
 
     let card = await this.cache.getCard(cardId)
