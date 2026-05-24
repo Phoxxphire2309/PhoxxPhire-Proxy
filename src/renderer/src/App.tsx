@@ -9,6 +9,7 @@ import { UpscaleControls } from '@renderer/components/UpscaleControls'
 import { ToastContainer } from '@renderer/components/ToastContainer'
 import { UpscaleProgress } from '@renderer/components/UpscaleProgress'
 import { BulkProgress } from '@renderer/components/BulkProgress'
+import { ConfirmHost } from '@renderer/components/ConfirmHost'
 import { PrintPartner } from '@renderer/components/PrintPartner'
 import { Onboarding } from '@renderer/components/Onboarding'
 import logo from '@renderer/assets/phoxxphire-logo.png'
@@ -102,6 +103,7 @@ export function App(): React.JSX.Element {
       <ToastContainer />
       <UpscaleProgress />
       <BulkProgress />
+      <ConfirmHost />
       {showOnboarding && <Onboarding onClose={dismissOnboarding} />}
     </div>
   )

@@ -1637,6 +1637,72 @@ body {
   font-variant-numeric: tabular-nums;
 }
 
+/* Confirm / choice dialog */
+.confirm {
+  position: fixed;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  z-index: 300;
+}
+
+.confirm__backdrop {
+  position: absolute;
+  inset: 0;
+  border: none;
+  background: rgba(8, 9, 11, 0.8);
+  backdrop-filter: blur(3px);
+  cursor: pointer;
+}
+
+.confirm__panel {
+  position: relative;
+  max-width: 420px;
+  padding: 22px 24px;
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 12px 32px rgba(0, 0, 0, 0.45);
+}
+
+.confirm__title {
+  margin: 0 0 8px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.confirm__message {
+  margin: 0 0 18px;
+  font-size: 13px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
+.confirm__actions {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+  gap: 8px;
+}
+
+.confirm__button {
+  padding: 7px 14px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.confirm__button--primary {
+  color: #1a1206;
+  background: var(--accent);
+  border-color: var(--accent);
+  font-weight: 600;
+}
+
 /* Deck toolbar + primary actions (Pack-4 layout fix) */
 .deck__total {
   margin: 0;

@@ -12,6 +12,7 @@ import { useCollectionStore } from '@renderer/state/collectionStore'
 import { useRotateStore } from '@renderer/state/rotateStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
+import { preUpscaleDeckWithConfirm } from '@renderer/state/upscaleActions'
 import { ImportDialog } from '@renderer/components/ImportDialog'
 import { TokenDialog } from '@renderer/components/TokenDialog'
 import { BasicLandDialog } from '@renderer/components/BasicLandDialog'
@@ -164,7 +165,6 @@ export function DeckPanel(): React.JSX.Element {
   const addCustomCard = useDeckStore((state) => state.addCustomCard)
   const importErrors = useDeckStore((state) => state.importErrors)
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
-  const runUpscale = useUpscaleStore((state) => state.runUpscale)
   const bulkSwitchPrintings = useDeckStore((state) => state.bulkSwitchPrintings)
   const exportDecklist = useDeckStore((state) => state.exportDecklist)
   const bulkRunning = useDeckStore((state) => state.bulkRunning)
@@ -210,13 +210,9 @@ export function DeckPanel(): React.JSX.Element {
       ))
     )
 
-  // Mark every deck card upscaled (so preview/export use it) and warm the cache.
-  const preUpscale = (): void =>
-    runUpscale(
-      items.flatMap((item) =>
-        item.card.faces.map((_f, i) => ({ cardId: item.card.id, faceIndex: i }))
-      )
-    )
+  // Mark deck cards upscaled (so preview/export use them) and warm the cache,
+  // asking whether to do every card or only those that aren't already high-res.
+  const preUpscale = (): void => void preUpscaleDeckWithConfirm(items.map((item) => item.card))
 
   return (
     <section className="deck">

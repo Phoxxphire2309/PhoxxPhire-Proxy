@@ -1,6 +1,7 @@
 import { useEffect, useState } from 'react'
 import { bestUsd, faceImageUrl, formatUsd, type Card } from '@shared/scryfall'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
+import { upscaleCardWithConfirm } from '@renderer/state/upscaleActions'
 
 function statusBadge(status: string | undefined): string | null {
   switch (status) {
@@ -31,7 +32,6 @@ export function CardTile({
   const available = useUpscaleStore((state) => state.available) === true
   const upscaled = useUpscaleStore((state) => Boolean(state.upscaled[card.id]))
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
-  const runUpscale = useUpscaleStore((state) => state.runUpscale)
   const unmarkUpscaled = useUpscaleStore((state) => state.unmarkUpscaled)
   const status = useUpscaleStore((state) => state.statuses[faceKey(card.id, faceIndex)])
 
@@ -88,7 +88,7 @@ export function CardTile({
             onClick={(event) => {
               event.stopPropagation()
               if (upscaled) unmarkUpscaled(card.id)
-              else runUpscale(card.faces.map((_f, i) => ({ cardId: card.id, faceIndex: i })))
+              else void upscaleCardWithConfirm(card)
             }}
             aria-pressed={upscaled}
             title={upscaled ? 'Show original' : 'Upscale this card'}

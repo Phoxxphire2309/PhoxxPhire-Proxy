@@ -9,6 +9,7 @@ import {
 } from '@shared/scryfall'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
+import { upscaleCardWithConfirm } from '@renderer/state/upscaleActions'
 import { useDeckStore } from '@renderer/state/deckStore'
 
 export function CardDetail(): React.JSX.Element | null {
@@ -20,7 +21,6 @@ export function CardDetail(): React.JSX.Element | null {
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
   const scale = useUpscaleStore((state) => state.scale)
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
-  const runUpscale = useUpscaleStore((state) => state.runUpscale)
 
   const [printings, setPrintings] = useState<Card[]>([])
   const [loadingPrintings, setLoadingPrintings] = useState(false)
@@ -202,11 +202,7 @@ export function CardDetail(): React.JSX.Element | null {
                 <button
                   className="toggle"
                   type="button"
-                  onClick={() =>
-                    runUpscale(
-                      displayed.faces.map((_f, i) => ({ cardId: displayed.id, faceIndex: i }))
-                    )
-                  }
+                  onClick={() => void upscaleCardWithConfirm(displayed)}
                 >
                   Upscale {scale}×
                 </button>
