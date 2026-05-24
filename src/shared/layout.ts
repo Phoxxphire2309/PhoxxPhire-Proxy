@@ -37,7 +37,11 @@ export interface ExportOptions {
   customWidthMm: number
   customHeightMm: number
   bleedMm: number
-  marginMm: number
+  /** Page margins per edge in mm (0 = print right to the page edge). */
+  marginTopMm: number
+  marginRightMm: number
+  marginBottomMm: number
+  marginLeftMm: number
   /** Gap between columns (horizontal) and rows (vertical), in mm. */
   columnSpacingMm: number
   rowSpacingMm: number
@@ -65,7 +69,10 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   bleedMm: 2,
   // 4mm keeps the standard 3×3 = 9 cards per A4 page even with 2mm bleed
   // (3 × (63+4)mm = 201mm fits A4's 210mm width).
-  marginMm: 4,
+  marginTopMm: 4,
+  marginRightMm: 4,
+  marginBottomMm: 4,
+  marginLeftMm: 4,
   columnSpacingMm: 0,
   rowSpacingMm: 0,
   cutGuideStyle: 'outline',
@@ -122,7 +129,10 @@ export function pageDimensionsPt(options: ExportOptions): { width: number; heigh
 export function computePageLayout(options: ExportOptions): PageLayout {
   const { width: pageWidthPt, height: pageHeightPt } = pageDimensionsPt(options)
   const bleed = mmToPt(options.bleedMm)
-  const margin = mmToPt(options.marginMm)
+  const marginTop = mmToPt(options.marginTopMm)
+  const marginRight = mmToPt(options.marginRightMm)
+  const marginBottom = mmToPt(options.marginBottomMm)
+  const marginLeft = mmToPt(options.marginLeftMm)
   const spacingX = mmToPt(options.columnSpacingMm)
   const spacingY = mmToPt(options.rowSpacingMm)
 
@@ -134,16 +144,15 @@ export function computePageLayout(options: ExportOptions): PageLayout {
   const footW = cutW + bleed * 2
   const footH = cutH + bleed * 2
 
-  const usableW = pageWidthPt - margin * 2
-  const usableH = pageHeightPt - margin * 2
+  const usableW = pageWidthPt - marginLeft - marginRight
+  const usableH = pageHeightPt - marginTop - marginBottom
   const columns = Math.max(0, Math.floor((usableW + spacingX) / (footW + spacingX)))
   const rows = Math.max(0, Math.floor((usableH + spacingY) / (footH + spacingY)))
 
-  // Centre the grid block on the page (margins end up >= the requested margin).
-  const gridW = columns > 0 ? columns * footW + (columns - 1) * spacingX : 0
-  const gridH = rows > 0 ? rows * footH + (rows - 1) * spacingY : 0
-  const originX = (pageWidthPt - gridW) / 2
-  const originY = (pageHeightPt - gridH) / 2
+  // Anchor the grid at the top-left margins so each edge margin is honoured
+  // exactly (a 0 margin prints right to that edge); slack falls to right/bottom.
+  const originX = marginLeft
+  const originY = marginTop
 
   const slots: Slot[] = []
   for (let row = 0; row < rows; row += 1) {

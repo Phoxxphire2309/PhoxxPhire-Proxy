@@ -12,6 +12,19 @@ interface PageSetupState {
 export const usePageSetupStore = create<PageSetupState>((set) => ({
   options: DEFAULT_EXPORT_OPTIONS,
   set: (key, value) => set((state) => ({ options: { ...state.options, [key]: value } })),
-  replace: (options) => set({ options: { ...DEFAULT_EXPORT_OPTIONS, ...options } }),
+  replace: (options) => {
+    // Migrate a legacy single `marginMm` to the per-edge fields.
+    const legacy = (options as { marginMm?: number }).marginMm
+    const migrated =
+      typeof legacy === 'number' && options.marginTopMm === undefined
+        ? {
+            marginTopMm: legacy,
+            marginRightMm: legacy,
+            marginBottomMm: legacy,
+            marginLeftMm: legacy
+          }
+        : {}
+    set({ options: { ...DEFAULT_EXPORT_OPTIONS, ...options, ...migrated } })
+  },
   reset: () => set({ options: DEFAULT_EXPORT_OPTIONS })
 }))

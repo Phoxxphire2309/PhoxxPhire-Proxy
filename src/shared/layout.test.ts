@@ -7,7 +7,14 @@ import {
   type ExportOptions
 } from '@shared/layout'
 
-const base: ExportOptions = { ...DEFAULT_EXPORT_OPTIONS, bleedMm: 0, marginMm: 6 }
+const base: ExportOptions = {
+  ...DEFAULT_EXPORT_OPTIONS,
+  bleedMm: 0,
+  marginTopMm: 6,
+  marginRightMm: 6,
+  marginBottomMm: 6,
+  marginLeftMm: 6
+}
 
 describe('pageDimensionsPt', () => {
   it('returns portrait dimensions for named sizes', () => {
@@ -60,9 +67,21 @@ describe('computePageLayout', () => {
   })
 
   it('returns no slots when the page is too small for a card', () => {
-    const layout = computePageLayout({ ...base, marginMm: 140 })
+    const layout = computePageLayout({ ...base, marginLeftMm: 140, marginRightMm: 140 })
     expect(layout.perPage).toBe(0)
     expect(layout.slots).toHaveLength(0)
+  })
+
+  it('anchors the grid at the top-left margins (0 margin prints to the edge)', () => {
+    const layout = computePageLayout({
+      ...base,
+      marginTopMm: 0,
+      marginLeftMm: 0,
+      marginRightMm: 0,
+      marginBottomMm: 0
+    })
+    expect(layout.slots[0]!.bleed.x).toBeCloseTo(0, 5)
+    expect(layout.slots[0]!.bleed.y).toBeCloseTo(0, 5)
   })
 
   it('scales the printed card size by scalePercent', () => {

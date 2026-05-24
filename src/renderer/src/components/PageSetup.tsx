@@ -61,7 +61,14 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
 
   const field = (
     label: string,
-    key: 'bleedMm' | 'marginMm' | 'columnSpacingMm' | 'rowSpacingMm',
+    key:
+      | 'bleedMm'
+      | 'marginTopMm'
+      | 'marginRightMm'
+      | 'marginBottomMm'
+      | 'marginLeftMm'
+      | 'columnSpacingMm'
+      | 'rowSpacingMm',
     max = 30
   ): React.JSX.Element => (
     <label className="export__field">
@@ -141,7 +148,10 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
             )}
 
             {field('Bleed', 'bleedMm', 6)}
-            {field('Margin', 'marginMm')}
+            {field('Margin top', 'marginTopMm', 100)}
+            {field('Margin right', 'marginRightMm', 100)}
+            {field('Margin bottom', 'marginBottomMm', 100)}
+            {field('Margin left', 'marginLeftMm', 100)}
             {field('Column spacing', 'columnSpacingMm')}
             {field('Row spacing', 'rowSpacingMm')}
 
