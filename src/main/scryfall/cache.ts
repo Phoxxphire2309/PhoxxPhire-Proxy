@@ -40,18 +40,41 @@ async function dirSize(dir: string): Promise<number> {
  * Metadata is stored as JSON keyed by card id; images live alongside, named by
  * card id + face index. Phase 2 adds upscaled variants in the same image dir.
  */
+/**
+ * Bumped whenever cached image processing changes (e.g. corner squaring), so
+ * stale images are dropped once and re-fetched / re-upscaled with current logic.
+ */
+const IMAGE_CACHE_VERSION = 2
+
 export class CardCache {
   private readonly cardsDir: string
   private readonly imagesDir: string
+  private readonly versionFile: string
 
   constructor(rootDir: string) {
     this.cardsDir = join(rootDir, 'cards')
     this.imagesDir = join(rootDir, 'images')
+    this.versionFile = join(rootDir, 'image-cache-version')
   }
 
   async init(): Promise<void> {
     await mkdir(this.cardsDir, { recursive: true })
+    await this.migrateImages()
     await mkdir(this.imagesDir, { recursive: true })
+  }
+
+  /** Drops the image cache once when the processing version changes. */
+  private async migrateImages(): Promise<void> {
+    let current = ''
+    try {
+      current = await readFile(this.versionFile, 'utf8')
+    } catch {
+      // No version file yet — treat as outdated.
+    }
+    if (current === String(IMAGE_CACHE_VERSION)) return
+    await rm(this.imagesDir, { recursive: true, force: true })
+    await mkdir(this.imagesDir, { recursive: true })
+    await writeFile(this.versionFile, String(IMAGE_CACHE_VERSION), 'utf8')
   }
 
   private cardPath(id: string): string {

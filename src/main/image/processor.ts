@@ -85,25 +85,51 @@ export async function sampleBorderColor(imageBytes: Uint8Array): Promise<Rgb> {
 }
 
 /**
- * Squares off the transparent rounded corners of a card image by compositing it
- * over a solid canvas of its own sampled border colour — so a black-bordered
- * card gets black corners, a white-bordered card white, and a borderless card
- * its dominant edge tone. This matches the printed card's border instead of
- * leaving the black (transparent-flattened) corners. A no-op for images without
- * an alpha channel (already square).
+ * Squares off the transparent rounded corners of a card image by extending the
+ * surrounding artwork into them: each transparent pixel takes the colour of its
+ * nearest opaque neighbour, propagated one ring at a time. This lets the bleed /
+ * edge art flow into the corners (rather than a flat colour patch), so a
+ * black-bordered card keeps black corners and a full-art card continues its art.
+ * A no-op for images without an alpha channel (already square).
  */
 export async function squareOffCorners(imageBytes: Uint8Array): Promise<Uint8Array> {
-  const meta = await sharp(imageBytes, { limitInputPixels: false }).metadata()
+  const base = sharp(imageBytes, { limitInputPixels: false })
+  const meta = await base.metadata()
   const width = meta.width ?? 0
   const height = meta.height ?? 0
   if (!width || !height || !meta.hasAlpha) return imageBytes
 
-  const color = await sampleBorderColor(imageBytes)
-  const out = await sharp({
-    create: { width, height, channels: 3, background: color }
-  })
-    .composite([{ input: Buffer.from(imageBytes) }])
-    .flatten({ background: color })
+  const { data } = await base.ensureAlpha().raw().toBuffer({ resolveWithObject: true })
+  const opaque = new Uint8Array(width * height)
+  for (let i = 0; i < width * height; i += 1) opaque[i] = data[i * 4 + 3]! > 128 ? 1 : 0
+
+  // The transparent area is only the small corner curves; a few rings past the
+  // corner radius (~4% of the card) fills them from the adjacent edge pixels.
+  const maxPasses = Math.ceil(Math.max(width, height) * 0.05)
+  for (let pass = 0; pass < maxPasses; pass += 1) {
+    let changed = false
+    for (let y = 0; y < height; y += 1) {
+      for (let x = 0; x < width; x += 1) {
+        const p = y * width + x
+        if (opaque[p]) continue
+        let n = -1
+        if (x > 0 && opaque[p - 1]) n = p - 1
+        else if (x < width - 1 && opaque[p + 1]) n = p + 1
+        else if (y > 0 && opaque[p - width]) n = p - width
+        else if (y < height - 1 && opaque[p + width]) n = p + width
+        if (n >= 0) {
+          data[p * 4] = data[n * 4]!
+          data[p * 4 + 1] = data[n * 4 + 1]!
+          data[p * 4 + 2] = data[n * 4 + 2]!
+          opaque[p] = 1
+          changed = true
+        }
+      }
+    }
+    if (!changed) break
+  }
+
+  const out = await sharp(Buffer.from(data), { raw: { width, height, channels: 4 } })
     .removeAlpha()
     .png()
     .toBuffer()
