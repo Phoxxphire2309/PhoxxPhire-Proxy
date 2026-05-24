@@ -5,6 +5,7 @@ import { usePrintingStore } from '@renderer/state/printingStore'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 import { ImportDialog } from '@renderer/components/ImportDialog'
 import { TokenDialog } from '@renderer/components/TokenDialog'
+import { BasicLandDialog } from '@renderer/components/BasicLandDialog'
 import { DeckStats } from '@renderer/components/DeckStats'
 import { ExportDialog } from '@renderer/components/ExportDialog'
 import { PrintPreview } from '@renderer/components/PrintPreview'
@@ -106,6 +107,7 @@ export function DeckPanel(): React.JSX.Element {
   const [showImport, setShowImport] = useState(false)
   const [showTokens, setShowTokens] = useState(false)
   const [showStats, setShowStats] = useState(false)
+  const [showLands, setShowLands] = useState(false)
   const [showExport, setShowExport] = useState(false)
   const [showPreview, setShowPreview] = useState(false)
   const [showPageSetup, setShowPageSetup] = useState(false)
@@ -146,6 +148,9 @@ export function DeckPanel(): React.JSX.Element {
         </button>
         <button className="toggle" type="button" onClick={() => void addCustomCard()}>
           Custom
+        </button>
+        <button className="toggle" type="button" onClick={() => setShowLands(true)}>
+          Lands
         </button>
         {items.length > 0 && (
           <button className="toggle" type="button" onClick={() => void saveDeck()}>
@@ -234,6 +239,7 @@ export function DeckPanel(): React.JSX.Element {
 
       {showImport && <ImportDialog onClose={() => setShowImport(false)} />}
       {showTokens && <TokenDialog onClose={() => setShowTokens(false)} />}
+      {showLands && <BasicLandDialog onClose={() => setShowLands(false)} />}
       {showExport && (
         <ExportDialog
           onClose={() => setShowExport(false)}
