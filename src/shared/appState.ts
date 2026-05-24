@@ -4,9 +4,15 @@ import type { Card } from './scryfall'
 
 export type ThemeName = 'dark' | 'light'
 
+type SavedDeckItemLite = { card: Card; quantities: number[]; section?: DeckSection }
+
 /** Persisted application state, restored on launch. */
 export interface AppState {
-  deck?: { card: Card; quantities: number[]; section?: DeckSection }[]
+  /** Legacy single-deck field; still written for back-compat with older versions. */
+  deck?: SavedDeckItemLite[]
+  /** Multiple deck tabs (preferred over `deck` when present). */
+  decks?: { id: string; name: string; items: SavedDeckItemLite[] }[]
+  activeDeckId?: string
   upscale?: { model: string; scale: number }
   showSource?: boolean
   theme?: ThemeName

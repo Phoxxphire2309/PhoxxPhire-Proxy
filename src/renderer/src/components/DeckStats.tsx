@@ -14,10 +14,13 @@ const COLOR_META: { key: ManaColor; label: string; swatch: string }[] = [
 /** Mana curve, colour, and type breakdown for the current deck. */
 export function DeckStats(): React.JSX.Element {
   const items = useDeckStore((state) => state.items)
-  // Stats describe the deck that prints — the maybeboard is a holding area.
+  // Stats describe the actual deck: skip the maybeboard (a holding area) and
+  // tokens/emblems (not real deck cards).
   const stats = computeDeckStats(
     items
-      .filter((item) => item.section !== 'maybeboard')
+      .filter(
+        (item) => item.section !== 'maybeboard' && !/Token|Emblem/.test(item.card.typeLine ?? '')
+      )
       .map((item) => ({ card: item.card, count: item.quantities[0] ?? 0 }))
   )
   const curveMax = Math.max(1, ...stats.curve)

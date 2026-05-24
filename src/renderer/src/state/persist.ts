@@ -1,5 +1,6 @@
 import type { AppState } from '@shared/appState'
 import { useDeckStore } from '@renderer/state/deckStore'
+import { useDecksStore } from '@renderer/state/decksStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore } from '@renderer/state/uiStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
@@ -15,7 +16,11 @@ export async function loadPersistedState(): Promise<void> {
   if (!state) return
 
   if (state.theme) useUiStore.getState().setTheme(state.theme)
-  if (state.deck) useDeckStore.getState().setItems(state.deck)
+  if (state.decks && state.decks.length > 0) {
+    useDecksStore.getState().restore(state.decks, state.activeDeckId ?? state.decks[0]!.id)
+  } else if (state.deck) {
+    useDeckStore.getState().setItems(state.deck)
+  }
   if (state.pageSetup) usePageSetupStore.getState().replace(state.pageSetup)
   // showSource is intentionally not restored — the view always starts on
   // "Original" so a saved "Upscaled" preference can't auto-upscale on launch.
@@ -25,11 +30,15 @@ export async function loadPersistedState(): Promise<void> {
 }
 
 function snapshot(): AppState {
-  const deck = useDeckStore.getState()
   const upscale = useUpscaleStore.getState()
   const ui = useUiStore.getState()
+  // Fold the live active-deck cards into the tabs before snapshotting.
+  useDecksStore.getState().commitActive()
+  const { tabs, activeId } = useDecksStore.getState()
   return {
-    deck: deck.items,
+    deck: useDeckStore.getState().items, // legacy fallback
+    decks: tabs,
+    activeDeckId: activeId,
     upscale: { model: upscale.model, scale: upscale.scale },
     theme: ui.theme,
     pageSetup: usePageSetupStore.getState().options
@@ -49,6 +58,7 @@ export function startPersisting(): () => void {
 
   const unsubscribers = [
     useDeckStore.subscribe(schedule),
+    useDecksStore.subscribe(schedule),
     useUpscaleStore.subscribe(schedule),
     useUiStore.subscribe(schedule),
     usePageSetupStore.subscribe(schedule)

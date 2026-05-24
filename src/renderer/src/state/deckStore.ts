@@ -12,7 +12,7 @@ export interface DeckItem {
 }
 
 /** A loosely-typed item from disk/persistence (legacy `quantity`, optional section). */
-type LoadableItem = {
+export type LoadableItem = {
   card: Card
   quantities?: number[]
   quantity?: number
@@ -71,7 +71,7 @@ function mergeItems(existing: DeckItem[], incoming: DeckItem[]): DeckItem[] {
 }
 
 /** Normalizes a possibly-legacy saved item to the current shape (defaulting section). */
-function normalizeItem(item: LoadableItem): DeckItem {
+export function normalizeItem(item: LoadableItem): DeckItem {
   const section: DeckSection = item.section ?? 'main'
   if (Array.isArray(item.quantities)) {
     return { card: item.card, quantities: [...item.quantities], section }

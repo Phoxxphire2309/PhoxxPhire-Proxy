@@ -552,6 +552,84 @@ body {
   padding-left: 16px;
 }
 
+/* Deck tabs */
+.tabs {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  margin-bottom: 10px;
+  flex-wrap: wrap;
+}
+
+.tabs__tab {
+  display: inline-flex;
+  align-items: center;
+  gap: 2px;
+  padding: 2px 2px 2px 4px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+.tabs__tab.is-active {
+  border-color: var(--accent);
+}
+
+.tabs__label {
+  max-width: 120px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  padding: 3px 6px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.tabs__tab.is-active .tabs__label {
+  color: var(--accent);
+}
+
+.tabs__rename {
+  max-width: 120px;
+  padding: 3px 6px;
+  font-size: 12px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--accent);
+  border-radius: 5px;
+}
+
+.tabs__close {
+  width: 18px;
+  height: 18px;
+  font-size: 10px;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.tabs__close:hover {
+  color: var(--text);
+  background: var(--border);
+}
+
+.tabs__new {
+  width: 26px;
+  height: 26px;
+  font-size: 15px;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+  cursor: pointer;
+}
+
 /* Deck sections */
 .deck__group {
   margin-bottom: 6px;

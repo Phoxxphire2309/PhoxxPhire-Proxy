@@ -4,6 +4,7 @@ import { Filters } from '@renderer/components/Filters'
 import { CardGrid } from '@renderer/components/CardGrid'
 import { CardDetail } from '@renderer/components/CardDetail'
 import { DeckPanel } from '@renderer/components/DeckPanel'
+import { DeckTabs } from '@renderer/components/DeckTabs'
 import { UpscaleControls } from '@renderer/components/UpscaleControls'
 import { ToastContainer } from '@renderer/components/ToastContainer'
 import { UpscaleProgress } from '@renderer/components/UpscaleProgress'
@@ -72,6 +73,7 @@ export function App(): React.JSX.Element {
           <CardGrid />
         </main>
         <aside className="app__deck">
+          <DeckTabs />
           <DeckPanel />
         </aside>
       </div>
