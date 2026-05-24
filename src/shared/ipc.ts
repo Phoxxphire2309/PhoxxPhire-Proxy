@@ -49,6 +49,7 @@ export const IpcChannel = {
   UpscaleInstallProgress: 'upscale:installProgress',
   ExportPdf: 'export:pdf',
   ExportImages: 'export:images',
+  ExportZip: 'export:zip',
   ExportMpc: 'export:mpc',
   ExportCalibration: 'export:calibration',
   /** Main → renderer push channel for export progress. */
@@ -112,6 +113,8 @@ export interface PhoxxApi {
   exportPdf(request: ExportRequest): Promise<ExportOutcome>
   /** Export each unique card face as a PNG into a chosen folder. */
   exportImages(slots: ExportSlot[]): Promise<ExportImagesOutcome>
+  /** Bundle every unique card face (upscaled or source) into a single ZIP file. */
+  exportZip(slots: ExportSlot[]): Promise<ExportImagesOutcome>
   /** Export the deck as a MakePlayingCards (MPC Autofill) order into a chosen folder. */
   exportMpc(cards: MpcCard[]): Promise<MpcExportOutcome>
   /** Save a print-calibration PDF for the given page options. */

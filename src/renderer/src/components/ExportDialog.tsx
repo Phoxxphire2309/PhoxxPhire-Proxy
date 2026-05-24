@@ -84,6 +84,12 @@ export function ExportDialog({
       return outcome.canceled ? null : `Saved ${outcome.count} card image(s) to ${outcome.path}`
     })
 
+  const exportZip = (): Promise<void> =>
+    runGuarded(async () => {
+      const outcome = await window.phoxx.exportZip(exportSlots)
+      return outcome.canceled ? null : `Saved ${outcome.count} card image(s) to ${outcome.path}`
+    })
+
   // One physical card per deck card; double-faced cards pair front + back, so the
   // front-face quantity drives the copy count.
   const mpcCards = items
@@ -175,6 +181,15 @@ export function ExportDialog({
                 onClick={() => void exportImages()}
               >
                 Export images
+              </button>
+              <button
+                className="toggle"
+                type="button"
+                disabled={running || items.length === 0}
+                onClick={() => void exportZip()}
+                title="Bundle every card image (upscaled or source) into one ZIP file"
+              >
+                Export ZIP
               </button>
               <button
                 className="toggle"

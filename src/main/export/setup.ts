@@ -79,6 +79,22 @@ export function initExport(options: ExportSetupOptions): void {
   )
 
   ipcMain.handle(
+    IpcChannel.ExportZip,
+    async (_event, slots: ExportSlot[]): Promise<ExportImagesOutcome> => {
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Export card images as ZIP',
+        defaultPath: 'card-images.zip',
+        filters: [{ name: 'ZIP archive', extensions: ['zip'] }]
+      })
+      if (canceled || !filePath) {
+        return { canceled: true }
+      }
+      const result = await service.exportZip(slots, filePath)
+      return { canceled: false, ...result }
+    }
+  )
+
+  ipcMain.handle(
     IpcChannel.ExportMpc,
     async (_event, cards: MpcCard[]): Promise<MpcExportOutcome> => {
       const { canceled, filePaths } = await dialog.showOpenDialog({

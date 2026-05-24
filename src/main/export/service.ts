@@ -1,4 +1,4 @@
-import { copyFile, readFile, writeFile } from 'node:fs/promises'
+import { readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
   computePageLayout,
@@ -9,8 +9,10 @@ import {
 } from '@shared/layout'
 import type { MpcCard } from '@shared/mpc'
 import type { Card } from '@shared/scryfall'
+import { squareOffCorners } from '../image/processor'
 import { buildMpcOrderXml, type MpcXmlCard } from './mpc'
 import { buildProxyPdf } from './pdf'
+import { buildZip } from './zip'
 
 export interface ExportServiceDeps {
   /** Resolve a card's metadata (from cache or Scryfall) to know its face count. */
@@ -23,11 +25,20 @@ export interface ExportServiceDeps {
   mpcImage?: (bytes: Uint8Array) => Promise<Uint8Array>
   /** Build the common MPC card-back image (required for `exportMpc`). */
   mpcCardBack?: () => Promise<Uint8Array>
+  /** Bundle a name → bytes map into a ZIP. Defaults to the built-in zlib writer. */
+  zip?: (files: Record<string, Uint8Array>) => Uint8Array
+  /** Fill transparent rounded corners with edge colour. Defaults to squareOffCorners. */
+  squareCorners?: (bytes: Uint8Array) => Promise<Uint8Array>
   emit: (progress: ExportProgress) => void
 }
 
 function sanitizeName(value: string): string {
   return value.replace(/[^a-z0-9._-]+/gi, '_').replace(/^_+|_+$/g, '') || 'card'
+}
+
+/** File extension for image bytes, by magic number (PNG vs JPEG, default png). */
+function imageExtension(bytes: Uint8Array): 'png' | 'jpg' {
+  return bytes[0] === 0xff && bytes[1] === 0xd8 ? 'jpg' : 'png'
 }
 
 /**
@@ -82,12 +93,9 @@ export class ExportService {
     }
   }
 
-  /** Exports each unique card face as its own PNG (upscaled per the slot's flag) into `folder`. */
-  async exportImages(
-    slots: ExportSlot[],
-    folder: string
-  ): Promise<{ path: string; count: number }> {
-    const faces: {
+  /** Collects the unique card faces across the slots, with the metadata exports need. */
+  private async collectFaces(slots: ExportSlot[]): Promise<
+    {
       cardId: string
       faceIndex: number
       upscale: boolean
@@ -95,9 +103,10 @@ export class ExportService {
       collectorNumber: string
       name: string
       multiFace: boolean
-    }[] = []
+    }[]
+  > {
+    const faces: Awaited<ReturnType<ExportService['collectFaces']>> = []
     const seen = new Set<string>()
-
     for (const slot of slots) {
       const key = `${slot.cardId} ${slot.faceIndex}`
       if (seen.has(key)) continue
@@ -113,19 +122,68 @@ export class ExportService {
         multiFace: card.faces.length > 1
       })
     }
+    return faces
+  }
+
+  /**
+   * Prepares each unique face's exportable image: reads its bytes (upscaled per
+   * the slot's flag, else source), fills transparent rounded corners with edge
+   * colour so prints come out square, and assigns a unique file name with the
+   * extension matching the actual bytes (`.jpg` upscaled, `.png` source).
+   */
+  private async prepareFaceFiles(
+    slots: ExportSlot[]
+  ): Promise<{ name: string; bytes: Uint8Array }[]> {
+    const faces = await this.collectFaces(slots)
+    const squareCorners = this.deps.squareCorners ?? squareOffCorners
+    const files: { name: string; bytes: Uint8Array }[] = []
+    const usedNames = new Set<string>()
 
     let completed = 0
     for (const face of faces) {
       const source = await this.deps.ensureImage(face.cardId, face.faceIndex, face.upscale)
+      const bytes = await squareCorners(new Uint8Array(await readFile(source)))
       const suffix = face.multiFace ? `-${face.faceIndex + 1}` : ''
-      const fileName = `${sanitizeName(face.setCode)}-${sanitizeName(face.collectorNumber)}-${sanitizeName(face.name)}${suffix}.png`
-      await copyFile(source, join(folder, fileName))
+      const stem = `${sanitizeName(face.setCode)}-${sanitizeName(face.collectorNumber)}-${sanitizeName(face.name)}${suffix}`
+      const ext = imageExtension(bytes)
+      let name = `${stem}.${ext}`
+      for (let n = 2; usedNames.has(name.toLowerCase()); n += 1) name = `${stem}-${n}.${ext}`
+      usedNames.add(name.toLowerCase())
+      files.push({ name, bytes })
       completed += 1
       this.deps.emit({ phase: 'preparing', completed, total: faces.length })
     }
+    return files
+  }
 
-    this.deps.emit({ phase: 'done', completed, total: faces.length })
-    return { path: folder, count: completed }
+  /** Exports each unique card face as its own image file (corners squared) into `folder`. */
+  async exportImages(
+    slots: ExportSlot[],
+    folder: string
+  ): Promise<{ path: string; count: number }> {
+    const files = await this.prepareFaceFiles(slots)
+    for (const file of files) await writeFile(join(folder, file.name), file.bytes)
+    this.deps.emit({ phase: 'done', completed: files.length, total: files.length })
+    return { path: folder, count: files.length }
+  }
+
+  /**
+   * Bundles every unique card face into a single ZIP at `savePath`. Each face is
+   * exported at its current best quality (upscaled where the slot is flagged and
+   * available, else source), with rounded corners squared and the file extension
+   * matching the actual bytes.
+   */
+  async exportZip(slots: ExportSlot[], savePath: string): Promise<{ path: string; count: number }> {
+    const files = await this.prepareFaceFiles(slots)
+    const map: Record<string, Uint8Array> = {}
+    for (const file of files) map[file.name] = file.bytes
+
+    this.deps.emit({ phase: 'rendering', completed: files.length, total: files.length })
+    const zipper = this.deps.zip ?? buildZip
+    await writeFile(savePath, zipper(map))
+
+    this.deps.emit({ phase: 'done', completed: files.length, total: files.length })
+    return { path: savePath, count: files.length }
   }
 
   /**

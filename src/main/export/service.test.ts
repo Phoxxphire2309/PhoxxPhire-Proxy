@@ -2,6 +2,7 @@ import { mkdir, mkdtemp, readdir, readFile, rm, writeFile } from 'node:fs/promis
 import { tmpdir } from 'node:os'
 import { join } from 'node:path'
 import { PDFDocument } from 'pdf-lib'
+import sharp from 'sharp'
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { DEFAULT_EXPORT_OPTIONS, type ExportProgress } from '@shared/layout'
 import type { Card } from '@shared/scryfall'
@@ -257,5 +258,135 @@ describe('ExportService.exportMpc', () => {
     const xml = await readFile(join(outDir, 'order.xml'), 'utf8')
     expect(xml).not.toContain('tst-1-a.png')
     expect(xml).toContain('tst-1-b.png')
+  })
+})
+
+describe('ExportService.exportZip', () => {
+  let dir: string
+  let pngPath: string
+  let jpgPath: string
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'phoxx-zip-'))
+    pngPath = join(dir, 'src.png')
+    jpgPath = join(dir, 'up.jpg')
+    await writeFile(pngPath, PNG_1X1)
+    // A real 1-byte-ish JPEG so the magic-number extension check exercises both paths.
+    await writeFile(jpgPath, await sharp(PNG_1X1).jpeg().toBuffer())
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('zips each unique face with an extension matching its bytes (jpg vs png)', async () => {
+    const cards: Record<string, Card> = { single: card('single', 1), dfc: card('dfc', 2) }
+    const captured: Record<string, Uint8Array> = {}
+    const savePath = join(dir, 'out.zip')
+
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      // Upscaled faces resolve to the JPEG, source faces to the PNG.
+      ensureImage: async (_id, _face, useUpscaled) => (useUpscaled ? jpgPath : pngPath),
+      zip: (files) => {
+        Object.assign(captured, files)
+        return new Uint8Array([0x50, 0x4b, 0x05, 0x06]) // sentinel "PK" bytes
+      },
+      emit: () => {}
+    })
+
+    const result = await service.exportZip(
+      [
+        { cardId: 'single', faceIndex: 0, upscale: true }, // → .jpg
+        { cardId: 'dfc', faceIndex: 0, upscale: false }, // → .png
+        { cardId: 'dfc', faceIndex: 1, upscale: false } // → .png (face 2)
+      ],
+      savePath
+    )
+
+    expect(result.count).toBe(3)
+    expect(Object.keys(captured).sort()).toEqual([
+      'tst-1-dfc-1.png',
+      'tst-1-dfc-2.png',
+      'tst-1-single.jpg'
+    ])
+    // The zipper output is what gets written to disk.
+    expect(new Uint8Array(await readFile(savePath))).toEqual(
+      new Uint8Array([0x50, 0x4b, 0x05, 0x06])
+    )
+  })
+
+  it('squares transparent rounded corners of source images before zipping', async () => {
+    // A red image with a transparent top-left corner (like a Scryfall card PNG).
+    const W = 200
+    const H = 280
+    const raw = Buffer.alloc(W * H * 4)
+    for (let y = 0; y < H; y += 1) {
+      for (let x = 0; x < W; x += 1) {
+        const i = (y * W + x) * 4
+        raw[i] = 200
+        raw[i + 1] = 30
+        raw[i + 2] = 30
+        raw[i + 3] = x < 12 && y < 12 ? 0 : 255 // transparent corner
+      }
+    }
+    const cornerPng = join(dir, 'corner.png')
+    await writeFile(
+      cornerPng,
+      await sharp(raw, { raw: { width: W, height: H, channels: 4 } })
+        .png()
+        .toBuffer()
+    )
+
+    const cards: Record<string, Card> = { c: card('c', 1) }
+    const captured: Record<string, Uint8Array> = {}
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage: async () => cornerPng,
+      zip: (files) => {
+        Object.assign(captured, files)
+        return new Uint8Array([0])
+      },
+      emit: () => {}
+    })
+
+    await service.exportZip([{ cardId: 'c', faceIndex: 0, upscale: false }], join(dir, 'sq.zip'))
+
+    const out = Object.values(captured)[0]!
+    const meta = await sharp(out).metadata()
+    expect(meta.hasAlpha).toBe(false) // squared & flattened — no transparent corners
+    // The (former) transparent corner now carries the card's red edge colour.
+    const { data } = await sharp(out).raw().toBuffer({ resolveWithObject: true })
+    expect(data[0]!).toBeGreaterThan(120)
+    expect(data[0]!).toBeGreaterThan(data[1]! + data[2]!)
+  })
+
+  it('de-duplicates identical file names with a numeric suffix', async () => {
+    // Two distinct cards that sanitize to the same stem must not collide.
+    const cards: Record<string, Card> = {
+      a: { ...card('a', 1), setCode: 'tst', collectorNumber: '1', name: 'Bolt' },
+      b: { ...card('b', 1), setCode: 'tst', collectorNumber: '1', name: 'Bolt' }
+    }
+    const captured: Record<string, Uint8Array> = {}
+
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage: async () => pngPath,
+      zip: (files) => {
+        Object.assign(captured, files)
+        return new Uint8Array([0])
+      },
+      emit: () => {}
+    })
+
+    await service.exportZip(
+      [
+        { cardId: 'a', faceIndex: 0, upscale: false },
+        { cardId: 'b', faceIndex: 0, upscale: false }
+      ],
+      join(dir, 'dup.zip')
+    )
+
+    expect(Object.keys(captured).sort()).toEqual(['tst-1-Bolt-2.png', 'tst-1-Bolt.png'])
   })
 })
