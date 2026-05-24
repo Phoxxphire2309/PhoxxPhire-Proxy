@@ -13,6 +13,9 @@ export function SearchBar(): React.JSX.Element {
   const [showRecents, setShowRecents] = useState(false)
   const [highlight, setHighlight] = useState(-1)
   const suppressNext = useRef(false)
+  // Set while a search is being run, so an in-flight debounced autocomplete
+  // can't reopen the dropdown after the user has searched. Reset on next keystroke.
+  const suppressOpen = useRef(false)
 
   // Debounced autocomplete as the user types.
   useEffect(() => {
@@ -30,6 +33,7 @@ export function SearchBar(): React.JSX.Element {
       window.phoxx
         .autocomplete(term)
         .then((results) => {
+          if (suppressOpen.current) return
           setSuggestions(results)
           setOpen(results.length > 0)
           setHighlight(-1)
@@ -39,11 +43,23 @@ export function SearchBar(): React.JSX.Element {
     return () => clearTimeout(timer)
   }, [query])
 
-  const choose = (value: string): void => {
-    suppressNext.current = true
-    setQuery(value)
+  /** Collapse the suggestions/recents dropdown and stop any pending open. */
+  const closeDropdown = (): void => {
+    suppressOpen.current = true
     setOpen(false)
     setShowRecents(false)
+    setSuggestions([])
+  }
+
+  const runSearch = (): void => {
+    closeDropdown()
+    void search()
+  }
+
+  const choose = (value: string): void => {
+    suppressNext.current = true
+    closeDropdown()
+    setQuery(value)
     void search()
   }
 
@@ -68,8 +84,7 @@ export function SearchBar(): React.JSX.Element {
       className="search"
       onSubmit={(event) => {
         event.preventDefault()
-        setOpen(false)
-        void search()
+        runSearch()
       }}
     >
       <div className="search__box">
@@ -78,7 +93,10 @@ export function SearchBar(): React.JSX.Element {
           className="search__input"
           type="search"
           value={query}
-          onChange={(event) => setQuery(event.target.value)}
+          onChange={(event) => {
+            suppressOpen.current = false
+            setQuery(event.target.value)
+          }}
           onKeyDown={onKeyDown}
           onBlur={() =>
             setTimeout(() => {
