@@ -645,6 +645,38 @@ body {
   color: var(--accent);
 }
 
+.onboard__nav {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-top: 18px;
+}
+
+.onboard__dots {
+  display: flex;
+  gap: 6px;
+}
+
+.onboard__dot {
+  width: 7px;
+  height: 7px;
+  border-radius: 50%;
+  background: var(--border);
+}
+
+.onboard__dot.is-on {
+  background: var(--accent);
+}
+
+.onboard__counter {
+  margin: 8px 0 0;
+  text-align: center;
+  font-size: 11px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
+}
+
 /* Collection ownership indicators */
 .ditem__owned {
   margin-left: 6px;
