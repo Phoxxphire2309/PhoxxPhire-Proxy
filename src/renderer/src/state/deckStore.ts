@@ -1,8 +1,9 @@
 import { create } from 'zustand'
-import { DECK_FILE_VERSION, type DeckSection } from '@shared/deck'
+import { DECK_FILE_VERSION, PROJECT_FILE_VERSION, type DeckSection } from '@shared/deck'
 import type { DeckResolution } from '@shared/decklist'
 import { bestPrinting, cheapestPrinting, type Card } from '@shared/scryfall'
 import { toast } from '@renderer/state/toastStore'
+import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 
 export interface DeckItem {
   card: Card
@@ -42,6 +43,8 @@ interface DeckState {
   importUrl: (url: string) => Promise<void>
   saveDeck: () => Promise<void>
   loadDeck: () => Promise<void>
+  saveProject: () => Promise<void>
+  loadProject: () => Promise<void>
   addCustomCard: () => Promise<void>
 }
 
@@ -186,6 +189,33 @@ export const useDeckStore = create<DeckState>((set, get) => ({
       toast(`Loaded ${outcome.deck.items.length} card(s)`, 'success')
     } catch (error) {
       toast(error instanceof Error ? error.message : 'Could not load deck', 'error')
+    }
+  },
+
+  saveProject: async () => {
+    const { items } = get()
+    if (items.length === 0) return
+    try {
+      const outcome = await window.phoxx.saveProject({
+        version: PROJECT_FILE_VERSION,
+        deck: { version: DECK_FILE_VERSION, items },
+        pageSetup: usePageSetupStore.getState().options
+      })
+      if (!outcome.canceled) toast('Project saved', 'success')
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not save project', 'error')
+    }
+  },
+
+  loadProject: async () => {
+    try {
+      const outcome = await window.phoxx.loadProject()
+      if (outcome.canceled) return
+      set({ items: outcome.project.deck.items.map(normalizeItem), importErrors: [] })
+      usePageSetupStore.getState().replace(outcome.project.pageSetup)
+      toast('Project loaded', 'success')
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not load project', 'error')
     }
   },
 

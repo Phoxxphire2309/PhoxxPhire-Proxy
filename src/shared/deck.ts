@@ -1,6 +1,8 @@
+import type { ExportOptions } from './layout'
 import type { Card } from './scryfall'
 
 export const DECK_FILE_VERSION = 3
+export const PROJECT_FILE_VERSION = 1
 
 /** Which part of the deck a card belongs to. Only printable sections export. */
 export type DeckSection = 'main' | 'commander' | 'sideboard' | 'maybeboard'
@@ -33,3 +35,13 @@ export interface SavedDeck {
 
 export type DeckSaveOutcome = { canceled: true } | { canceled: false; path: string }
 export type DeckLoadOutcome = { canceled: true } | { canceled: false; deck: SavedDeck }
+
+/** A full project: the deck plus its page-setup, so a print job is reproducible. */
+export interface SavedProject {
+  version: number
+  deck: SavedDeck
+  pageSetup: ExportOptions
+}
+
+export type ProjectSaveOutcome = { canceled: true } | { canceled: false; path: string }
+export type ProjectLoadOutcome = { canceled: true } | { canceled: false; project: SavedProject }

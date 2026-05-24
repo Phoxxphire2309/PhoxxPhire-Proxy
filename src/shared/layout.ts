@@ -53,6 +53,8 @@ export interface ExportOptions {
   scalePercent: number
   /** Colour adjustment for the target printer (PDF export). */
   colorProfile: ColorProfile
+  /** Overlay a faint diagonal "PROXY" watermark on each card (PDF export). */
+  watermark: boolean
 }
 
 export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
@@ -70,7 +72,8 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   cardBack: 'none',
   bleedMode: 'solid',
   scalePercent: 100,
-  colorProfile: 'none'
+  colorProfile: 'none',
+  watermark: false
 }
 
 export interface Rect {

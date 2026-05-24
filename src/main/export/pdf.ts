@@ -1,4 +1,4 @@
-import { PDFDocument, rgb, type PDFPage } from 'pdf-lib'
+import { degrees, PDFDocument, rgb, StandardFonts, type PDFFont, type PDFPage } from 'pdf-lib'
 import {
   computePageLayout,
   pageCountFor,
@@ -12,6 +12,26 @@ const GUIDE_COLOR = rgb(0.55, 0.55, 0.55)
 const GUIDE_THICKNESS = 0.5
 const CORNER_MARK_PT = 10
 const BACK_COLOR = rgb(0.12, 0.12, 0.14)
+const WATERMARK_TEXT = 'PROXY'
+
+/** Draws a faint diagonal "PROXY" watermark across a card's trim rectangle. */
+function drawWatermark(page: PDFPage, pageHeight: number, cut: Rect, font: PDFFont): void {
+  const size = Math.min(cut.width, cut.height) * 0.22
+  const textWidth = font.widthOfTextAtSize(WATERMARK_TEXT, size)
+  const cx = cut.x + cut.width / 2
+  const cy = pageHeight - (cut.y + cut.height / 2)
+  // Offset back along the 45° baseline so the rotated text sits roughly centred.
+  const half = textWidth / 2
+  page.drawText(WATERMARK_TEXT, {
+    x: cx - half * Math.SQRT1_2,
+    y: cy - half * Math.SQRT1_2,
+    size,
+    font,
+    color: rgb(0, 0, 0),
+    opacity: 0.16,
+    rotate: degrees(45)
+  })
+}
 
 /** Cut rect edges/corners, converted from top-left layout coords to PDF space. */
 function cutEdges(
@@ -102,6 +122,7 @@ export async function buildProxyPdf(
   const embedded = await Promise.all(uniqueImages.map((bytes) => embedImage(doc, bytes)))
   const backEmbed =
     options.cardBack === 'custom' && backImage ? await embedImage(doc, backImage) : null
+  const watermarkFont = options.watermark ? await doc.embedFont(StandardFonts.HelveticaBold) : null
   const pageCount = pageCountFor(slotImageIndices.length, layout.perPage)
 
   for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
@@ -122,6 +143,7 @@ export async function buildProxyPdf(
         height: slot.bleed.height
       })
       drawCutGuide(page, layout.pageHeightPt, slot.cut, options.cutGuideStyle)
+      if (watermarkFont) drawWatermark(page, layout.pageHeightPt, slot.cut, watermarkFont)
       slotsOnPage += 1
     }
 

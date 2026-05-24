@@ -7,7 +7,14 @@
  */
 
 import type { AppState } from './appState'
-import type { DeckLoadOutcome, DeckSaveOutcome, SavedDeck } from './deck'
+import type {
+  DeckLoadOutcome,
+  DeckSaveOutcome,
+  ProjectLoadOutcome,
+  ProjectSaveOutcome,
+  SavedDeck,
+  SavedProject
+} from './deck'
 import type { DeckResolution, ImportProgress } from './decklist'
 import type {
   CalibrationOutcome,
@@ -34,6 +41,8 @@ export const IpcChannel = {
   ScryfallImportProgress: 'scryfall:importProgress',
   DeckSave: 'deck:save',
   DeckLoad: 'deck:load',
+  ProjectSave: 'project:save',
+  ProjectLoad: 'project:load',
   CustomCardImport: 'custom:import',
   CardBackImport: 'cardback:import',
   CardBackInfo: 'cardback:info',
@@ -110,6 +119,10 @@ export interface PhoxxApi {
   saveDeck(deck: SavedDeck): Promise<DeckSaveOutcome>
   /** Load a deck from a JSON file (prompts for a file). */
   loadDeck(): Promise<DeckLoadOutcome>
+  /** Save a full project (deck + page setup) to a file (prompts for a path). */
+  saveProject(project: SavedProject): Promise<ProjectSaveOutcome>
+  /** Load a project (deck + page setup) from a file (prompts for a file). */
+  loadProject(): Promise<ProjectLoadOutcome>
   /** Pick an image file and register it as a custom card; null if cancelled. */
   importCustomCard(): Promise<Card | null>
   /** Pick an image file to use as the custom card back; returns the resulting state. */

@@ -120,6 +120,8 @@ export function DeckPanel(): React.JSX.Element {
   const clear = useDeckStore((state) => state.clear)
   const saveDeck = useDeckStore((state) => state.saveDeck)
   const loadDeck = useDeckStore((state) => state.loadDeck)
+  const saveProject = useDeckStore((state) => state.saveProject)
+  const loadProject = useDeckStore((state) => state.loadProject)
   const addCustomCard = useDeckStore((state) => state.addCustomCard)
   const importErrors = useDeckStore((state) => state.importErrors)
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
@@ -178,6 +180,9 @@ export function DeckPanel(): React.JSX.Element {
         <button className="toggle" type="button" onClick={() => void loadDeck()}>
           Load
         </button>
+        <button className="toggle" type="button" onClick={() => void loadProject()}>
+          Open project
+        </button>
         <button className="toggle" type="button" onClick={() => void addCustomCard()}>
           Custom
         </button>
@@ -187,6 +192,11 @@ export function DeckPanel(): React.JSX.Element {
         {items.length > 0 && (
           <button className="toggle" type="button" onClick={() => void saveDeck()}>
             Save
+          </button>
+        )}
+        {items.length > 0 && (
+          <button className="toggle" type="button" onClick={() => void saveProject()}>
+            Save project
           </button>
         )}
         {items.length > 0 && (

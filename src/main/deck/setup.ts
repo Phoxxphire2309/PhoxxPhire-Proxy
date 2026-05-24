@@ -1,13 +1,29 @@
 import { readFile, writeFile } from 'node:fs/promises'
 import { dialog, ipcMain } from 'electron'
 import { IpcChannel } from '@shared/ipc'
-import type { DeckLoadOutcome, DeckSaveOutcome, SavedDeck } from '@shared/deck'
+import type {
+  DeckLoadOutcome,
+  DeckSaveOutcome,
+  ProjectLoadOutcome,
+  ProjectSaveOutcome,
+  SavedDeck,
+  SavedProject
+} from '@shared/deck'
 
 function isSavedDeck(value: unknown): value is SavedDeck {
   return (
     typeof value === 'object' &&
     value !== null &&
     Array.isArray((value as { items?: unknown }).items)
+  )
+}
+
+function isSavedProject(value: unknown): value is SavedProject {
+  return (
+    typeof value === 'object' &&
+    value !== null &&
+    isSavedDeck((value as { deck?: unknown }).deck) &&
+    typeof (value as { pageSetup?: unknown }).pageSetup === 'object'
   )
 }
 
@@ -38,5 +54,35 @@ export function initDeckIo(): void {
       throw new Error('That file is not a PhoxxPhire deck.')
     }
     return { canceled: false, deck: parsed }
+  })
+
+  ipcMain.handle(
+    IpcChannel.ProjectSave,
+    async (_event, project: SavedProject): Promise<ProjectSaveOutcome> => {
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Save project',
+        defaultPath: 'project.phoxxproj',
+        filters: [{ name: 'PhoxxPhire project', extensions: ['phoxxproj', 'json'] }]
+      })
+      if (canceled || !filePath) return { canceled: true }
+      await writeFile(filePath, JSON.stringify(project, null, 2), 'utf8')
+      return { canceled: false, path: filePath }
+    }
+  )
+
+  ipcMain.handle(IpcChannel.ProjectLoad, async (): Promise<ProjectLoadOutcome> => {
+    const { canceled, filePaths } = await dialog.showOpenDialog({
+      title: 'Open project',
+      properties: ['openFile'],
+      filters: [{ name: 'PhoxxPhire project', extensions: ['phoxxproj', 'json'] }]
+    })
+    const file = filePaths[0]
+    if (canceled || !file) return { canceled: true }
+
+    const parsed: unknown = JSON.parse(await readFile(file, 'utf8'))
+    if (!isSavedProject(parsed)) {
+      throw new Error('That file is not a PhoxxPhire project.')
+    }
+    return { canceled: false, project: parsed }
   })
 }

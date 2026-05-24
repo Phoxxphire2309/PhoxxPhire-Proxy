@@ -208,6 +208,15 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
               </select>
             </label>
 
+            <label className="export__field export__field--inline">
+              <input
+                type="checkbox"
+                checked={options.watermark}
+                onChange={(event) => set('watermark', event.target.checked)}
+              />
+              <span>“PROXY” watermark</span>
+            </label>
+
             <label className="export__field">
               <span>Print scale (%)</span>
               <input

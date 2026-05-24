@@ -170,6 +170,24 @@ describe('ExportService.export', () => {
     expect(ensureImage).not.toHaveBeenCalledWith('dfc', 1, false)
   })
 
+  it('renders a valid PDF with the PROXY watermark enabled', async () => {
+    const cards: Record<string, Card> = { a: card('a', 1) }
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage: async () => imagePath,
+      emit: () => {}
+    })
+    const savePath = join(dir, 'wm.pdf')
+    const result = await service.export(
+      [{ cardId: 'a', faceIndex: 0, upscale: false }],
+      { ...DEFAULT_EXPORT_OPTIONS, watermark: true },
+      savePath
+    )
+    expect(result.cardCount).toBe(1)
+    const doc = await PDFDocument.load(await readFile(savePath))
+    expect(doc.getPageCount()).toBe(1)
+  })
+
   it('interleaves a back page using the custom card back when selected', async () => {
     const cards: Record<string, Card> = { a: card('a', 1) }
     const customCardBack = vi.fn(async () => new Uint8Array(PNG_1X1))
