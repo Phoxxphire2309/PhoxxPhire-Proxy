@@ -920,6 +920,33 @@ body {
   background: var(--bg);
 }
 
+.search__recents-head {
+  padding: 6px 10px 2px;
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  color: var(--muted);
+}
+
+.search__help {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  flex-shrink: 0;
+  font-weight: 700;
+  text-decoration: none;
+  color: var(--muted);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+}
+
+.search__help:hover {
+  color: var(--text);
+  border-color: var(--accent);
+}
+
 .search__input {
   width: 100%;
   padding: 11px 14px;

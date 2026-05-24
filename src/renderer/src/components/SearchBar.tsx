@@ -6,9 +6,11 @@ export function SearchBar(): React.JSX.Element {
   const status = useSearchStore((state) => state.status)
   const setQuery = useSearchStore((state) => state.setQuery)
   const search = useSearchStore((state) => state.search)
+  const recents = useSearchStore((state) => state.recents)
 
   const [suggestions, setSuggestions] = useState<string[]>([])
   const [open, setOpen] = useState(false)
+  const [showRecents, setShowRecents] = useState(false)
   const [highlight, setHighlight] = useState(-1)
   const suppressNext = useRef(false)
 
@@ -41,6 +43,7 @@ export function SearchBar(): React.JSX.Element {
     suppressNext.current = true
     setQuery(value)
     setOpen(false)
+    setShowRecents(false)
     void search()
   }
 
@@ -77,8 +80,16 @@ export function SearchBar(): React.JSX.Element {
           value={query}
           onChange={(event) => setQuery(event.target.value)}
           onKeyDown={onKeyDown}
-          onBlur={() => setTimeout(() => setOpen(false), 120)}
-          onFocus={() => suggestions.length > 0 && setOpen(true)}
+          onBlur={() =>
+            setTimeout(() => {
+              setOpen(false)
+              setShowRecents(false)
+            }, 120)
+          }
+          onFocus={() => {
+            if (suggestions.length > 0) setOpen(true)
+            else if (query.trim().length === 0 && recents.length > 0) setShowRecents(true)
+          }}
           placeholder="Search Scryfall — e.g. lightning bolt, t:goblin, set:mh3"
           aria-label="Card search query"
           autoComplete="off"
@@ -100,10 +111,37 @@ export function SearchBar(): React.JSX.Element {
             ))}
           </ul>
         )}
+        {!open && showRecents && recents.length > 0 && (
+          <ul className="search__suggestions">
+            <li className="search__recents-head">Recent searches</li>
+            {recents.map((recent) => (
+              <li key={recent}>
+                <button
+                  type="button"
+                  className="search__suggestion"
+                  onMouseDown={(event) => event.preventDefault()}
+                  onClick={() => choose(recent)}
+                >
+                  ↺ {recent}
+                </button>
+              </li>
+            ))}
+          </ul>
+        )}
       </div>
       <button className="search__button" type="submit" disabled={status === 'loading'}>
         {status === 'loading' ? 'Searching…' : 'Search'}
       </button>
+      <a
+        className="search__help"
+        href="https://scryfall.com/docs/syntax"
+        target="_blank"
+        rel="noreferrer"
+        title="Scryfall search syntax reference"
+        aria-label="Search syntax help"
+      >
+        ?
+      </a>
     </form>
   )
 }
