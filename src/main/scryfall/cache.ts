@@ -47,11 +47,13 @@ async function dirSize(dir: string): Promise<number> {
 const IMAGE_CACHE_VERSION = 5
 
 export class CardCache {
+  readonly rootDir: string
   private readonly cardsDir: string
   private readonly imagesDir: string
   private readonly versionFile: string
 
   constructor(rootDir: string) {
+    this.rootDir = rootDir
     this.cardsDir = join(rootDir, 'cards')
     this.imagesDir = join(rootDir, 'images')
     this.versionFile = join(rootDir, 'image-cache-version')
@@ -168,6 +170,16 @@ export class CardCache {
       rm(this.imagesDir, { recursive: true, force: true })
     ])
     await this.init()
+  }
+
+  /**
+   * Removes only the cached images, keeping card metadata. They re-download and
+   * re-process with the current image logic on next use — so corner/bleed fixes
+   * apply without losing your searched cards or needing an app restart.
+   */
+  async clearImages(): Promise<void> {
+    await rm(this.imagesDir, { recursive: true, force: true })
+    await mkdir(this.imagesDir, { recursive: true })
   }
 
   /** Atomically write image bytes (temp file + rename) so readers never see a partial. */

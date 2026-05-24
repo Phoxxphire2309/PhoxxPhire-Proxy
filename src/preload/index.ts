@@ -55,6 +55,7 @@ const api: PhoxxApi = {
   },
   getCacheInfo: () => ipcRenderer.invoke(IpcChannel.CacheInfo),
   clearCache: () => ipcRenderer.invoke(IpcChannel.CacheClear),
+  rebuildImageCache: () => ipcRenderer.invoke(IpcChannel.CacheRebuildImages),
   onUpscaleStatus: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, data: UpscaleStatusEvent): void =>
       listener(data)

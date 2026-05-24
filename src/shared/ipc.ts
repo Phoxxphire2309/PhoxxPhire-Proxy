@@ -57,6 +57,7 @@ export const IpcChannel = {
   UpscaleInstall: 'upscale:install',
   CacheInfo: 'cache:info',
   CacheClear: 'cache:clear',
+  CacheRebuildImages: 'cache:rebuildImages',
   /** Main → renderer push channel for per-face upscale progress. */
   UpscaleStatus: 'upscale:status',
   /** Main → renderer push channel for one-click install progress. */
@@ -84,6 +85,8 @@ export interface UpscaleSettings {
 
 export interface CacheInfo {
   bytes: number
+  /** Absolute path to the on-disk cache directory. */
+  path: string
 }
 
 /** Whether a custom card-back image is currently installed. */
@@ -167,6 +170,8 @@ export interface PhoxxApi {
   getCacheInfo(): Promise<CacheInfo>
   /** Delete the on-disk cache; returns the (near-zero) size afterwards. */
   clearCache(): Promise<CacheInfo>
+  /** Drop only cached images (keeping card metadata) so they re-process with current logic. */
+  rebuildImageCache(): Promise<CacheInfo>
   /** Subscribe to upscale progress events; returns an unsubscribe function. */
   onUpscaleStatus(listener: (event: UpscaleStatusEvent) => void): () => void
 }

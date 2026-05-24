@@ -74,10 +74,17 @@ export async function initUpscale(options: UpscaleSetupOptions): Promise<Upscale
       return service.getSettings()
     }
   )
-  ipcMain.handle(IpcChannel.CacheInfo, async () => ({ bytes: await options.cache.sizeBytes() }))
+  ipcMain.handle(IpcChannel.CacheInfo, async () => ({
+    bytes: await options.cache.sizeBytes(),
+    path: options.cache.rootDir
+  }))
   ipcMain.handle(IpcChannel.CacheClear, async () => {
     await options.cache.clear()
-    return { bytes: await options.cache.sizeBytes() }
+    return { bytes: await options.cache.sizeBytes(), path: options.cache.rootDir }
+  })
+  ipcMain.handle(IpcChannel.CacheRebuildImages, async () => {
+    await options.cache.clearImages()
+    return { bytes: await options.cache.sizeBytes(), path: options.cache.rootDir }
   })
 
   ipcMain.handle(IpcChannel.UpscaleInstall, async () => {

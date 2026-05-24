@@ -46,4 +46,12 @@ describe('CardCache size + clear', () => {
     expect(await cache.sizeBytes()).toBe(0)
     expect(await cache.getCard('id-1')).toBeNull()
   })
+
+  it('clearImages drops images but keeps card metadata', async () => {
+    await cache.putCard(sampleCard)
+    await cache.writeImage('id-1', 0, new Uint8Array([1, 2, 3]))
+    await cache.clearImages()
+    expect(await cache.hasImage('id-1', 0)).toBe(false)
+    expect((await cache.getCard('id-1'))?.id).toBe('id-1') // metadata preserved
+  })
 })
