@@ -132,7 +132,8 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
                   value={options.bleedMode}
                   onChange={(event) => set('bleedMode', event.target.value as BleedMode)}
                 >
-                  <option value="extend">Extend edges (clean corners)</option>
+                  <option value="solid">Solid border colour (recommended)</option>
+                  <option value="extend">Extend edges</option>
                   <option value="zoom">Zoom card</option>
                 </select>
               </label>

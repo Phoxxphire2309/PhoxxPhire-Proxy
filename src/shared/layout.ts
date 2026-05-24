@@ -14,8 +14,13 @@ export type PageSize = 'a4' | 'letter' | 'legal' | 'a3' | 'custom'
 export type Orientation = 'portrait' | 'landscape'
 export type CutGuideStyle = 'none' | 'outline' | 'corners'
 export type CardBackStyle = 'none' | 'plain'
-/** 'extend' generates a mirrored bleed border; 'zoom' enlarges the card to fill the bleed. */
-export type BleedMode = 'zoom' | 'extend'
+/**
+ * How the bleed border is produced:
+ *  - 'solid'  — a flat band of the card's sampled border colour (default).
+ *  - 'extend' — each edge pixel replicated straight outward.
+ *  - 'zoom'   — no border; the card is enlarged at layout time to fill the bleed.
+ */
+export type BleedMode = 'solid' | 'zoom' | 'extend'
 
 export interface ExportOptions {
   pageSize: PageSize
@@ -47,7 +52,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   rowSpacingMm: 0,
   cutGuideStyle: 'outline',
   cardBack: 'none',
-  bleedMode: 'extend'
+  bleedMode: 'solid'
 }
 
 export interface Rect {

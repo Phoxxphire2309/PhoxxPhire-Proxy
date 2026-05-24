@@ -7,6 +7,7 @@ import { DeckPanel } from '@renderer/components/DeckPanel'
 import { UpscaleControls } from '@renderer/components/UpscaleControls'
 import { ToastContainer } from '@renderer/components/ToastContainer'
 import { UpscaleProgress } from '@renderer/components/UpscaleProgress'
+import { PrintPartner } from '@renderer/components/PrintPartner'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore } from '@renderer/state/uiStore'
 import { loadPersistedState, startPersisting } from '@renderer/state/persist'
@@ -64,6 +65,7 @@ export function App(): React.JSX.Element {
           <span className="app__version">v{version}</span>
         </div>
         <div className="app__controls">
+          <PrintPartner compact />
           <UpscaleControls />
           <button
             className="toggle"

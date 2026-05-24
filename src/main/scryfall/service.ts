@@ -8,6 +8,7 @@ import {
 
 type ProgressFn = (progress: ImportProgress) => void
 import type { Card, SearchResult } from '@shared/scryfall'
+import { squareOffCorners } from '../image/processor'
 import { CardCache } from './cache'
 import { ScryfallClient } from './client'
 import { fetchDeckLines } from './deck-sources'
@@ -171,6 +172,10 @@ export class ScryfallService {
     }
 
     const data = await downloadImage(face.imageUrl, this.fetchFn, IMAGE_DOWNLOAD_TIMEOUT_MS)
-    return this.cache.writeImage(cardId, faceIndex, data)
+    // Square the transparent rounded corners on download (filled with the card's
+    // border colour) so every consumer — preview, upscaler, export — sees a clean
+    // rectangular card.
+    const squared = await squareOffCorners(data)
+    return this.cache.writeImage(cardId, faceIndex, squared)
   }
 }

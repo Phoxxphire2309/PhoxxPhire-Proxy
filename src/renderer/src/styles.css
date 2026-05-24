@@ -84,6 +84,81 @@ body {
   color: var(--muted);
 }
 
+/* Print partner credit (TCGPlaytest.com) */
+.partner {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  text-decoration: none;
+  color: var(--text);
+}
+
+.partner__logo {
+  flex-shrink: 0;
+  object-fit: contain;
+}
+
+.partner__text {
+  display: flex;
+  flex-direction: column;
+}
+
+.partner__lead {
+  font-size: 13px;
+  font-weight: 600;
+}
+
+.partner__sub {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+/* Full card, shown in the export dialog */
+.partner:not(.partner--compact) {
+  margin-top: 16px;
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  transition: border-color 0.15s ease;
+}
+
+.partner:not(.partner--compact):hover {
+  border-color: var(--accent);
+}
+
+.partner:not(.partner--compact) .partner__logo {
+  width: 56px;
+  height: 50px;
+}
+
+/* Compact badge, shown persistently in the header */
+.partner--compact {
+  gap: 8px;
+  padding: 4px 10px 4px 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  transition:
+    border-color 0.15s ease,
+    background 0.15s ease;
+}
+
+.partner--compact:hover {
+  border-color: var(--accent);
+  background: var(--surface, rgba(255, 255, 255, 0.04));
+}
+
+.partner--compact .partner__logo {
+  width: 30px;
+  height: 27px;
+}
+
+.partner__compact-text {
+  font-size: 12px;
+  font-weight: 600;
+  white-space: nowrap;
+}
+
 /* Upscale controls (header) */
 .controls {
   display: flex;

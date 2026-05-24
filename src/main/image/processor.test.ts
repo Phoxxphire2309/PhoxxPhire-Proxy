@@ -4,7 +4,37 @@ import { join } from 'node:path'
 import sharp from 'sharp'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { MPC_BLEED_PX, MPC_IMAGE_HEIGHT, MPC_IMAGE_WIDTH } from '@shared/mpc'
-import { buildMpcCardBack, buildMpcImage, extendBleed, finalizeUpscaled } from './processor'
+import {
+  buildMpcCardBack,
+  buildMpcImage,
+  extendBleed,
+  finalizeUpscaled,
+  sampleBorderColor
+} from './processor'
+
+/** A card-like image: an opaque coloured border around a different-coloured interior. */
+async function borderedPng(
+  border: { r: number; g: number; b: number },
+  interior: { r: number; g: number; b: number },
+  w = 630,
+  h = 880,
+  borderPx = 40
+): Promise<Buffer> {
+  const raw = Buffer.alloc(w * h * 3)
+  for (let y = 0; y < h; y += 1) {
+    for (let x = 0; x < w; x += 1) {
+      const edge = x < borderPx || y < borderPx || x >= w - borderPx || y >= h - borderPx
+      const px = edge ? border : interior
+      const i = (y * w + x) * 3
+      raw[i] = px.r
+      raw[i + 1] = px.g
+      raw[i + 2] = px.b
+    }
+  }
+  return sharp(raw, { raw: { width: w, height: h, channels: 3 } })
+    .png()
+    .toBuffer()
+}
 
 const isPng = (bytes: Uint8Array): boolean =>
   bytes[0] === 0x89 && bytes[1] === 0x50 && bytes[2] === 0x4e && bytes[3] === 0x47
@@ -91,41 +121,21 @@ describe('extendBleed', () => {
     expect(leftEdgeMean).toBeGreaterThan(150) // bright: the edge was replicated, not reflected
   })
 
-  it('fills transparent rounded corners with art instead of black', async () => {
-    // A red card with a small transparent top-left corner (like Scryfall's
-    // rounded corners). Without squaring-off, the corner would flatten to black
-    // and replicate black into the bleed; squaring-off fills it from the art.
-    const W = 630
-    const H = 880
-    const raw = Buffer.alloc(W * H * 4)
-    for (let y = 0; y < H; y += 1) {
-      for (let x = 0; x < W; x += 1) {
-        const transparent = x < W * 0.03 && y < H * 0.03
-        const i = (y * W + x) * 4
-        raw[i] = 200
-        raw[i + 1] = 40
-        raw[i + 2] = 90
-        raw[i + 3] = transparent ? 0 : 255
-      }
-    }
-    const png = await sharp(raw, { raw: { width: W, height: H, channels: 4 } })
-      .png()
-      .toBuffer()
-    const out = await extendBleed(new Uint8Array(png), 2, 'extend')
+  it('fills the bleed with the sampled border colour in solid mode', async () => {
+    // Red border, blue interior. The solid bleed should be the red border colour.
+    const png = await borderedPng({ r: 210, g: 30, b: 30 }, { r: 20, g: 40, b: 200 })
+    const out = await extendBleed(new Uint8Array(png), 2, 'solid')
     const { data } = await sharp(out).raw().toBuffer({ resolveWithObject: true })
-
-    // The very top-left pixel (outermost bleed corner) should be reddish art, not black.
     const r = data[0]!
     const g = data[1]!
     const b = data[2]!
-    expect(r).toBeGreaterThan(120)
-    expect(r).toBeGreaterThan(g + b) // dominated by the card's red, i.e. real art
+    expect(r).toBeGreaterThan(150) // outer bleed pixel is the red border, not the blue interior
+    expect(r).toBeGreaterThan(g + b)
   })
 
-  it('fills a transparent corner from the nearest edge, not distant interior art', async () => {
-    // Black border, grey interior, transparent top-left corner. The corner must
-    // be filled from the adjacent BLACK edge — not the grey interior 40px in
-    // (the bug where a grey blob appeared in a corner that should be black).
+  it('squares transparent rounded corners using the border colour, not interior art', async () => {
+    // Black border, grey interior, transparent top-left corner. The squared
+    // corner must take the BLACK border colour, never the grey interior.
     const W = 630
     const H = 880
     const border = 40
@@ -145,17 +155,34 @@ describe('extendBleed', () => {
     const png = await sharp(raw, { raw: { width: W, height: H, channels: 4 } })
       .png()
       .toBuffer()
-    const out = await extendBleed(new Uint8Array(png), 2, 'extend')
+    const out = await extendBleed(new Uint8Array(png), 2, 'solid')
     const { data } = await sharp(out).raw().toBuffer({ resolveWithObject: true })
 
-    // Outermost top-left bleed pixel should be black (the edge), well below grey (160).
+    // Outermost top-left bleed pixel should be black (the border), well below grey (160).
     expect(data[0]!).toBeLessThan(60)
   })
 
   it('returns the input unchanged for zoom mode or zero bleed', async () => {
     const bytes = new Uint8Array(await solidPng(10, 14))
     expect(await extendBleed(bytes, 2, 'zoom')).toBe(bytes)
-    expect(await extendBleed(bytes, 0, 'extend')).toBe(bytes)
+    expect(await extendBleed(bytes, 0, 'solid')).toBe(bytes)
+  })
+})
+
+describe('sampleBorderColor', () => {
+  it('returns the dominant border colour, ignoring the interior', async () => {
+    const black = await sampleBorderColor(
+      new Uint8Array(await borderedPng({ r: 0, g: 0, b: 0 }, { r: 200, g: 200, b: 200 }))
+    )
+    expect(black.r).toBeLessThan(30)
+    expect(black.g).toBeLessThan(30)
+    expect(black.b).toBeLessThan(30)
+
+    const red = await sampleBorderColor(
+      new Uint8Array(await borderedPng({ r: 210, g: 20, b: 20 }, { r: 20, g: 20, b: 210 }))
+    )
+    expect(red.r).toBeGreaterThan(150)
+    expect(red.b).toBeLessThan(80)
   })
 })
 

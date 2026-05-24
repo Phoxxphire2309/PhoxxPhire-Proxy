@@ -4,6 +4,7 @@ import { useDeckStore } from '@renderer/state/deckStore'
 import { useOrderStore } from '@renderer/state/orderStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
+import { PrintPartner } from '@renderer/components/PrintPartner'
 
 type Phase = 'configure' | 'running' | 'done' | 'error'
 
@@ -209,6 +210,8 @@ export function ExportDialog({
                 {running ? 'Exporting…' : 'Export PDF'}
               </button>
             </div>
+
+            <PrintPartner />
           </>
         )}
       </div>
