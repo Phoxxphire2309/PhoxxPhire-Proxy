@@ -30,6 +30,24 @@ const IMAGE_DOWNLOAD_TIMEOUT_MS = 20_000
  */
 const PRINTINGS_TTL_MS = 10 * 60 * 1000
 
+/**
+ * Runs `fn` over every item with at most `limit` in flight at once. Used to cap
+ * the burst of disk writes when caching a card with hundreds of printings (basic
+ * lands, staples), which would otherwise fire all at once — especially now that
+ * bulk switches fetch several cards in parallel.
+ */
+async function forEachLimit<T>(
+  items: readonly T[],
+  limit: number,
+  fn: (item: T) => Promise<void>
+): Promise<void> {
+  const queue = [...items]
+  const worker = async (): Promise<void> => {
+    for (let next = queue.shift(); next !== undefined; next = queue.shift()) await fn(next)
+  }
+  await Promise.all(Array.from({ length: Math.min(limit, items.length) }, () => worker()))
+}
+
 /** Downloads an image into the given face slot of the cache. */
 async function downloadImage(
   url: string,
@@ -96,7 +114,9 @@ export class ScryfallService {
     if (hit && Date.now() - hit.at < PRINTINGS_TTL_MS) return hit.cards
 
     const cards = await this.client.getPrintings(oracleId)
-    await Promise.all(cards.map((card) => this.cache.putCard(card)))
+    // Persist with bounded concurrency so a high-printing card doesn't storm the
+    // filesystem (and exhaust the libuv thread pool) with hundreds of writes.
+    await forEachLimit(cards, 8, (card) => this.cache.putCard(card))
     this.printingsCache.set(oracleId, { cards, at: Date.now() })
     return cards
   }

@@ -198,3 +198,45 @@ describe('ScryfallService.findTokens', () => {
     expect(tokens).toEqual([])
   })
 })
+
+describe('ScryfallService.getPrintings', () => {
+  let dir: string
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'phoxx-prints-'))
+  })
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('caches printings in memory so a repeat lookup makes no second request', async () => {
+    const cache = new CardCache(dir)
+    await cache.init()
+    let calls = 0
+    const fetchFn = (async () => {
+      calls += 1
+      return jsonResponse({
+        object: 'list',
+        has_more: false,
+        data: [card('a', 'lea', '1'), card('b', 'mh3', '2')]
+      })
+    }) as typeof fetch
+    const client = new ScryfallClient({
+      userAgent: 'test',
+      limiter: new RateLimiter(0),
+      sleepFn: async () => {},
+      maxRetries: 0,
+      fetchFn
+    })
+    const service = new ScryfallService(client, cache)
+
+    const first = await service.getPrintings('o-1')
+    const second = await service.getPrintings('o-1')
+    expect(first.map((c) => c.id)).toEqual(['a', 'b'])
+    expect(second).toBe(first) // same cached array, no refetch
+    expect(calls).toBe(1)
+    // Every printing was still persisted to the on-disk card cache.
+    expect((await cache.getCard('a'))?.id).toBe('a')
+    expect((await cache.getCard('b'))?.id).toBe('b')
+  })
+})
