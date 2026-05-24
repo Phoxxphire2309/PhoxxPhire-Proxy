@@ -12,6 +12,7 @@ import type { Card } from '@shared/scryfall'
 import { squareOffCorners } from '../image/processor'
 import { buildMpcOrderXml, type MpcXmlCard } from './mpc'
 import { buildProxyPdf } from './pdf'
+import { buildPrintHtml } from './print-html'
 import { buildZip } from './zip'
 
 export interface ExportServiceDeps {
@@ -52,11 +53,24 @@ function imageExtension(bytes: Uint8Array): 'png' | 'jpg' {
 export class ExportService {
   constructor(private readonly deps: ExportServiceDeps) {}
 
-  async export(
+  /**
+   * Prepares everything the PDF and print renderers need: each unique card image
+   * (processed once), the per-slot image index map, the optional custom back, the
+   * per-slot rotation flags, and the per-slot duplex back overrides. Emits
+   * `preparing` progress as images are processed.
+   */
+  private async prepareRender(
     slots: ExportSlot[],
-    options: ExportOptions,
-    savePath: string
-  ): Promise<{ path: string; cardCount: number; pageCount: number }> {
+    options: ExportOptions
+  ): Promise<{
+    uniqueImages: Uint8Array[]
+    slotImageIndices: number[]
+    backImage: Uint8Array | undefined
+    slotRotations: boolean[]
+    slotBackImages: (Uint8Array | null)[]
+    cardCount: number
+    pageCount: number
+  }> {
     const slotKey = (slot: ExportSlot): string =>
       `${slot.upscale ? 'u' : 's'} ${slot.faceIndex} ${slot.cardId}`
 
@@ -130,25 +144,71 @@ export class ExportService {
       }
     }
 
-    this.deps.emit({ phase: 'rendering', completed: keys.length, total: keys.length })
-    const pdf = await buildProxyPdf(
+    const layout = computePageLayout(options)
+    return {
       uniqueImages,
       slotImageIndices,
-      options,
       backImage,
       slotRotations,
-      slotBackImages
-    )
-    await writeFile(savePath, pdf)
-
-    const layout = computePageLayout(options)
-    this.deps.emit({ phase: 'done', completed: slots.length, total: slots.length })
-
-    return {
-      path: savePath,
+      slotBackImages,
       cardCount: slots.filter((slot) => !slot.spacer).length,
       pageCount: pageCountFor(slots.length, layout.perPage)
     }
+  }
+
+  async export(
+    slots: ExportSlot[],
+    options: ExportOptions,
+    savePath: string
+  ): Promise<{ path: string; cardCount: number; pageCount: number }> {
+    const prepared = await this.prepareRender(slots, options)
+
+    this.deps.emit({
+      phase: 'rendering',
+      completed: prepared.uniqueImages.length,
+      total: prepared.uniqueImages.length
+    })
+    const pdf = await buildProxyPdf(
+      prepared.uniqueImages,
+      prepared.slotImageIndices,
+      options,
+      prepared.backImage,
+      prepared.slotRotations,
+      prepared.slotBackImages
+    )
+    await writeFile(savePath, pdf)
+
+    this.deps.emit({ phase: 'done', completed: slots.length, total: slots.length })
+    return { path: savePath, cardCount: prepared.cardCount, pageCount: prepared.pageCount }
+  }
+
+  /**
+   * Renders the proxy sheet to a self-contained HTML document (images inlined as
+   * data URLs) for printing — the same layout and image pipeline as the PDF, but
+   * printable reliably via the OS print dialog.
+   */
+  async renderPrintHtml(
+    slots: ExportSlot[],
+    options: ExportOptions
+  ): Promise<{ html: string; cardCount: number }> {
+    const prepared = await this.prepareRender(slots, options)
+
+    this.deps.emit({
+      phase: 'rendering',
+      completed: prepared.uniqueImages.length,
+      total: prepared.uniqueImages.length
+    })
+    const html = buildPrintHtml(
+      prepared.uniqueImages,
+      prepared.slotImageIndices,
+      options,
+      prepared.backImage,
+      prepared.slotRotations,
+      prepared.slotBackImages
+    )
+
+    this.deps.emit({ phase: 'done', completed: slots.length, total: slots.length })
+    return { html, cardCount: prepared.cardCount }
   }
 
   /** Collects the unique card faces across the slots, with the metadata exports need. */

@@ -35,18 +35,25 @@ function broadcastProgress(progress: ExportProgress): void {
 }
 
 /**
- * Loads a PDF in an offscreen window (Chromium's PDF viewer needs `plugins`)
- * and opens the OS print dialog. Resolves true if the job was sent, false if the
- * user cancelled the dialog; rejects on a genuine load/print failure.
+ * Loads a self-contained HTML document in an offscreen window and opens the OS
+ * print dialog. Printing rendered HTML is reliable (unlike printing a loaded
+ * PDF, whose plugin frame often never returns a print callback). Resolves true
+ * if the job was sent, false if the user cancelled; rejects on a load failure.
+ * A timeout guards the load so a stuck render can't hang the caller forever.
  */
-function printPdfFile(pdfPath: string): Promise<boolean> {
+function printHtmlFile(htmlPath: string): Promise<boolean> {
   return new Promise<boolean>((resolve, reject) => {
-    const win = new BrowserWindow({ show: false, webPreferences: { plugins: true } })
+    const win = new BrowserWindow({ show: false })
     const cleanup = (): void => {
       if (!win.isDestroyed()) win.close()
     }
+    const loadTimer = setTimeout(() => {
+      cleanup()
+      reject(new Error('Timed out preparing the document for printing.'))
+    }, 30_000)
 
     win.webContents.once('did-finish-load', () => {
+      clearTimeout(loadTimer)
       win.webContents.print({ silent: false, printBackground: true }, (success, failureReason) => {
         cleanup()
         // A user-cancelled dialog isn't an error; anything else is.
@@ -55,11 +62,13 @@ function printPdfFile(pdfPath: string): Promise<boolean> {
       })
     })
     win.webContents.once('did-fail-load', (_event, _code, description) => {
+      clearTimeout(loadTimer)
       cleanup()
       reject(new Error(`Could not open the document for printing: ${description}`))
     })
 
-    win.loadFile(pdfPath).catch((error: unknown) => {
+    win.loadFile(htmlPath).catch((error: unknown) => {
+      clearTimeout(loadTimer)
       cleanup()
       reject(error instanceof Error ? error : new Error('Could not open the document for printing'))
     })
@@ -104,12 +113,13 @@ export function initExport(options: ExportSetupOptions): void {
   ipcMain.handle(
     IpcChannel.ExportPrint,
     async (_event, request: ExportRequest): Promise<PrintOutcome> => {
-      // Render to a temp PDF, print it, then clean up regardless of outcome.
-      const tmpPath = join(app.getPath('temp'), `phoxx-print-${Date.now()}.pdf`)
+      // Render the sheet to a temp HTML doc, print it, then clean up regardless.
+      const tmpPath = join(app.getPath('temp'), `phoxx-print-${Date.now()}.html`)
       try {
-        const result = await service.export(request.slots, request.options, tmpPath)
-        const printed = await printPdfFile(tmpPath)
-        return printed ? { canceled: false, cardCount: result.cardCount } : { canceled: true }
+        const { html, cardCount } = await service.renderPrintHtml(request.slots, request.options)
+        await writeFile(tmpPath, html, 'utf8')
+        const printed = await printHtmlFile(tmpPath)
+        return printed ? { canceled: false, cardCount } : { canceled: true }
       } finally {
         await rm(tmpPath, { force: true })
       }
