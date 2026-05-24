@@ -71,16 +71,25 @@ function drawBack(page: PDFPage, pageWidth: number, pageHeight: number, slot: Sl
   })
 }
 
+async function embedImage(
+  doc: PDFDocument,
+  bytes: Uint8Array
+): Promise<Awaited<ReturnType<PDFDocument['embedPng']>>> {
+  return bytes[0] === 0xff && bytes[1] === 0xd8 ? doc.embedJpg(bytes) : doc.embedPng(bytes)
+}
+
 /**
  * Builds a print-ready proxy PDF. `slotImageIndices` maps each printed slot (in
  * order) to an entry in `uniqueImages`, so duplicate cards are embedded once.
  * When `cardBack` is enabled, a mirrored back page is interleaved after each
- * front page for double-sided (duplex) printing.
+ * front page for double-sided (duplex) printing: a custom `backImage` is drawn
+ * when `cardBack === 'custom'` and one is supplied, otherwise a plain dark back.
  */
 export async function buildProxyPdf(
   uniqueImages: Uint8Array[],
   slotImageIndices: number[],
-  options: ExportOptions
+  options: ExportOptions,
+  backImage?: Uint8Array
 ): Promise<Uint8Array> {
   const layout = computePageLayout(options)
   const doc = await PDFDocument.create()
@@ -90,11 +99,9 @@ export async function buildProxyPdf(
     return doc.save()
   }
 
-  const embedded = await Promise.all(
-    uniqueImages.map((bytes) =>
-      bytes[0] === 0xff && bytes[1] === 0xd8 ? doc.embedJpg(bytes) : doc.embedPng(bytes)
-    )
-  )
+  const embedded = await Promise.all(uniqueImages.map((bytes) => embedImage(doc, bytes)))
+  const backEmbed =
+    options.cardBack === 'custom' && backImage ? await embedImage(doc, backImage) : null
   const pageCount = pageCountFor(slotImageIndices.length, layout.perPage)
 
   for (let pageIndex = 0; pageIndex < pageCount; pageIndex += 1) {
@@ -122,7 +129,18 @@ export async function buildProxyPdf(
       const backPage = doc.addPage([layout.pageWidthPt, layout.pageHeightPt])
       for (let slotIndex = 0; slotIndex < slotsOnPage; slotIndex += 1) {
         const slot = layout.slots[slotIndex]!
-        drawBack(backPage, layout.pageWidthPt, layout.pageHeightPt, slot)
+        if (backEmbed) {
+          // Mirror the X position so backs line up with fronts under duplex printing.
+          const mirroredX = layout.pageWidthPt - (slot.bleed.x + slot.bleed.width)
+          backPage.drawImage(backEmbed, {
+            x: mirroredX,
+            y: layout.pageHeightPt - (slot.bleed.y + slot.bleed.height),
+            width: slot.bleed.width,
+            height: slot.bleed.height
+          })
+        } else {
+          drawBack(backPage, layout.pageWidthPt, layout.pageHeightPt, slot)
+        }
         const mirroredCut: Rect = {
           x: layout.pageWidthPt - (slot.cut.x + slot.cut.width),
           y: slot.cut.y,

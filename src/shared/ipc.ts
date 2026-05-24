@@ -35,6 +35,8 @@ export const IpcChannel = {
   DeckSave: 'deck:save',
   DeckLoad: 'deck:load',
   CustomCardImport: 'custom:import',
+  CardBackImport: 'cardback:import',
+  CardBackInfo: 'cardback:info',
   StateGet: 'state:get',
   StateSet: 'state:set',
   UpscaleAvailable: 'upscale:available',
@@ -71,6 +73,11 @@ export interface CacheInfo {
   bytes: number
 }
 
+/** Whether a custom card-back image is currently installed. */
+export interface CardBackInfo {
+  hasCustom: boolean
+}
+
 export type UpscaleStatus = 'queued' | 'upscaling' | 'ready' | 'failed'
 
 /** Progress update for a single card face moving through the upscale pipeline. */
@@ -105,6 +112,10 @@ export interface PhoxxApi {
   loadDeck(): Promise<DeckLoadOutcome>
   /** Pick an image file and register it as a custom card; null if cancelled. */
   importCustomCard(): Promise<Card | null>
+  /** Pick an image file to use as the custom card back; returns the resulting state. */
+  importCardBack(): Promise<CardBackInfo>
+  /** Whether a custom card-back image is currently installed. */
+  getCardBackInfo(): Promise<CardBackInfo>
   /** Read persisted app state (deck, settings, theme), or null if none saved. */
   getAppState(): Promise<AppState | null>
   /** Persist app state to disk. */

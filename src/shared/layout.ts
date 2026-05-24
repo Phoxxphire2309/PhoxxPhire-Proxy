@@ -13,7 +13,8 @@ import { CARD_HEIGHT_MM, CARD_WIDTH_MM, mmToPt } from './units'
 export type PageSize = 'a4' | 'letter' | 'legal' | 'a3' | 'custom'
 export type Orientation = 'portrait' | 'landscape'
 export type CutGuideStyle = 'none' | 'outline' | 'corners'
-export type CardBackStyle = 'none' | 'plain'
+/** 'plain' draws a flat dark back; 'custom' uses a user-uploaded back image. */
+export type CardBackStyle = 'none' | 'plain' | 'custom'
 /**
  * How the bleed border is produced:
  *  - 'solid'  — a flat band of the card's sampled border colour (default).

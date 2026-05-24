@@ -11,6 +11,7 @@ import type {
   ExportSlot
 } from '@shared/layout'
 import type { MpcCard, MpcExportOutcome } from '@shared/mpc'
+import type { CardBackManager } from '../cardback/setup'
 import type { ScryfallService } from '../scryfall/service'
 import type { UpscaleService } from '../upscale/service'
 import { buildMpcCardBack, buildMpcImage, extendBleed } from '../image/processor'
@@ -20,6 +21,7 @@ import { ExportService } from './service'
 export interface ExportSetupOptions {
   scryfall: ScryfallService
   upscale: UpscaleService
+  cardBack: CardBackManager
 }
 
 function broadcastProgress(progress: ExportProgress): void {
@@ -42,6 +44,7 @@ export function initExport(options: ExportSetupOptions): void {
       extendBleed(bytes, exportOptions.bleedMm, exportOptions.bleedMode),
     mpcImage: buildMpcImage,
     mpcCardBack: buildMpcCardBack,
+    customCardBack: () => options.cardBack.getBytes(),
     emit: broadcastProgress
   })
 

@@ -25,6 +25,8 @@ export interface ExportServiceDeps {
   mpcImage?: (bytes: Uint8Array) => Promise<Uint8Array>
   /** Build the common MPC card-back image (required for `exportMpc`). */
   mpcCardBack?: () => Promise<Uint8Array>
+  /** The user's custom card-back image bytes, or null if none is installed. */
+  customCardBack?: () => Promise<Uint8Array | null>
   /** Bundle a name → bytes map into a ZIP. Defaults to the built-in zlib writer. */
   zip?: (files: Record<string, Uint8Array>) => Uint8Array
   /** Fill transparent rounded corners with edge colour. Defaults to squareOffCorners. */
@@ -79,8 +81,15 @@ export class ExportService {
 
     const slotImageIndices = slots.map((slot) => keyToIndex.get(slotKey(slot))!)
 
+    // Custom card back (when selected and available); export silently uses the
+    // plain back otherwise.
+    const backImage =
+      options.cardBack === 'custom'
+        ? ((await this.deps.customCardBack?.()) ?? undefined)
+        : undefined
+
     this.deps.emit({ phase: 'rendering', completed: keys.length, total: keys.length })
-    const pdf = await buildProxyPdf(uniqueImages, slotImageIndices, options)
+    const pdf = await buildProxyPdf(uniqueImages, slotImageIndices, options, backImage)
     await writeFile(savePath, pdf)
 
     const layout = computePageLayout(options)
@@ -261,8 +270,11 @@ export class ExportService {
       })
     }
 
+    // Use the user's custom back (rendered to MPC spec) when installed, else the plain back.
+    const customBack = (await this.deps.customCardBack?.()) ?? null
     const cardBackName = uniqueName('cardback')
-    await writeFile(join(folder, cardBackName), await mpcCardBack())
+    const cardBackBytes = customBack ? await mpcImage(customBack) : await mpcCardBack()
+    await writeFile(join(folder, cardBackName), cardBackBytes)
     fileCount += 1
     this.deps.emit({ phase: 'preparing', completed: (completed += 1), total })
 

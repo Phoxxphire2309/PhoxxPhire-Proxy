@@ -1,7 +1,8 @@
-import { useEffect } from 'react'
+import { useEffect, useState } from 'react'
 import {
   computePageLayout,
   type BleedMode,
+  type CardBackStyle,
   type CutGuideStyle,
   type Orientation,
   type PageSize
@@ -9,6 +10,7 @@ import {
 import { faceImageUrl } from '@shared/scryfall'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 import { useDeckStore } from '@renderer/state/deckStore'
+import { toast } from '@renderer/state/toastStore'
 
 const numeric = (value: string): number => Math.max(0, Number(value) || 0)
 
@@ -17,14 +19,29 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
   const set = usePageSetupStore((state) => state.set)
   const reset = usePageSetupStore((state) => state.reset)
   const items = useDeckStore((state) => state.items)
+  const [hasCustomBack, setHasCustomBack] = useState(false)
 
   useEffect(() => {
+    void window.phoxx.getCardBackInfo().then((info) => setHasCustomBack(info.hasCustom))
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') onClose()
     }
     window.addEventListener('keydown', onKey)
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
+
+  const chooseCardBack = async (): Promise<void> => {
+    try {
+      const info = await window.phoxx.importCardBack()
+      setHasCustomBack(info.hasCustom)
+      if (info.hasCustom) {
+        set('cardBack', 'custom')
+        toast('Custom card back set', 'success')
+      }
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Could not set the card back', 'error')
+    }
+  }
 
   const layout = computePageLayout(options)
   const { pageWidthPt: pw, pageHeightPt: ph, perPage } = layout
@@ -151,14 +168,30 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
               </select>
             </label>
 
-            <label className="export__field export__field--inline">
-              <input
-                type="checkbox"
-                checked={options.cardBack !== 'none'}
-                onChange={(event) => set('cardBack', event.target.checked ? 'plain' : 'none')}
-              />
+            <label className="export__field">
               <span>Card backs (duplex)</span>
+              <select
+                value={options.cardBack}
+                onChange={(event) => set('cardBack', event.target.value as CardBackStyle)}
+              >
+                <option value="none">None</option>
+                <option value="plain">Plain dark</option>
+                <option value="custom">Custom image</option>
+              </select>
             </label>
+
+            {options.cardBack === 'custom' && (
+              <div className="cardback">
+                <button className="toggle" type="button" onClick={() => void chooseCardBack()}>
+                  {hasCustomBack ? 'Replace back image…' : 'Choose back image…'}
+                </button>
+                <span className="detail__hint">
+                  {hasCustomBack
+                    ? 'Custom back installed ✓'
+                    : 'No image chosen yet — exports fall back to the plain back.'}
+                </span>
+              </div>
+            )}
 
             <button className="toggle" type="button" onClick={reset}>
               Reset to defaults

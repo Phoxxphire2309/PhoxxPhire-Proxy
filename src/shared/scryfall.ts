@@ -45,6 +45,9 @@ export interface ScryfallPrices {
   tix?: string | null
 }
 
+/** Scryfall's assessment of a printing's image quality. */
+export type ImageStatus = 'missing' | 'placeholder' | 'lowres' | 'highres_scan'
+
 /** Subset of a Scryfall card object that we rely on. */
 export interface ScryfallCard {
   id: string
@@ -54,6 +57,7 @@ export interface ScryfallCard {
   collector_number: string
   lang: string
   layout: string
+  image_status?: string
   image_uris?: ScryfallImageUris
   card_faces?: ScryfallCardFace[]
   prices?: ScryfallPrices
@@ -107,6 +111,44 @@ export interface Card {
   prices: CardPrices
   /** Tokens / emblems this card creates (from Scryfall `all_parts`). */
   relatedTokens: RelatedToken[]
+  /** Scryfall's image-quality rating for this printing (drives best-source selection). */
+  imageStatus?: ImageStatus
+}
+
+/** Higher is better. Used to pick the highest-quality printing to upscale from. */
+export function imageStatusRank(status: ImageStatus | undefined): number {
+  switch (status) {
+    case 'highres_scan':
+      return 3
+    case 'lowres':
+      return 2
+    case 'placeholder':
+      return 1
+    default:
+      return 0
+  }
+}
+
+/** Whether a card's source image is a full high-resolution scan. */
+export function isHighRes(card: Pick<Card, 'imageStatus'>): boolean {
+  return card.imageStatus === 'highres_scan'
+}
+
+/**
+ * The printing with the best image quality among the given cards (highest
+ * `image_status` rank), keeping the first on ties. Returns null for an empty list.
+ */
+export function bestPrinting(cards: Card[]): Card | null {
+  let best: Card | null = null
+  let bestRank = -1
+  for (const card of cards) {
+    const rank = imageStatusRank(card.imageStatus)
+    if (rank > bestRank) {
+      best = card
+      bestRank = rank
+    }
+  }
+  return best
 }
 
 /** Best available non-foil USD price, falling back to etched/foil. */

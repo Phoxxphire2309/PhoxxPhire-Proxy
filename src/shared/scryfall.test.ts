@@ -1,5 +1,16 @@
 import { describe, expect, it } from 'vitest'
-import { bestUsd, faceImageUrl, formatUsd, IMAGE_PROTOCOL, type CardPrices } from '@shared/scryfall'
+import {
+  bestPrinting,
+  bestUsd,
+  faceImageUrl,
+  formatUsd,
+  imageStatusRank,
+  isHighRes,
+  IMAGE_PROTOCOL,
+  type Card,
+  type CardPrices,
+  type ImageStatus
+} from '@shared/scryfall'
 
 const prices = (overrides: Partial<CardPrices> = {}): CardPrices => ({
   usd: null,
@@ -9,6 +20,20 @@ const prices = (overrides: Partial<CardPrices> = {}): CardPrices => ({
   eurFoil: null,
   tix: null,
   ...overrides
+})
+
+const card = (id: string, imageStatus?: ImageStatus): Card => ({
+  id,
+  oracleId: 'o',
+  name: id,
+  setCode: 'tst',
+  collectorNumber: '1',
+  lang: 'en',
+  layout: 'normal',
+  faces: [{ name: id, imageUrl: 'x' }],
+  prices: prices(),
+  relatedTokens: [],
+  ...(imageStatus !== undefined && { imageStatus })
 })
 
 describe('faceImageUrl', () => {
@@ -49,5 +74,35 @@ describe('bestUsd', () => {
 
   it('returns null when no USD price is available', () => {
     expect(bestUsd(prices())).toBeNull()
+  })
+})
+
+describe('imageStatusRank / isHighRes', () => {
+  it('ranks highres_scan highest and undefined lowest', () => {
+    expect(imageStatusRank('highres_scan')).toBeGreaterThan(imageStatusRank('lowres'))
+    expect(imageStatusRank('lowres')).toBeGreaterThan(imageStatusRank('placeholder'))
+    expect(imageStatusRank('placeholder')).toBeGreaterThan(imageStatusRank(undefined))
+  })
+
+  it('treats only highres_scan as high-res', () => {
+    expect(isHighRes({ imageStatus: 'highres_scan' })).toBe(true)
+    expect(isHighRes({ imageStatus: 'lowres' })).toBe(false)
+    expect(isHighRes({})).toBe(false)
+  })
+})
+
+describe('bestPrinting', () => {
+  it('picks the highest-quality printing', () => {
+    const cards = [card('a', 'lowres'), card('b', 'highres_scan'), card('c', 'placeholder')]
+    expect(bestPrinting(cards)?.id).toBe('b')
+  })
+
+  it('keeps the first on ties', () => {
+    const cards = [card('a', 'highres_scan'), card('b', 'highres_scan')]
+    expect(bestPrinting(cards)?.id).toBe('a')
+  })
+
+  it('returns null for an empty list', () => {
+    expect(bestPrinting([])).toBeNull()
   })
 })

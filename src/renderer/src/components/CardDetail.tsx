@@ -1,5 +1,12 @@
-import { useEffect, useState } from 'react'
-import { bestUsd, faceImageUrl, formatUsd, type Card } from '@shared/scryfall'
+import { useEffect, useRef, useState } from 'react'
+import {
+  bestPrinting,
+  bestUsd,
+  faceImageUrl,
+  formatUsd,
+  isHighRes,
+  type Card
+} from '@shared/scryfall'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useDeckStore } from '@renderer/state/deckStore'
@@ -19,6 +26,17 @@ export function CardDetail(): React.JSX.Element | null {
   const [loadingPrintings, setLoadingPrintings] = useState(false)
   const [faceIndex, setFaceIndex] = useState(0)
   const [compare, setCompare] = useState(50)
+  const [dragging, setDragging] = useState(false)
+  const compareRef = useRef<HTMLDivElement>(null)
+
+  // Map a pointer X position to a 0–100 split across the comparison image.
+  const setCompareFromX = (clientX: number): void => {
+    const el = compareRef.current
+    if (!el) return
+    const rect = el.getBoundingClientRect()
+    const pct = ((clientX - rect.left) / rect.width) * 100
+    setCompare(Math.min(100, Math.max(0, pct)))
+  }
 
   const displayed = detailCard
   const oracleId = displayed?.oracleId ?? null
@@ -58,6 +76,10 @@ export function CardDetail(): React.JSX.Element | null {
 
   const face = displayed.faces[faceIndex] ?? displayed.faces[0]
   const isDoubleFaced = displayed.faces.length > 1
+  // Best-quality printing for upscaling: offer a switch when a higher-res scan exists.
+  const best = bestPrinting(printings)
+  const betterAvailable =
+    best !== null && best.id !== displayed.id && isHighRes(best) && !isHighRes(displayed)
   const upscaled = Boolean(upscaledSet[displayed.id])
   const showCompare = upscalerAvailable && upscaled
   const sourceSrc = faceImageUrl(displayed.id, faceIndex, 'source')
@@ -79,7 +101,20 @@ export function CardDetail(): React.JSX.Element | null {
 
         <div className="detail__main">
           {showCompare ? (
-            <div className="compare">
+            <div
+              className={`compare${dragging ? ' is-dragging' : ''}`}
+              ref={compareRef}
+              onPointerDown={(event) => {
+                event.currentTarget.setPointerCapture(event.pointerId)
+                setDragging(true)
+                setCompareFromX(event.clientX)
+              }}
+              onPointerMove={(event) => {
+                if (dragging) setCompareFromX(event.clientX)
+              }}
+              onPointerUp={() => setDragging(false)}
+              onPointerCancel={() => setDragging(false)}
+            >
               <img
                 className="detail__image"
                 src={upscaledSrc}
@@ -97,15 +132,23 @@ export function CardDetail(): React.JSX.Element | null {
               </div>
               <span className="compare__tag compare__tag--left">Original</span>
               <span className="compare__tag compare__tag--right">Upscaled {scale}×</span>
-              <input
-                className="compare__range"
-                type="range"
-                min={0}
-                max={100}
-                value={compare}
-                onChange={(event) => setCompare(Number(event.target.value))}
-                aria-label="Drag to compare original and upscaled"
-              />
+              <div className="compare__divider" style={{ left: `${compare}%` }}>
+                <span
+                  className="compare__handle"
+                  role="slider"
+                  tabIndex={0}
+                  aria-label="Compare original and upscaled"
+                  aria-valuemin={0}
+                  aria-valuemax={100}
+                  aria-valuenow={Math.round(compare)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'ArrowLeft') setCompare((c) => Math.max(0, c - 2))
+                    else if (event.key === 'ArrowRight') setCompare((c) => Math.min(100, c + 2))
+                    else if (event.key === 'Home') setCompare(0)
+                    else if (event.key === 'End') setCompare(100)
+                  }}
+                />
+              </div>
             </div>
           ) : (
             <img
@@ -120,7 +163,24 @@ export function CardDetail(): React.JSX.Element | null {
             <h2 className="detail__name">{face?.name ?? displayed.name}</h2>
             <p className="detail__meta">
               {displayed.setCode.toUpperCase()} · #{displayed.collectorNumber} · {displayed.layout}
+              {displayed.imageStatus !== undefined && (
+                <span
+                  className={`quality ${isHighRes(displayed) ? 'quality--hd' : 'quality--low'}`}
+                >
+                  {isHighRes(displayed) ? 'HD scan' : 'Low-res scan'}
+                </span>
+              )}
             </p>
+            {betterAvailable && best && (
+              <button
+                className="toggle"
+                type="button"
+                onClick={() => choose(best)}
+                title="Switch to a higher-resolution printing for a sharper upscale"
+              >
+                ✦ Use best-quality printing ({best.setCode.toUpperCase()})
+              </button>
+            )}
             <p
               className="detail__price"
               title="Estimated market price from Scryfall, updated daily"
@@ -186,7 +246,10 @@ export function CardDetail(): React.JSX.Element | null {
                         loading="lazy"
                         draggable={false}
                       />
-                      <span className="prints__label">{printing.setCode.toUpperCase()}</span>
+                      <span className="prints__label">
+                        {printing.setCode.toUpperCase()}
+                        {isHighRes(printing) && <span className="prints__hd">HD</span>}
+                      </span>
                       <span className="prints__price">{formatUsd(bestUsd(printing.prices))}</span>
                     </button>
                   </li>

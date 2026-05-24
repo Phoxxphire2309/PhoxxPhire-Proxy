@@ -81,6 +81,15 @@ describe('normalizeCard', () => {
     expect(normalizeCard(base).relatedTokens).toEqual([])
   })
 
+  it('maps a known image_status and ignores unknown values', () => {
+    expect(normalizeCard({ ...base, image_status: 'highres_scan' }).imageStatus).toBe(
+      'highres_scan'
+    )
+    expect(normalizeCard({ ...base, image_status: 'lowres' }).imageStatus).toBe('lowres')
+    expect(normalizeCard({ ...base, image_status: 'bogus' }).imageStatus).toBeUndefined()
+    expect(normalizeCard(base).imageStatus).toBeUndefined()
+  })
+
   it('extracts only token components from all_parts, excluding the card itself', () => {
     const card = normalizeCard({
       ...base,

@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { SearchBar } from '@renderer/components/SearchBar'
 import { Filters } from '@renderer/components/Filters'
 import { CardGrid } from '@renderer/components/CardGrid'
@@ -8,27 +8,16 @@ import { UpscaleControls } from '@renderer/components/UpscaleControls'
 import { ToastContainer } from '@renderer/components/ToastContainer'
 import { UpscaleProgress } from '@renderer/components/UpscaleProgress'
 import { PrintPartner } from '@renderer/components/PrintPartner'
+import logo from '@renderer/assets/phoxxphire-logo.png'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore } from '@renderer/state/uiStore'
 import { loadPersistedState, startPersisting } from '@renderer/state/persist'
 
 export function App(): React.JSX.Element {
-  const [version, setVersion] = useState<string>('…')
   const loadSettings = useUpscaleStore((state) => state.loadSettings)
   const applyStatus = useUpscaleStore((state) => state.applyStatus)
   const theme = useUiStore((state) => state.theme)
   const toggleTheme = useUiStore((state) => state.toggleTheme)
-
-  useEffect(() => {
-    let active = true
-    window.phoxx
-      .getVersion()
-      .then((v) => active && setVersion(v))
-      .catch(() => active && setVersion('unknown'))
-    return () => {
-      active = false
-    }
-  }, [])
 
   // Load settings + persisted state, then begin persisting changes.
   useEffect(() => {
@@ -60,11 +49,10 @@ export function App(): React.JSX.Element {
   return (
     <div className="app">
       <header className="app__header">
-        <div className="app__brand">
-          <h1 className="app__title">PhoxxPhire Proxy</h1>
-          <span className="app__version">v{version}</span>
-        </div>
-        <div className="app__controls">
+        <img className="app__logo" src={logo} alt="PhoxxPhire Proxy Maker" />
+        <div className="app__toolbar">
+          <SearchBar />
+          <Filters />
           <PrintPartner compact />
           <UpscaleControls />
           <button
@@ -78,9 +66,6 @@ export function App(): React.JSX.Element {
           </button>
         </div>
       </header>
-
-      <SearchBar />
-      <Filters />
 
       <div className="app__body">
         <main className="app__results">

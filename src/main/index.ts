@@ -11,6 +11,7 @@ import { initUpscale } from './upscale/setup'
 import { initExport } from './export/setup'
 import { initDeckIo } from './deck/setup'
 import { initCustomCards } from './custom/setup'
+import { initCardBack } from './cardback/setup'
 import { initPersistence } from './persist/setup'
 import { initAutoUpdate } from './update/setup'
 
@@ -83,7 +84,8 @@ app.whenReady().then(async () => {
   }
   handleImageProtocol(resolver)
 
-  initExport({ scryfall, upscale })
+  const cardBack = initCardBack(app.getPath('userData'))
+  initExport({ scryfall, upscale, cardBack })
   initDeckIo()
   initCustomCards(cache)
   initPersistence()

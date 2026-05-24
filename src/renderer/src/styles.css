@@ -52,31 +52,34 @@ body {
 .app__header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
-  gap: 16px;
+  gap: 20px;
 }
 
-.app__brand {
-  display: flex;
-  align-items: baseline;
-  gap: 12px;
+.app__logo {
+  height: 126px;
+  width: auto;
+  display: block;
+  flex-shrink: 0;
+  /* The logo art is white-on-transparent; invert it in light theme for contrast. */
+  filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.4));
 }
 
-.app__title {
-  margin: 0;
-  font-size: 26px;
-  letter-spacing: -0.02em;
+:root[data-theme='light'] .app__logo {
+  filter: invert(1) drop-shadow(0 2px 8px rgba(0, 0, 0, 0.2));
 }
 
-.app__version {
-  color: var(--muted);
-  font-variant-numeric: tabular-nums;
-}
-
-.app__controls {
+/* Single toolbar row beside the logo: search fills the gap, then filters + controls. */
+.app__toolbar {
+  flex: 1;
+  min-width: 0;
   display: flex;
   align-items: center;
   gap: 12px;
+}
+
+.app__toolbar .search {
+  flex: 1;
+  min-width: 0;
 }
 
 .app__note {
@@ -211,7 +214,13 @@ body {
 .compare {
   position: relative;
   width: 100%;
+  /* Don't let the grid stretch this taller than the image, or the divider would
+     extend past the bottom of the card. */
+  align-self: start;
+  line-height: 0;
   user-select: none;
+  cursor: ew-resize;
+  touch-action: none;
 }
 
 .compare__top {
@@ -241,13 +250,52 @@ body {
   background: var(--accent);
 }
 
-.compare__range {
+/* Draggable divider drawn directly on the comparison image. */
+.compare__divider {
   position: absolute;
-  left: 0;
-  bottom: 10px;
-  width: 100%;
-  margin: 0;
+  top: 0;
+  bottom: 0;
+  width: 2px;
+  background: rgba(255, 255, 255, 0.9);
+  box-shadow: 0 0 0 1px rgba(0, 0, 0, 0.35);
+  transform: translateX(-1px);
+  pointer-events: none;
+}
+
+.compare__handle {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  width: 34px;
+  height: 34px;
+  transform: translate(-50%, -50%);
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.95);
+  border: 2px solid var(--accent);
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.45);
   cursor: ew-resize;
+  pointer-events: auto;
+}
+
+/* Left/right grip arrows. */
+.compare__handle::before {
+  content: '⟺';
+  position: absolute;
+  inset: 0;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 16px;
+  color: #1a1206;
+}
+
+.compare__handle:focus-visible {
+  outline: 2px solid var(--accent);
+  outline-offset: 3px;
+}
+
+.compare.is-dragging {
+  cursor: grabbing;
 }
 
 .toggle {
@@ -502,6 +550,13 @@ body {
 .deck__errors ul {
   margin: 0;
   padding-left: 16px;
+}
+
+/* Custom card-back chooser (page setup) */
+.cardback {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
 }
 
 /* Token dialog */
@@ -999,6 +1054,36 @@ body {
   margin: 0 0 16px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* Image-quality badges (best-source-for-upscale) */
+.quality {
+  margin-left: 8px;
+  padding: 1px 7px;
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  vertical-align: middle;
+}
+
+.quality--hd {
+  color: #0c1f12;
+  background: #4ade80;
+}
+
+.quality--low {
+  color: #2a1206;
+  background: #fbbf24;
+}
+
+.prints__hd {
+  margin-left: 5px;
+  padding: 0 4px;
+  font-size: 9px;
+  font-weight: 700;
+  color: #0c1f12;
+  background: #4ade80;
+  border-radius: 4px;
 }
 
 .detail__actions {

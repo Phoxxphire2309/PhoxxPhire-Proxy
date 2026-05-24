@@ -2,11 +2,23 @@ import type {
   Card,
   CardFace,
   CardPrices,
+  ImageStatus,
   RelatedToken,
   ScryfallCard,
   ScryfallImageUris,
   ScryfallPrices
 } from '@shared/scryfall'
+
+const IMAGE_STATUSES: ReadonlySet<string> = new Set([
+  'missing',
+  'placeholder',
+  'lowres',
+  'highres_scan'
+])
+
+function parseImageStatus(value: string | undefined): ImageStatus | undefined {
+  return value !== undefined && IMAGE_STATUSES.has(value) ? (value as ImageStatus) : undefined
+}
 
 /** Highest-quality image URL available for a face, or null if none. */
 function pickImage(uris: ScryfallImageUris | undefined): string | null {
@@ -39,6 +51,7 @@ function extractPrices(prices: ScryfallPrices | undefined): CardPrices {
  * per-face images under `card_faces`. We surface one face per printable side.
  */
 export function normalizeCard(raw: ScryfallCard): Card {
+  const imageStatus = parseImageStatus(raw.image_status)
   return {
     id: raw.id,
     oracleId: raw.oracle_id ?? null,
@@ -49,7 +62,8 @@ export function normalizeCard(raw: ScryfallCard): Card {
     layout: raw.layout,
     faces: extractFaces(raw),
     prices: extractPrices(raw.prices),
-    relatedTokens: extractRelatedTokens(raw)
+    relatedTokens: extractRelatedTokens(raw),
+    ...(imageStatus ? { imageStatus } : {})
   }
 }
 

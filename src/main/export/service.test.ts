@@ -169,6 +169,29 @@ describe('ExportService.export', () => {
     expect(ensureImage).toHaveBeenCalledWith('dfc', 0, false)
     expect(ensureImage).not.toHaveBeenCalledWith('dfc', 1, false)
   })
+
+  it('interleaves a back page using the custom card back when selected', async () => {
+    const cards: Record<string, Card> = { a: card('a', 1) }
+    const customCardBack = vi.fn(async () => new Uint8Array(PNG_1X1))
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage: async () => imagePath,
+      customCardBack,
+      emit: () => {}
+    })
+
+    const savePath = join(dir, 'back.pdf')
+    await service.export(
+      [{ cardId: 'a', faceIndex: 0, upscale: false }],
+      { ...DEFAULT_EXPORT_OPTIONS, cardBack: 'custom' },
+      savePath
+    )
+
+    expect(customCardBack).toHaveBeenCalled()
+    // One front page + one interleaved back page.
+    const doc = await PDFDocument.load(await readFile(savePath))
+    expect(doc.getPageCount()).toBe(2)
+  })
 })
 
 describe('ExportService.exportMpc', () => {
@@ -195,6 +218,27 @@ describe('ExportService.exportMpc', () => {
       emit: () => {}
     })
   }
+
+  it('uses the custom card back when one is installed', async () => {
+    const cards: Record<string, Card> = { single: card('single', 1) }
+    const outDir = join(dir, 'customback')
+    await mkdir(outDir)
+    const customBack = new Uint8Array([9, 9, 9, 9])
+
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage: async () => imagePath,
+      mpcImage: async (bytes) => bytes, // identity → cardback file == custom bytes
+      mpcCardBack: async () => new Uint8Array([1, 2, 3]),
+      customCardBack: async () => customBack,
+      emit: () => {}
+    })
+
+    await service.exportMpc([{ cardId: 'single', quantity: 1, upscale: false }], outDir)
+    const files = (await readdir(outDir)).filter((f) => f.startsWith('cardback'))
+    expect(files).toHaveLength(1)
+    expect(new Uint8Array(await readFile(join(outDir, files[0]!)))).toEqual(customBack)
+  })
 
   it('throws a clear error when the MPC deps are not configured', async () => {
     const service = new ExportService({
