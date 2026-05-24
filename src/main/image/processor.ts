@@ -1,10 +1,32 @@
 import { readFile, rm } from 'node:fs/promises'
 import sharp from 'sharp'
-import type { BleedMode } from '@shared/layout'
+import type { BleedMode, ColorProfile } from '@shared/layout'
 import { MPC_BLEED_PX, MPC_IMAGE_HEIGHT, MPC_IMAGE_WIDTH } from '@shared/mpc'
 import { CARD_HEIGHT_MM, CARD_WIDTH_MM } from '@shared/units'
 
 const JPEG_QUALITY = 85
+
+/**
+ * Adjusts card art for a target printer. Home printers reproduce colour poorly:
+ * inkjets print dark and desaturated (so we lift saturation + brightness), laser
+ * output is flat (so we push saturation harder and add a light sharpen). 'none'
+ * returns the input unchanged.
+ */
+export async function applyColorProfile(
+  imageBytes: Uint8Array,
+  profile: ColorProfile
+): Promise<Uint8Array> {
+  if (profile === 'none') return imageBytes
+
+  const pipeline = sharp(imageBytes, { limitInputPixels: false })
+  if (profile === 'inkjet') {
+    pipeline.modulate({ saturation: 1.12, brightness: 1.05 })
+  } else {
+    pipeline.modulate({ saturation: 1.18 }).sharpen({ sigma: 0.6 })
+  }
+  const out = await pipeline.jpeg({ quality: JPEG_QUALITY }).toBuffer()
+  return new Uint8Array(out)
+}
 
 export interface Rgb {
   r: number

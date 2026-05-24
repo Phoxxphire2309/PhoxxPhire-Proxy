@@ -22,6 +22,13 @@ export type CardBackStyle = 'none' | 'plain' | 'custom'
  *  - 'zoom'   — no border; the card is enlarged at layout time to fill the bleed.
  */
 export type BleedMode = 'solid' | 'zoom' | 'extend'
+/**
+ * Colour adjustment applied to card art at PDF export, compensating for how home
+ * printers reproduce colour: 'inkjet' lifts saturation/brightness (inkjets print
+ * dark and washed-out), 'laser' boosts saturation and sharpens (laser output is
+ * flatter). 'none' leaves the art untouched.
+ */
+export type ColorProfile = 'none' | 'inkjet' | 'laser'
 
 export interface ExportOptions {
   pageSize: PageSize
@@ -38,6 +45,14 @@ export interface ExportOptions {
   /** When not 'none', interleave mirrored back pages for duplex printing. */
   cardBack: CardBackStyle
   bleedMode: BleedMode
+  /**
+   * Print-scale compensation: the printed card size is multiplied by this / 100.
+   * Use the calibration page to find the value (e.g. a printer that outputs at
+   * 98% needs ~102 here). 100 = no compensation.
+   */
+  scalePercent: number
+  /** Colour adjustment for the target printer (PDF export). */
+  colorProfile: ColorProfile
 }
 
 export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
@@ -53,7 +68,9 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   rowSpacingMm: 0,
   cutGuideStyle: 'outline',
   cardBack: 'none',
-  bleedMode: 'solid'
+  bleedMode: 'solid',
+  scalePercent: 100,
+  colorProfile: 'none'
 }
 
 export interface Rect {
@@ -106,8 +123,11 @@ export function computePageLayout(options: ExportOptions): PageLayout {
   const spacingX = mmToPt(options.columnSpacingMm)
   const spacingY = mmToPt(options.rowSpacingMm)
 
-  const cutW = mmToPt(CARD_WIDTH_MM)
-  const cutH = mmToPt(CARD_HEIGHT_MM)
+  // Scale compensation enlarges/shrinks the printed card so it trims to the true
+  // size on printers that don't output at exactly 100%.
+  const scale = options.scalePercent > 0 ? options.scalePercent / 100 : 1
+  const cutW = mmToPt(CARD_WIDTH_MM) * scale
+  const cutH = mmToPt(CARD_HEIGHT_MM) * scale
   const footW = cutW + bleed * 2
   const footH = cutH + bleed * 2
 

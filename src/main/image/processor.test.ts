@@ -5,6 +5,7 @@ import sharp from 'sharp'
 import { afterEach, beforeEach, describe, expect, it } from 'vitest'
 import { MPC_BLEED_PX, MPC_IMAGE_HEIGHT, MPC_IMAGE_WIDTH } from '@shared/mpc'
 import {
+  applyColorProfile,
   buildMpcCardBack,
   buildMpcImage,
   extendBleed,
@@ -200,6 +201,34 @@ describe('buildMpcImage', () => {
     const meta = await sharp(out).metadata()
     expect((meta.width ?? 0) - 2 * MPC_BLEED_PX).toBe(MPC_IMAGE_WIDTH - 2 * MPC_BLEED_PX)
     expect((meta.height ?? 0) - 2 * MPC_BLEED_PX).toBe(MPC_IMAGE_HEIGHT - 2 * MPC_BLEED_PX)
+  })
+})
+
+describe('applyColorProfile', () => {
+  it('returns the exact same bytes for the none profile', async () => {
+    const bytes = new Uint8Array(await solidPng(60, 80))
+    expect(await applyColorProfile(bytes, 'none')).toBe(bytes)
+  })
+
+  it('boosts saturation for inkjet and laser, changing the pixels', async () => {
+    // A muted mid-colour so a saturation boost is measurable.
+    const base = await sharp({
+      create: { width: 60, height: 80, channels: 3, background: { r: 150, g: 90, b: 90 } }
+    })
+      .png()
+      .toBuffer()
+    const original = (await sharp(base).raw().toBuffer())[0]!
+
+    for (const profile of ['inkjet', 'laser'] as const) {
+      const out = await applyColorProfile(new Uint8Array(base), profile)
+      expect(isJpeg(out)).toBe(true)
+      const meta = await sharp(out).metadata()
+      expect(meta.width).toBe(60)
+      expect(meta.height).toBe(80)
+      // Saturation lift pushes the dominant red channel higher.
+      const r = (await sharp(out).raw().toBuffer())[0]!
+      expect(r).toBeGreaterThanOrEqual(original)
+    }
   })
 })
 

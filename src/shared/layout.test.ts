@@ -64,6 +64,19 @@ describe('computePageLayout', () => {
     expect(layout.perPage).toBe(0)
     expect(layout.slots).toHaveLength(0)
   })
+
+  it('scales the printed card size by scalePercent', () => {
+    const normal = computePageLayout(base).slots[0]!
+    const bigger = computePageLayout({ ...base, scalePercent: 110 }).slots[0]!
+    expect(bigger.cut.width).toBeCloseTo(normal.cut.width * 1.1, 1)
+    expect(bigger.cut.height).toBeCloseTo(normal.cut.height * 1.1, 1)
+  })
+
+  it('treats a non-positive scalePercent as 100%', () => {
+    const normal = computePageLayout(base).slots[0]!
+    const zero = computePageLayout({ ...base, scalePercent: 0 }).slots[0]!
+    expect(zero.cut.width).toBeCloseTo(normal.cut.width, 5)
+  })
 })
 
 describe('pageCountFor', () => {

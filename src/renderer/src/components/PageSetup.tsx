@@ -3,6 +3,7 @@ import {
   computePageLayout,
   type BleedMode,
   type CardBackStyle,
+  type ColorProfile,
   type CutGuideStyle,
   type Orientation,
   type PageSize
@@ -20,6 +21,7 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
   const reset = usePageSetupStore((state) => state.reset)
   const items = useDeckStore((state) => state.items)
   const [hasCustomBack, setHasCustomBack] = useState(false)
+  const [measuredMm, setMeasuredMm] = useState('')
 
   useEffect(() => {
     void window.phoxx.getCardBackInfo().then((info) => setHasCustomBack(info.hasCustom))
@@ -192,6 +194,55 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
                 </span>
               </div>
             )}
+
+            <label className="export__field">
+              <span>Printer colour</span>
+              <select
+                value={options.colorProfile}
+                onChange={(event) => set('colorProfile', event.target.value as ColorProfile)}
+              >
+                <option value="none">None (print as-is)</option>
+                <option value="inkjet">Optimise for inkjet</option>
+                <option value="laser">Optimise for laser</option>
+              </select>
+            </label>
+
+            <label className="export__field">
+              <span>Print scale (%)</span>
+              <input
+                type="number"
+                min={50}
+                max={150}
+                step={0.1}
+                value={options.scalePercent}
+                onChange={(event) =>
+                  set(
+                    'scalePercent',
+                    Math.min(150, Math.max(50, Number(event.target.value) || 100))
+                  )
+                }
+              />
+            </label>
+
+            <div className="cardback">
+              <span className="detail__hint">
+                Calibration: print the calibration page, measure the 100&nbsp;mm square, and enter
+                what it actually measured to auto-set the scale.
+              </span>
+              <input
+                className="search__input"
+                type="number"
+                step={0.1}
+                placeholder="measured mm (was 100)"
+                value={measuredMm}
+                onChange={(event) => {
+                  setMeasuredMm(event.target.value)
+                  const mm = Number(event.target.value)
+                  if (mm > 0) set('scalePercent', Math.round((10000 / mm) * 10) / 10)
+                }}
+                aria-label="Measured size of the 100mm calibration square"
+              />
+            </div>
 
             <button className="toggle" type="button" onClick={reset}>
               Reset to defaults

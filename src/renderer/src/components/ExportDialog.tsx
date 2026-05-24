@@ -85,6 +85,16 @@ export function ExportDialog({
       return outcome.canceled ? null : `Saved ${outcome.count} card image(s) to ${outcome.path}`
     })
 
+  // Export just the first card so the user can dial in scale/colour on one sheet
+  // before committing a full run.
+  const exportTestCard = (): Promise<void> =>
+    runGuarded(async () => {
+      const first = exportSlots[0]
+      if (!first) return null
+      const outcome = await window.phoxx.exportPdf({ slots: [first], options })
+      return outcome.canceled ? null : `Saved a 1-card test sheet to ${outcome.path}`
+    })
+
   const exportZip = (): Promise<void> =>
     runGuarded(async () => {
       const outcome = await window.phoxx.exportZip(exportSlots)
@@ -174,6 +184,15 @@ export function ExportDialog({
                 onClick={() => void exportCalibration()}
               >
                 Calibration page
+              </button>
+              <button
+                className="toggle"
+                type="button"
+                disabled={running || items.length === 0}
+                onClick={() => void exportTestCard()}
+                title="Export just the first card to test scale and colour on one sheet"
+              >
+                Test card
               </button>
               <button
                 className="toggle"

@@ -14,7 +14,7 @@ import type { MpcCard, MpcExportOutcome } from '@shared/mpc'
 import type { CardBackManager } from '../cardback/setup'
 import type { ScryfallService } from '../scryfall/service'
 import type { UpscaleService } from '../upscale/service'
-import { buildMpcCardBack, buildMpcImage, extendBleed } from '../image/processor'
+import { applyColorProfile, buildMpcCardBack, buildMpcImage, extendBleed } from '../image/processor'
 import { buildCalibrationPdf } from './calibration'
 import { ExportService } from './service'
 
@@ -40,8 +40,10 @@ export function initExport(options: ExportSetupOptions): void {
       useUpscaled && options.upscale.available()
         ? options.upscale.ensureUpscaled(cardId, faceIndex)
         : options.scryfall.ensureFaceImage(cardId, faceIndex),
-    processImage: (bytes, exportOptions) =>
-      extendBleed(bytes, exportOptions.bleedMm, exportOptions.bleedMode),
+    processImage: async (bytes, exportOptions) => {
+      const bled = await extendBleed(bytes, exportOptions.bleedMm, exportOptions.bleedMode)
+      return applyColorProfile(bled, exportOptions.colorProfile)
+    },
     mpcImage: buildMpcImage,
     mpcCardBack: buildMpcCardBack,
     customCardBack: () => options.cardBack.getBytes(),
