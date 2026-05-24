@@ -924,11 +924,47 @@ body {
   font-size: 12px;
 }
 
-/* Custom card-back chooser (page setup) */
+/* Custom card-back library (page setup) */
 .cardback {
   display: flex;
   flex-direction: column;
   gap: 6px;
+}
+
+.cardback__list {
+  margin: 0;
+  padding: 0;
+  list-style: none;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.cardback__item {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 4px 8px;
+  font-size: 13px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 7px;
+}
+
+.cardback__choice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+}
+
+.cardback__remove {
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  cursor: pointer;
+  font-size: 13px;
 }
 
 /* Token dialog */

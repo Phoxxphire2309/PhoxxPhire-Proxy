@@ -8,6 +8,7 @@ import {
   type Orientation,
   type PageSize
 } from '@shared/layout'
+import type { CardBackLibrary } from '@shared/ipc'
 import { faceImageUrl } from '@shared/scryfall'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 import { useDeckStore } from '@renderer/state/deckStore'
@@ -20,11 +21,11 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
   const set = usePageSetupStore((state) => state.set)
   const reset = usePageSetupStore((state) => state.reset)
   const items = useDeckStore((state) => state.items)
-  const [hasCustomBack, setHasCustomBack] = useState(false)
+  const [library, setLibrary] = useState<CardBackLibrary>({ backs: [], selectedId: null })
   const [measuredMm, setMeasuredMm] = useState('')
 
   useEffect(() => {
-    void window.phoxx.getCardBackInfo().then((info) => setHasCustomBack(info.hasCustom))
+    void window.phoxx.getCardBacks().then(setLibrary)
     const onKey = (event: KeyboardEvent): void => {
       if (event.key === 'Escape') onClose()
     }
@@ -32,17 +33,25 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
     return () => window.removeEventListener('keydown', onKey)
   }, [onClose])
 
-  const chooseCardBack = async (): Promise<void> => {
+  const addCardBack = async (): Promise<void> => {
     try {
-      const info = await window.phoxx.importCardBack()
-      setHasCustomBack(info.hasCustom)
-      if (info.hasCustom) {
+      const next = await window.phoxx.importCardBack()
+      setLibrary(next)
+      if (next.selectedId) {
         set('cardBack', 'custom')
-        toast('Custom card back set', 'success')
+        toast('Card back added', 'success')
       }
     } catch (error) {
-      toast(error instanceof Error ? error.message : 'Could not set the card back', 'error')
+      toast(error instanceof Error ? error.message : 'Could not add the card back', 'error')
     }
+  }
+
+  const selectCardBack = (id: string): void => {
+    void window.phoxx.selectCardBack(id).then(setLibrary)
+  }
+
+  const deleteCardBack = (id: string): void => {
+    void window.phoxx.deleteCardBack(id).then(setLibrary)
   }
 
   const layout = computePageLayout(options)
@@ -198,13 +207,39 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
 
             {options.cardBack === 'custom' && (
               <div className="cardback">
-                <button className="toggle" type="button" onClick={() => void chooseCardBack()}>
-                  {hasCustomBack ? 'Replace back image…' : 'Choose back image…'}
+                {library.backs.length > 0 && (
+                  <ul className="cardback__list">
+                    {library.backs.map((back) => (
+                      <li className="cardback__item" key={back.id}>
+                        <label className="cardback__choice">
+                          <input
+                            type="radio"
+                            name="cardback"
+                            checked={library.selectedId === back.id}
+                            onChange={() => selectCardBack(back.id)}
+                          />
+                          <span>{back.name}</span>
+                        </label>
+                        <button
+                          type="button"
+                          className="cardback__remove"
+                          onClick={() => deleteCardBack(back.id)}
+                          aria-label={`Delete ${back.name}`}
+                          title="Delete this back"
+                        >
+                          ✕
+                        </button>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+                <button className="toggle" type="button" onClick={() => void addCardBack()}>
+                  Add back image…
                 </button>
                 <span className="detail__hint">
-                  {hasCustomBack
-                    ? 'Custom back installed ✓'
-                    : 'No image chosen yet — exports fall back to the plain back.'}
+                  {library.selectedId
+                    ? 'Selected back will print on every card’s reverse.'
+                    : 'No back selected — exports fall back to the plain back.'}
                 </span>
               </div>
             )}

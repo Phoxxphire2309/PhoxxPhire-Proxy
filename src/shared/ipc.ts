@@ -48,7 +48,9 @@ export const IpcChannel = {
   ProjectLoad: 'project:load',
   CustomCardImport: 'custom:import',
   CardBackImport: 'cardback:import',
-  CardBackInfo: 'cardback:info',
+  CardBackList: 'cardback:list',
+  CardBackSelect: 'cardback:select',
+  CardBackDelete: 'cardback:delete',
   StateGet: 'state:get',
   StateSet: 'state:set',
   UpscaleAvailable: 'upscale:available',
@@ -89,9 +91,17 @@ export interface CacheInfo {
   path: string
 }
 
-/** Whether a custom card-back image is currently installed. */
-export interface CardBackInfo {
-  hasCustom: boolean
+/** One saved custom card back in the library. */
+export interface CardBackEntry {
+  id: string
+  name: string
+}
+
+/** The card-back library: saved backs and which one is currently selected. */
+export interface CardBackLibrary {
+  backs: CardBackEntry[]
+  /** Id of the back used for 'custom' exports, or null when none is selected. */
+  selectedId: string | null
 }
 
 export type UpscaleStatus = 'queued' | 'upscaling' | 'ready' | 'failed'
@@ -134,10 +144,14 @@ export interface PhoxxApi {
   loadProject(): Promise<ProjectLoadOutcome>
   /** Pick an image file and register it as a custom card; null if cancelled. */
   importCustomCard(): Promise<Card | null>
-  /** Pick an image file to use as the custom card back; returns the resulting state. */
-  importCardBack(): Promise<CardBackInfo>
-  /** Whether a custom card-back image is currently installed. */
-  getCardBackInfo(): Promise<CardBackInfo>
+  /** Pick an image file, add it to the card-back library, and select it. */
+  importCardBack(): Promise<CardBackLibrary>
+  /** The saved card backs and which one is selected. */
+  getCardBacks(): Promise<CardBackLibrary>
+  /** Select which saved back is used for 'custom' exports. */
+  selectCardBack(id: string): Promise<CardBackLibrary>
+  /** Delete a saved back from the library. */
+  deleteCardBack(id: string): Promise<CardBackLibrary>
   /** Read persisted app state (deck, settings, theme), or null if none saved. */
   getAppState(): Promise<AppState | null>
   /** Persist app state to disk. */
