@@ -1,7 +1,7 @@
 import { create } from 'zustand'
 import { DECK_FILE_VERSION } from '@shared/deck'
 import type { DeckResolution } from '@shared/decklist'
-import type { Card } from '@shared/scryfall'
+import { bestPrinting, cheapestPrinting, type Card } from '@shared/scryfall'
 import { toast } from '@renderer/state/toastStore'
 
 export interface DeckItem {
@@ -14,16 +14,20 @@ function facesOf(card: Card): number {
   return Math.max(1, card.faces.length)
 }
 
+export type BulkPrintingMode = 'highres' | 'cheapest'
+
 interface DeckState {
   items: DeckItem[]
   importing: boolean
   importErrors: string[]
+  bulkRunning: boolean
   add: (card: Card, quantity?: number) => void
   setItems: (items: DeckItem[]) => void
   setFaceQuantity: (cardId: string, faceIndex: number, quantity: number) => void
   replaceCard: (oldCardId: string, newCard: Card) => void
   remove: (cardId: string) => void
   clear: () => void
+  bulkSwitchPrintings: (mode: BulkPrintingMode) => Promise<void>
   importText: (text: string) => Promise<void>
   importUrl: (url: string) => Promise<void>
   saveDeck: () => Promise<void>
@@ -61,6 +65,7 @@ export const useDeckStore = create<DeckState>((set, get) => ({
   items: [],
   importing: false,
   importErrors: [],
+  bulkRunning: false,
 
   add: (card, quantity = 1) =>
     set((state) => ({
@@ -106,6 +111,40 @@ export const useDeckStore = create<DeckState>((set, get) => ({
     set((state) => ({ items: state.items.filter((item) => item.card.id !== cardId) })),
 
   clear: () => set({ items: [], importErrors: [] }),
+
+  bulkSwitchPrintings: async (mode) => {
+    const snapshot = get().items
+    if (snapshot.length === 0 || get().bulkRunning) return
+    set({ bulkRunning: true })
+    let changed = 0
+    try {
+      for (const item of snapshot) {
+        if (!item.card.oracleId) continue
+        let printings: Card[]
+        try {
+          printings = await window.phoxx.getPrintings(item.card.oracleId)
+        } catch {
+          continue
+        }
+        if (printings.length === 0) continue
+        const pick = mode === 'highres' ? bestPrinting(printings) : cheapestPrinting(printings)
+        if (pick && pick.id !== item.card.id) {
+          get().replaceCard(item.card.id, pick)
+          changed += 1
+        }
+      }
+      toast(
+        changed > 0
+          ? `Switched ${changed} card(s) to the ${mode === 'highres' ? 'highest-resolution' : 'cheapest'} printing`
+          : 'No cards needed switching',
+        'success'
+      )
+    } catch (error) {
+      toast(error instanceof Error ? error.message : 'Bulk switch failed', 'error')
+    } finally {
+      set({ bulkRunning: false })
+    }
+  },
 
   importText: (text) => runImport(set, () => window.phoxx.resolveDeck(text)),
   importUrl: (url) => runImport(set, () => window.phoxx.importDeckUrl(url)),

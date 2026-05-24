@@ -101,6 +101,8 @@ export function DeckPanel(): React.JSX.Element {
   const importErrors = useDeckStore((state) => state.importErrors)
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
   const runUpscale = useUpscaleStore((state) => state.runUpscale)
+  const bulkSwitchPrintings = useDeckStore((state) => state.bulkSwitchPrintings)
+  const bulkRunning = useDeckStore((state) => state.bulkRunning)
   const [showImport, setShowImport] = useState(false)
   const [showTokens, setShowTokens] = useState(false)
   const [showStats, setShowStats] = useState(false)
@@ -184,6 +186,24 @@ export function DeckPanel(): React.JSX.Element {
               Pre-upscale all
             </button>
           )}
+          <button
+            className="deck__preview"
+            type="button"
+            disabled={bulkRunning}
+            onClick={() => void bulkSwitchPrintings('highres')}
+            title="Switch every card to its highest-resolution printing"
+          >
+            {bulkRunning ? 'Switching…' : 'All → best scan'}
+          </button>
+          <button
+            className="deck__preview"
+            type="button"
+            disabled={bulkRunning}
+            onClick={() => void bulkSwitchPrintings('cheapest')}
+            title="Switch every card to its cheapest printing"
+          >
+            All → cheapest
+          </button>
         </div>
       )}
 

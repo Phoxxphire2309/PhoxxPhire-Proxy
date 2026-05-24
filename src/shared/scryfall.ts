@@ -160,6 +160,23 @@ export function bestPrinting(cards: Card[]): Card | null {
   return best
 }
 
+/**
+ * The cheapest printing (lowest best USD price) among the given cards; printings
+ * with no known price are considered most expensive. Keeps the first on ties.
+ */
+export function cheapestPrinting(cards: Card[]): Card | null {
+  let cheapest: Card | null = null
+  let lowest = Infinity
+  for (const card of cards) {
+    const price = bestUsd(card.prices) ?? Infinity
+    if (price < lowest) {
+      cheapest = card
+      lowest = price
+    }
+  }
+  return cheapest ?? cards[0] ?? null
+}
+
 /** Best available non-foil USD price, falling back to etched/foil. */
 export function bestUsd(prices: CardPrices): number | null {
   return prices.usd ?? prices.usdEtched ?? prices.usdFoil

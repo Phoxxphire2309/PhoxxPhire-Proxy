@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 import {
   bestPrinting,
   bestUsd,
+  cheapestPrinting,
   faceImageUrl,
   formatUsd,
   imageStatusRank,
@@ -104,5 +105,25 @@ describe('bestPrinting', () => {
 
   it('returns null for an empty list', () => {
     expect(bestPrinting([])).toBeNull()
+  })
+})
+
+describe('cheapestPrinting', () => {
+  const priced = (id: string, usd: number | null): Card => ({
+    ...card(id),
+    prices: prices({ usd })
+  })
+
+  it('picks the lowest-priced printing, treating unknown prices as most expensive', () => {
+    const cards = [priced('a', 5), priced('b', 1.5), priced('c', null)]
+    expect(cheapestPrinting(cards)?.id).toBe('b')
+  })
+
+  it('falls back to the first card when no prices are known', () => {
+    expect(cheapestPrinting([priced('a', null), priced('b', null)])?.id).toBe('a')
+  })
+
+  it('returns null for an empty list', () => {
+    expect(cheapestPrinting([])).toBeNull()
   })
 })
