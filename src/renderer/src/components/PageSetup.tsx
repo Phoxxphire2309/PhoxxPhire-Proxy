@@ -49,10 +49,13 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
   const { pageWidthPt: pw, pageHeightPt: ph, perPage } = layout
 
   // Deck faces to fill the first page (source quality — preview never upscales).
+  // In duplex, a double-faced card shows only its front (the back prints behind).
+  const duplex = options.cardBack !== 'none'
   const faces: { cardId: string; faceIndex: number }[] = []
   for (const item of items) {
     if (item.section === 'maybeboard') continue
-    for (let faceIndex = 0; faceIndex < item.quantities.length; faceIndex += 1) {
+    const faceCount = duplex ? 1 : item.quantities.length
+    for (let faceIndex = 0; faceIndex < faceCount; faceIndex += 1) {
       for (let copy = 0; copy < item.quantities[faceIndex]!; copy += 1) {
         faces.push({ cardId: item.card.id, faceIndex })
       }

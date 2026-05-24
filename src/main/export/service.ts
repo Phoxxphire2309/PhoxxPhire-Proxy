@@ -102,13 +102,42 @@ export class ExportService {
 
     const slotRotations = slots.map((slot) => slot.rotate ?? false)
 
+    // Duplex backs: a double-faced card prints its second face on the reverse
+    // (overriding the custom/plain back); single-faced cards fall back to the
+    // shared back. Built per slot, parallel to `slots`.
+    const slotBackImages: (Uint8Array | null)[] = []
+    if (options.cardBack !== 'none') {
+      const dfcBackCache = new Map<string, Uint8Array>()
+      for (const slot of slots) {
+        if (slot.spacer) {
+          slotBackImages.push(null)
+          continue
+        }
+        const card = await this.deps.resolveCard(slot.cardId)
+        if (card.faces.length > 1) {
+          const cacheKey = `${slot.cardId} ${slot.upscale}`
+          let back = dfcBackCache.get(cacheKey)
+          if (!back) {
+            const path = await this.deps.ensureImage(slot.cardId, 1, slot.upscale)
+            const bytes = new Uint8Array(await readFile(path))
+            back = this.deps.processImage ? await this.deps.processImage(bytes, options) : bytes
+            dfcBackCache.set(cacheKey, back)
+          }
+          slotBackImages.push(back)
+        } else {
+          slotBackImages.push(null)
+        }
+      }
+    }
+
     this.deps.emit({ phase: 'rendering', completed: keys.length, total: keys.length })
     const pdf = await buildProxyPdf(
       uniqueImages,
       slotImageIndices,
       options,
       backImage,
-      slotRotations
+      slotRotations,
+      slotBackImages
     )
     await writeFile(savePath, pdf)
 

@@ -231,6 +231,32 @@ describe('ExportService.export', () => {
     expect(doc.getPageCount()).toBe(1)
   })
 
+  it('prints a double-faced card’s second face as the duplex back', async () => {
+    const cards: Record<string, Card> = { dfc: card('dfc', 2) }
+    const ensureImage = vi.fn(async () => imagePath)
+    // A custom back is set, but the DFC must override it with its own face 1.
+    const customCardBack = vi.fn(async () => new Uint8Array(PNG_1X1))
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage,
+      customCardBack,
+      emit: () => {}
+    })
+
+    const savePath = join(dir, 'dfc.pdf')
+    await service.export(
+      [{ cardId: 'dfc', faceIndex: 0, upscale: false }],
+      { ...DEFAULT_EXPORT_OPTIONS, cardBack: 'custom' },
+      savePath
+    )
+
+    // Face 0 is the front; face 1 is fetched for the back.
+    expect(ensureImage).toHaveBeenCalledWith('dfc', 0, false)
+    expect(ensureImage).toHaveBeenCalledWith('dfc', 1, false)
+    const doc = await PDFDocument.load(await readFile(savePath))
+    expect(doc.getPageCount()).toBe(2) // front page + duplex back page
+  })
+
   it('squares and processes the custom back, even with zero bleed', async () => {
     const cards: Record<string, Card> = { a: card('a', 1) }
     const backBytes = new Uint8Array(PNG_1X1)

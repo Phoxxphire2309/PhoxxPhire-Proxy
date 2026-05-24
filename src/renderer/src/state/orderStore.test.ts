@@ -51,6 +51,14 @@ describe('orderStore.syncFromDeck', () => {
     expect(slots.filter((s) => s.faceIndex === 1)).toHaveLength(2)
   })
 
+  it('pairs a double-faced card into one front slot when duplex', () => {
+    useOrderStore.getState().syncFromDeck([item('dfc', 2, 'main', 2)], true)
+    const slots = useOrderStore.getState().slots
+    // Only front faces; the back face prints on the reverse.
+    expect(slots).toHaveLength(2)
+    expect(slots.every((s) => s.faceIndex === 0)).toBe(true)
+  })
+
   it('keeps spacers across a re-sync when the card set is unchanged', () => {
     const deck = [item('a', 1, 'main')]
     useOrderStore.getState().syncFromDeck(deck)

@@ -110,7 +110,8 @@ export async function buildProxyPdf(
   slotImageIndices: number[],
   options: ExportOptions,
   backImage?: Uint8Array,
-  slotRotations: boolean[] = []
+  slotRotations: boolean[] = [],
+  slotBackImages: (Uint8Array | null)[] = []
 ): Promise<Uint8Array> {
   const layout = computePageLayout(options)
   const doc = await PDFDocument.create()
@@ -123,6 +124,11 @@ export async function buildProxyPdf(
   const embedded = await Promise.all(uniqueImages.map((bytes) => embedImage(doc, bytes)))
   const backEmbed =
     options.cardBack === 'custom' && backImage ? await embedImage(doc, backImage) : null
+  // Per-slot back overrides (e.g. a double-faced card's reverse face), embedded once each.
+  const overrideEmbeds = new Map<Uint8Array, Awaited<ReturnType<typeof embedImage>>>()
+  for (const bytes of new Set(slotBackImages.filter((b): b is Uint8Array => b != null))) {
+    overrideEmbeds.set(bytes, await embedImage(doc, bytes))
+  }
   const watermarkFont = options.watermark ? await doc.embedFont(StandardFonts.HelveticaBold) : null
   const pageCount = pageCountFor(slotImageIndices.length, layout.perPage)
 
@@ -174,10 +180,12 @@ export async function buildProxyPdf(
       for (let slotIndex = 0; slotIndex < slotsOnPage; slotIndex += 1) {
         if (blankOnPage[slotIndex]) continue // no back for a spacer cell
         const slot = layout.slots[slotIndex]!
-        if (backEmbed) {
+        const override = slotBackImages[pageIndex * layout.perPage + slotIndex]
+        const backArt = override ? overrideEmbeds.get(override)! : backEmbed
+        if (backArt) {
           // Mirror the X position so backs line up with fronts under duplex printing.
           const mirroredX = layout.pageWidthPt - (slot.bleed.x + slot.bleed.width)
-          backPage.drawImage(backEmbed, {
+          backPage.drawImage(backArt, {
             x: mirroredX,
             y: layout.pageHeightPt - (slot.bleed.y + slot.bleed.height),
             width: slot.bleed.width,

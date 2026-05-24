@@ -28,13 +28,14 @@ export function ExportDialog({
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   const [message, setMessage] = useState<string>('')
 
-  // Stable signature of the deck's quantities; rebuilds the order only when it changes.
-  const deckSignature = items
-    .map((item) => `${item.card.id}:${item.quantities.join(',')}`)
-    .join('|')
+  const duplex = options.cardBack !== 'none'
+  // Stable signature of the deck's quantities + duplex (which pairs DFC faces);
+  // rebuilds the order only when one changes.
+  const deckSignature =
+    items.map((item) => `${item.card.id}:${item.quantities.join(',')}`).join('|') + `|${duplex}`
 
   useEffect(() => {
-    syncFromDeck(items)
+    syncFromDeck(items, duplex)
     // The deck signature captures everything syncFromDeck reads; items/syncFromDeck are stable refs.
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [deckSignature])

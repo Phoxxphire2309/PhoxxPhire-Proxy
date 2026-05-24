@@ -12,8 +12,13 @@ export interface OrderSlot {
 interface OrderState {
   /** Fully expanded, user-orderable list of printable slots. */
   slots: OrderSlot[]
-  /** Rebuild the slot list from the deck, preserving manual order + spacers when card set is unchanged. */
-  syncFromDeck: (items: DeckItem[]) => void
+  /**
+   * Rebuild the slot list from the deck, preserving manual order + spacers when
+   * the card set is unchanged. When `pairBackFaces` is set (duplex printing), a
+   * double-faced card becomes a single front slot — its second face prints on
+   * the back — instead of expanding both faces as separate cards.
+   */
+  syncFromDeck: (items: DeckItem[], pairBackFaces?: boolean) => void
   /** Immutably move the slot at `fromIndex` to `toIndex`. */
   reorder: (fromIndex: number, toIndex: number) => void
   /** Append a blank spacer to the end of the order. */
@@ -31,12 +36,17 @@ function signature(slots: OrderSlot[]): string {
     .join('|')
 }
 
-/** Expands a deck into one slot per copy per face, in deck order. Maybeboard is skipped. */
-function expand(items: DeckItem[]): OrderSlot[] {
+/**
+ * Expands a deck into one slot per copy per face, in deck order. Maybeboard is
+ * skipped. When `pairBackFaces` is set, multi-faced cards emit only their front
+ * face (the back face prints on the duplex reverse), so they count as one card.
+ */
+function expand(items: DeckItem[], pairBackFaces: boolean): OrderSlot[] {
   const slots: OrderSlot[] = []
   for (const item of items) {
     if (item.section === 'maybeboard') continue
-    for (let faceIndex = 0; faceIndex < item.quantities.length; faceIndex += 1) {
+    const faceCount = pairBackFaces ? 1 : item.quantities.length
+    for (let faceIndex = 0; faceIndex < faceCount; faceIndex += 1) {
       for (let copy = 0; copy < item.quantities[faceIndex]!; copy += 1) {
         slots.push({ cardId: item.card.id, faceIndex })
       }
@@ -49,8 +59,8 @@ function expand(items: DeckItem[]): OrderSlot[] {
 export const useOrderStore = create<OrderState>((set, get) => ({
   slots: [],
 
-  syncFromDeck: (items) => {
-    const desired = expand(items)
+  syncFromDeck: (items, pairBackFaces = false) => {
+    const desired = expand(items, pairBackFaces)
     // Same multiset of slots → keep the current (possibly manually reordered) list.
     if (signature(desired) === signature(get().slots)) return
     set({ slots: desired })
