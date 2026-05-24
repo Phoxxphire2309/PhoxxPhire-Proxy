@@ -59,6 +59,7 @@ export function App(): React.JSX.Element {
 
   return (
     <div className="app">
+      <div className="app__bg" aria-hidden="true" style={{ backgroundImage: `url(${logo})` }} />
       <header className="app__header">
         <img className="app__logo" src={logo} alt="PhoxxPhire Proxy Maker" />
         <div className="app__toolbar">

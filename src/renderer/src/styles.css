@@ -42,11 +42,36 @@ body {
 }
 
 .app {
+  position: relative;
   display: flex;
   flex-direction: column;
   gap: 20px;
   height: 100%;
   padding: 28px 36px;
+}
+
+/* Faint logo watermark behind the whole app. */
+.app__bg {
+  position: fixed;
+  inset: 0;
+  z-index: 0;
+  background-repeat: no-repeat;
+  background-position: center;
+  background-size: min(55vmin, 540px);
+  opacity: 0.05;
+  pointer-events: none;
+}
+
+:root[data-theme='light'] .app__bg {
+  filter: invert(1);
+  opacity: 0.06;
+}
+
+/* Keep the real content above the watermark (modals sit higher still, z-index 50). */
+.app__header,
+.app__body {
+  position: relative;
+  z-index: 1;
 }
 
 .app__header {
