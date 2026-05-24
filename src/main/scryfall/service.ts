@@ -8,7 +8,13 @@ import {
 
 type ProgressFn = (progress: ImportProgress) => void
 import { readFile } from 'node:fs/promises'
-import type { Card, SearchResult } from '@shared/scryfall'
+import {
+  cheapestPrinting,
+  isNonFoil,
+  nonFoilPrintings,
+  type Card,
+  type SearchResult
+} from '@shared/scryfall'
 import { squareOffCorners } from '../image/processor'
 import { CardCache } from './cache'
 import { ScryfallClient } from './client'
@@ -113,16 +119,46 @@ export class ScryfallService {
    * by name. Duplicate cards are merged by quantity, and unresolved lines are
    * returned as error messages rather than failing the whole import.
    */
-  resolveDeck(text: string, onProgress?: ProgressFn): Promise<DeckResolution> {
-    return this.resolveLines(parseDecklist(text), onProgress)
+  resolveDeck(
+    text: string,
+    onProgress?: ProgressFn,
+    excludeFoils = false
+  ): Promise<DeckResolution> {
+    return this.resolveLines(parseDecklist(text), onProgress, excludeFoils)
   }
 
   /** Fetch a decklist from a supported site URL and resolve it. */
-  async importDeckUrl(url: string, onProgress?: ProgressFn): Promise<DeckResolution> {
-    return this.resolveLines(await fetchDeckLines(url, this.deckFetch), onProgress)
+  async importDeckUrl(
+    url: string,
+    onProgress?: ProgressFn,
+    excludeFoils = false
+  ): Promise<DeckResolution> {
+    return this.resolveLines(await fetchDeckLines(url, this.deckFetch), onProgress, excludeFoils)
   }
 
-  async resolveLines(lines: DeckLine[], onProgress?: ProgressFn): Promise<DeckResolution> {
+  /**
+   * When excluding foils, swap a foil-only resolved card for a non-foil printing
+   * of the same card (the cheapest one), so the deck prints from a regular scan.
+   */
+  private async toNonFoil(card: Card): Promise<Card> {
+    if (isNonFoil(card) || !card.oracleId) return card
+    try {
+      const pick = cheapestPrinting(nonFoilPrintings(await this.client.getPrintings(card.oracleId)))
+      if (pick && isNonFoil(pick)) {
+        await this.cache.putCard(pick)
+        return pick
+      }
+    } catch {
+      // Keep the original card if the lookup fails.
+    }
+    return card
+  }
+
+  async resolveLines(
+    lines: DeckLine[],
+    onProgress?: ProgressFn,
+    excludeFoils = false
+  ): Promise<DeckResolution> {
     const items: DeckResolvedItem[] = []
     const byId = new Map<string, DeckResolvedItem>()
     const errors: string[] = []
@@ -130,10 +166,11 @@ export class ScryfallService {
     let completed = 0
     for (const line of lines) {
       try {
-        const card =
+        const resolved =
           line.setCode && line.collectorNumber
             ? await this.client.getBySetAndNumber(line.setCode, line.collectorNumber)
             : await this.client.named(line.name, false)
+        const card = excludeFoils ? await this.toNonFoil(resolved) : resolved
         await this.cache.putCard(card)
 
         const existing = byId.get(card.id)

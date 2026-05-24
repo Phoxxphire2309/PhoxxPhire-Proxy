@@ -108,9 +108,9 @@ export interface PhoxxApi {
   /** All printings (across sets) of the card with the given Scryfall oracle id. */
   getPrintings(oracleId: string): Promise<Card[]>
   /** Parse a decklist and resolve every line to a Scryfall card. */
-  resolveDeck(text: string): Promise<DeckResolution>
+  resolveDeck(text: string, excludeFoils?: boolean): Promise<DeckResolution>
   /** Fetch + resolve a decklist from a supported site URL (Archidekt, Moxfield). */
-  importDeckUrl(url: string): Promise<DeckResolution>
+  importDeckUrl(url: string, excludeFoils?: boolean): Promise<DeckResolution>
   /** Distinct tokens / emblems created by the given deck cards, ready to add. */
   findTokens(cardIds: string[]): Promise<Card[]>
   /** Subscribe to per-card deck-import progress; returns an unsubscribe function. */

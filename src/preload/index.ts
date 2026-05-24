@@ -9,8 +9,10 @@ const api: PhoxxApi = {
   searchCards: (query) => ipcRenderer.invoke(IpcChannel.ScryfallSearch, query),
   autocomplete: (query) => ipcRenderer.invoke(IpcChannel.ScryfallAutocomplete, query),
   getPrintings: (oracleId) => ipcRenderer.invoke(IpcChannel.ScryfallPrints, oracleId),
-  resolveDeck: (text) => ipcRenderer.invoke(IpcChannel.ScryfallResolveDeck, text),
-  importDeckUrl: (url) => ipcRenderer.invoke(IpcChannel.ScryfallImportUrl, url),
+  resolveDeck: (text, excludeFoils) =>
+    ipcRenderer.invoke(IpcChannel.ScryfallResolveDeck, text, excludeFoils),
+  importDeckUrl: (url, excludeFoils) =>
+    ipcRenderer.invoke(IpcChannel.ScryfallImportUrl, url, excludeFoils),
   findTokens: (cardIds) => ipcRenderer.invoke(IpcChannel.ScryfallFindTokens, cardIds),
   onImportProgress: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, data: ImportProgress): void =>

@@ -58,8 +58,8 @@ interface DeckState {
   remove: (cardId: string) => void
   clear: () => void
   bulkSwitchPrintings: (mode: BulkPrintingMode) => Promise<void>
-  importText: (text: string) => Promise<void>
-  importUrl: (url: string) => Promise<void>
+  importText: (text: string, excludeFoils?: boolean) => Promise<void>
+  importUrl: (url: string, excludeFoils?: boolean) => Promise<void>
   saveDeck: () => Promise<void>
   loadDeck: () => Promise<void>
   saveProject: () => Promise<void>
@@ -217,8 +217,10 @@ export const useDeckStore = create<DeckState>((set, get) => ({
     }
   },
 
-  importText: (text) => runImport(set, () => window.phoxx.resolveDeck(text)),
-  importUrl: (url) => runImport(set, () => window.phoxx.importDeckUrl(url)),
+  importText: (text, excludeFoils) =>
+    runImport(set, () => window.phoxx.resolveDeck(text, excludeFoils)),
+  importUrl: (url, excludeFoils) =>
+    runImport(set, () => window.phoxx.importDeckUrl(url, excludeFoils)),
 
   saveDeck: async () => {
     const { items } = get()

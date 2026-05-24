@@ -86,6 +86,50 @@ describe('ScryfallService.resolveDeck', () => {
   })
 })
 
+describe('ScryfallService.resolveDeck excludeFoils', () => {
+  let dir: string
+  let service: ScryfallService
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'phoxx-foil-'))
+    const cache = new CardCache(dir)
+    await cache.init()
+    // A foil-only card resolved by name; its oracle has a non-foil printing too.
+    const foilCard = { ...card('foilonly', 'pls', '1', 'Shiny'), finishes: ['foil'] }
+    const nonFoilCard = { ...card('regular', 'lea', '9', 'Shiny'), finishes: ['nonfoil', 'foil'] }
+    const fetchFn = (async (input: string | URL) => {
+      const url = String(input)
+      if (url.includes('/cards/named') && url.includes('Shiny')) return jsonResponse(foilCard)
+      if (url.includes('/cards/search')) {
+        return jsonResponse({ object: 'list', has_more: false, data: [foilCard, nonFoilCard] })
+      }
+      return jsonResponse({ object: 'error', status: 404 }, 404)
+    }) as typeof fetch
+    const client = new ScryfallClient({
+      userAgent: 'test',
+      limiter: new RateLimiter(0),
+      sleepFn: async () => {},
+      maxRetries: 0,
+      fetchFn
+    })
+    service = new ScryfallService(client, cache)
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('keeps the foil-only printing when excludeFoils is off', async () => {
+    const result = await service.resolveDeck('1 Shiny')
+    expect(result.items[0]?.card.id).toBe('foilonly')
+  })
+
+  it('swaps a foil-only card for a non-foil printing when excludeFoils is on', async () => {
+    const result = await service.resolveDeck('1 Shiny', undefined, true)
+    expect(result.items[0]?.card.id).toBe('regular')
+  })
+})
+
 describe('ScryfallService.findTokens', () => {
   let dir: string
   let service: ScryfallService

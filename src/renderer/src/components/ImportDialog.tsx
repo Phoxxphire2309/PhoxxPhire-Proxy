@@ -12,6 +12,7 @@ export function ImportDialog({ onClose }: { onClose: () => void }): React.JSX.El
   const importing = useDeckStore((state) => state.importing)
   const [text, setText] = useState('')
   const [url, setUrl] = useState('')
+  const [excludeFoils, setExcludeFoils] = useState(true)
   const [progress, setProgress] = useState<ImportProgress | null>(null)
 
   useEffect(() => {
@@ -28,13 +29,13 @@ export function ImportDialog({ onClose }: { onClose: () => void }): React.JSX.El
 
   const submit = async (): Promise<void> => {
     setProgress(null)
-    await importText(text)
+    await importText(text, excludeFoils)
     onClose()
   }
 
   const submitUrl = async (): Promise<void> => {
     setProgress(null)
-    await importUrl(url)
+    await importUrl(url, excludeFoils)
     onClose()
   }
 
@@ -81,6 +82,15 @@ export function ImportDialog({ onClose }: { onClose: () => void }): React.JSX.El
           aria-label="Decklist text"
           spellCheck={false}
         />
+        <label className="export__field export__field--inline">
+          <input
+            type="checkbox"
+            checked={excludeFoils}
+            onChange={(event) => setExcludeFoils(event.target.checked)}
+          />
+          <span>Exclude foils — use the cheapest non-foil printing (foils print poorly)</span>
+        </label>
+
         {importing && progress && (
           <div className="import__progress" role="status" aria-live="polite">
             <div className="upscale-progress__bar">
