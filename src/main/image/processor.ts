@@ -84,22 +84,6 @@ export async function sampleBorderColor(imageBytes: Uint8Array): Promise<Rgb> {
   }
 }
 
-/** Averages a small sample patch into a single RGB colour. */
-async function sampleColorAt(
-  imageBytes: Uint8Array,
-  left: number,
-  top: number,
-  size: number
-): Promise<Rgb> {
-  const { data } = await sharp(imageBytes, { limitInputPixels: false })
-    .extract({ left, top, width: size, height: size })
-    .removeAlpha()
-    .resize(1, 1)
-    .raw()
-    .toBuffer({ resolveWithObject: true })
-  return { r: data[0]!, g: data[1]!, b: data[2]! }
-}
-
 /** A solid RGB rectangle as PNG bytes, for compositing. */
 async function solidRect(color: Rgb, size: number): Promise<Buffer> {
   return sharp({ create: { width: size, height: size, channels: 3, background: color } })
@@ -108,12 +92,13 @@ async function solidRect(color: Rgb, size: number): Promise<Buffer> {
 }
 
 /**
- * Squares off the transparent rounded corners by filling each corner with a
- * solid colour sampled just inside that corner (≈3% in), then compositing the
- * card on top — so only the rounded gap shows the fill, matching the card's
- * local edge tone at each corner (per MTGProxyPrinter's corner approach). This
- * is clean for any card — black-bordered, full-art, or custom — with no streaks
- * or whole-image colour cast. A no-op for images without an alpha channel.
+ * Squares off the transparent rounded corners by filling each corner with its
+ * border colour — found by walking diagonally in from the corner to the first
+ * opaque pixel (the card's edge/border, not the art further in, like
+ * MTGProxyPrinter) — then compositing the card on top so only the rounded gap
+ * shows the fill. Clean for any card: black-bordered keeps black corners,
+ * white-bordered keeps white, full-art/custom take their edge tone. A no-op for
+ * images without an alpha channel.
  */
 export async function squareOffCorners(imageBytes: Uint8Array): Promise<Uint8Array> {
   const meta = await sharp(imageBytes, { limitInputPixels: false }).metadata()
@@ -122,18 +107,32 @@ export async function squareOffCorners(imageBytes: Uint8Array): Promise<Uint8Arr
   // Too small to sample corners meaningfully (also guards tiny test fixtures).
   if (!width || !height || !meta.hasAlpha || Math.min(width, height) < 24) return imageBytes
 
-  // Sample past the corner radius (~4%) so we read opaque art, not the gap.
-  const inset = Math.max(2, Math.round(Math.min(width, height) * 0.07))
-  const sample = Math.max(4, Math.round(Math.min(width, height) * 0.02))
-  // Patch must cover the corner radius so the whole rounded gap is filled.
-  const patch = Math.max(8, Math.round(Math.min(width, height) * 0.06))
+  const { data, info } = await sharp(imageBytes, { limitInputPixels: false })
+    .ensureAlpha()
+    .raw()
+    .toBuffer({ resolveWithObject: true })
+  const ch = info.channels
+  const maxScan = Math.round(Math.min(width, height) * 0.15)
 
-  const [tl, tr, bl, br] = await Promise.all([
-    sampleColorAt(imageBytes, inset, inset, sample),
-    sampleColorAt(imageBytes, width - inset - sample, inset, sample),
-    sampleColorAt(imageBytes, inset, height - inset - sample, sample),
-    sampleColorAt(imageBytes, width - inset - sample, height - inset - sample, sample)
-  ])
+  // From a corner, step diagonally inward to the first opaque pixel — the border.
+  const borderColor = (cx: number, cy: number, dx: number, dy: number): Rgb => {
+    for (let k = 0; k <= maxScan; k += 1) {
+      const x = cx + dx * k
+      const y = cy + dy * k
+      if (x < 0 || y < 0 || x >= width || y >= height) break
+      const i = (y * width + x) * ch
+      if (data[i + 3]! > 128) return { r: data[i]!, g: data[i + 1]!, b: data[i + 2]! }
+    }
+    return { r: 0, g: 0, b: 0 }
+  }
+
+  const tl = borderColor(0, 0, 1, 1)
+  const tr = borderColor(width - 1, 0, -1, 1)
+  const bl = borderColor(0, height - 1, 1, -1)
+  const br = borderColor(width - 1, height - 1, -1, -1)
+
+  // Generous patch so the whole rounded gap is covered (the card hides the rest).
+  const patch = Math.max(8, Math.round(Math.min(width, height) * 0.08))
 
   const out = await sharp({
     create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
