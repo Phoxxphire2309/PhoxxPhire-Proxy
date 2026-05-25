@@ -190,9 +190,13 @@ export function DeckGridView(): React.JSX.Element {
       </div>
 
       {items.length === 0 ? (
-        <p className="deck__empty">
-          No cards yet. Add from <strong>Search</strong>, or use <strong>Import</strong>.
-        </p>
+        <div className="emptystate">
+          <p className="emptystate__title">This deck is empty</p>
+          <p className="emptystate__hint">
+            Add cards from <strong>Search</strong> (the ＋ on a card, or drag it onto{' '}
+            <strong>Decks</strong>), or use <strong>Import</strong> to paste a list.
+          </p>
+        </div>
       ) : (
         <>
           <div className="dview__cardsbar">

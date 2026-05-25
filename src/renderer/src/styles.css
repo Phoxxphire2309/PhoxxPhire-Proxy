@@ -275,6 +275,14 @@ h3 {
   border-color: color-mix(in srgb, var(--accent) 35%, transparent);
 }
 
+/* Highlighted while a search card is dragged over it (drag-to-add). */
+.nav__item.is-droptarget {
+  color: var(--text);
+  background: var(--accent-soft);
+  border-color: var(--accent);
+  border-style: dashed;
+}
+
 .nav__icon {
   display: flex;
   align-items: center;
@@ -416,7 +424,8 @@ h3 {
     0 0 0 2px var(--ring);
 }
 
-.filt__apply {
+.filt__apply,
+.filt__more {
   margin-top: 4px;
   padding: 9px;
   font-size: 13px;
@@ -428,8 +437,16 @@ h3 {
   cursor: pointer;
 }
 
-.filt__apply:hover {
+.filt__more {
+  color: var(--muted);
+  background: transparent;
+  border-style: dashed;
+}
+
+.filt__apply:hover,
+.filt__more:hover {
   border-color: var(--accent);
+  color: var(--text);
 }
 
 .rail__btn {

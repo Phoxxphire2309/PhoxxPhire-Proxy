@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { hasActiveFilters, LANGUAGES } from '@shared/scryfallQuery'
 import { useSearchStore } from '@renderer/state/searchStore'
 import { useDeckStore } from '@renderer/state/deckStore'
+import { useDndStore } from '@renderer/state/dndStore'
 import { useDeckUiStore } from '@renderer/state/deckUiStore'
 import { useUiStore, type AppView } from '@renderer/state/uiStore'
 import { PrintPartner } from '@renderer/components/PrintPartner'
@@ -34,7 +36,12 @@ export function Sidebar(): React.JSX.Element {
     state.items.reduce((sum, item) => sum + (item.quantities[0] ?? 0), 0)
   )
   const openModal = useDeckUiStore((state) => state.open)
+  const addToDeck = useDeckStore((state) => state.add)
+  const draggingCard = useDndStore((state) => state.draggingCard)
+  const setDragging = useDndStore((state) => state.setDragging)
   const active = hasActiveFilters(filters)
+  const [showMore, setShowMore] = useState(false)
+  const [dropActive, setDropActive] = useState(false)
 
   const toggleColor = (code: string): void => {
     const colors = filters.colors.includes(code)
@@ -50,9 +57,27 @@ export function Sidebar(): React.JSX.Element {
           <button
             key={item.view}
             type="button"
-            className={`nav__item${view === item.view ? ' is-active' : ''}`}
+            className={`nav__item${view === item.view ? ' is-active' : ''}${
+              item.view === 'decks' && dropActive ? ' is-droptarget' : ''
+            }`}
             onClick={() => setView(item.view)}
             aria-current={view === item.view ? 'page' : undefined}
+            {...(item.view === 'decks'
+              ? {
+                  onDragOver: (event: React.DragEvent) => {
+                    if (!draggingCard) return
+                    event.preventDefault()
+                    setDropActive(true)
+                  },
+                  onDragLeave: () => setDropActive(false),
+                  onDrop: (event: React.DragEvent) => {
+                    event.preventDefault()
+                    if (draggingCard) addToDeck(draggingCard)
+                    setDragging(null)
+                    setDropActive(false)
+                  }
+                }
+              : {})}
           >
             <span className="nav__icon" aria-hidden="true">
               {item.icon}
@@ -119,39 +144,6 @@ export function Sidebar(): React.JSX.Element {
             </label>
 
             <label className="filt">
-              <span className="filt__label">Subtype</span>
-              <input
-                type="text"
-                value={filters.subtype}
-                onChange={(event) => setFilters({ subtype: event.target.value })}
-                placeholder="goblin, equipment…"
-              />
-            </label>
-
-            <div className="filt">
-              <span className="filt__label">Mana value</span>
-              <div className="filt__range">
-                <input
-                  type="number"
-                  min={0}
-                  value={filters.manaMin}
-                  onChange={(event) => setFilters({ manaMin: event.target.value })}
-                  placeholder="Min"
-                  aria-label="Minimum mana value"
-                />
-                <span className="filt__dash">–</span>
-                <input
-                  type="number"
-                  min={0}
-                  value={filters.manaMax}
-                  onChange={(event) => setFilters({ manaMax: event.target.value })}
-                  placeholder="Max"
-                  aria-label="Maximum mana value"
-                />
-              </div>
-            </div>
-
-            <label className="filt">
               <span className="filt__label">Rarity</span>
               <select
                 value={filters.rarity}
@@ -191,29 +183,75 @@ export function Sidebar(): React.JSX.Element {
               />
             </label>
 
-            <label className="filt">
-              <span className="filt__label">Artist</span>
-              <input
-                type="text"
-                value={filters.artist}
-                onChange={(event) => setFilters({ artist: event.target.value })}
-                placeholder="e.g. John Avon"
-              />
-            </label>
+            {showMore && (
+              <>
+                <label className="filt">
+                  <span className="filt__label">Subtype</span>
+                  <input
+                    type="text"
+                    value={filters.subtype}
+                    onChange={(event) => setFilters({ subtype: event.target.value })}
+                    placeholder="goblin, equipment…"
+                  />
+                </label>
 
-            <label className="filt">
-              <span className="filt__label">Language</span>
-              <select
-                value={filters.language}
-                onChange={(event) => setFilters({ language: event.target.value })}
-              >
-                {LANGUAGES.map((language) => (
-                  <option key={language.code} value={language.code}>
-                    {language.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+                <div className="filt">
+                  <span className="filt__label">Mana value</span>
+                  <div className="filt__range">
+                    <input
+                      type="number"
+                      min={0}
+                      value={filters.manaMin}
+                      onChange={(event) => setFilters({ manaMin: event.target.value })}
+                      placeholder="Min"
+                      aria-label="Minimum mana value"
+                    />
+                    <span className="filt__dash">–</span>
+                    <input
+                      type="number"
+                      min={0}
+                      value={filters.manaMax}
+                      onChange={(event) => setFilters({ manaMax: event.target.value })}
+                      placeholder="Max"
+                      aria-label="Maximum mana value"
+                    />
+                  </div>
+                </div>
+
+                <label className="filt">
+                  <span className="filt__label">Artist</span>
+                  <input
+                    type="text"
+                    value={filters.artist}
+                    onChange={(event) => setFilters({ artist: event.target.value })}
+                    placeholder="e.g. John Avon"
+                  />
+                </label>
+
+                <label className="filt">
+                  <span className="filt__label">Language</span>
+                  <select
+                    value={filters.language}
+                    onChange={(event) => setFilters({ language: event.target.value })}
+                  >
+                    {LANGUAGES.map((language) => (
+                      <option key={language.code} value={language.code}>
+                        {language.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+              </>
+            )}
+
+            <button
+              type="button"
+              className="filt__more"
+              onClick={() => setShowMore((value) => !value)}
+              aria-expanded={showMore}
+            >
+              {showMore ? '− Fewer filters' : '+ More filters'}
+            </button>
           </>
         )}
 

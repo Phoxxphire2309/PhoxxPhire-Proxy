@@ -2,6 +2,7 @@ import { useEffect, useState } from 'react'
 import { bestUsd, faceImageUrl, formatUsd, type Card } from '@shared/scryfall'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 import { upscaleCardWithConfirm } from '@renderer/state/upscaleActions'
+import { useDndStore } from '@renderer/state/dndStore'
 
 function statusBadge(status: string | undefined): string | null {
   switch (status) {
@@ -33,6 +34,7 @@ export function CardTile({
   const upscaled = useUpscaleStore((state) => Boolean(state.upscaled[card.id]))
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
   const unmarkUpscaled = useUpscaleStore((state) => state.unmarkUpscaled)
+  const setDragging = useDndStore((state) => state.setDragging)
   const status = useUpscaleStore((state) => state.statuses[faceKey(card.id, faceIndex)])
 
   const quality = upscaled ? 'upscaled' : 'thumb'
@@ -51,6 +53,12 @@ export function CardTile({
         role="button"
         tabIndex={0}
         aria-label={`View ${card.name}`}
+        draggable
+        onDragStart={(event) => {
+          setDragging(card)
+          event.dataTransfer.effectAllowed = 'copy'
+        }}
+        onDragEnd={() => setDragging(null)}
         onClick={onOpen}
         onKeyDown={(event) => {
           if (event.key === 'Enter' || event.key === ' ') {
