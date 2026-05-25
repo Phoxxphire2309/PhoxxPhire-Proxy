@@ -92,17 +92,29 @@ export class ScryfallClient {
   /**
    * Every printing of a card, identified by its oracle id, ordered by release.
    * `unique: 'prints'` is what surfaces the per-set art/version variants.
+   *
+   * Scryfall returns at most 175 results per page, so high-printing cards (basic
+   * lands, staples) need their pages followed via `has_more` — otherwise later
+   * sets go missing. Capped to keep the most prolific basics bounded.
    */
   async getPrintings(oracleId: string): Promise<Card[]> {
     if (!oracleId) return []
+    const MAX_PAGES = 20
+    const raw: ScryfallCard[] = []
     try {
-      const list = await this.request<ScryfallList<ScryfallCard>>('/cards/search', {
-        q: `oracleid:${oracleId}`,
-        unique: 'prints',
-        order: 'released',
-        dir: 'asc'
-      })
-      return list.data.map(normalizeCard).filter((card) => card.faces.length > 0)
+      for (let page = 1; page <= MAX_PAGES; page += 1) {
+        const params: Record<string, string> = {
+          q: `oracleid:${oracleId}`,
+          unique: 'prints',
+          order: 'released',
+          dir: 'asc'
+        }
+        if (page > 1) params.page = String(page)
+        const list = await this.request<ScryfallList<ScryfallCard>>('/cards/search', params)
+        raw.push(...list.data)
+        if (!list.has_more) break
+      }
+      return raw.map(normalizeCard).filter((card) => card.faces.length > 0)
     } catch (error) {
       if (error instanceof ScryfallError && error.status === 404) return []
       throw error

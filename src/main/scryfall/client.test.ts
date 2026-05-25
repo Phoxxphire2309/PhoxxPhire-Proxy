@@ -186,6 +186,19 @@ describe('ScryfallClient', () => {
     expect(cards.map((card) => card.id)).toEqual(['id-1', 'id-2'])
   })
 
+  it('follows pagination so high-printing cards return every set', async () => {
+    const page1 = { ...rawCard, id: 'p1', set: 'lea' }
+    const page2 = { ...rawCard, id: 'p2', set: 'mh3' }
+    const fetchFn = vi
+      .fn<typeof fetch>()
+      .mockResolvedValueOnce(jsonResponse({ object: 'list', has_more: true, data: [page1] }))
+      .mockResolvedValueOnce(jsonResponse({ object: 'list', has_more: false, data: [page2] }))
+    const cards = await makeClient(fetchFn).getPrintings('o-1')
+    expect(fetchFn).toHaveBeenCalledTimes(2)
+    expect(String(fetchFn.mock.calls[1]![0])).toContain('page=2')
+    expect(cards.map((card) => card.id)).toEqual(['p1', 'p2'])
+  })
+
   it('returns no printings for a missing oracle id without calling the API', async () => {
     const fetchFn = vi.fn<typeof fetch>(async () => jsonResponse(rawCard))
     expect(await makeClient(fetchFn).getPrintings('')).toEqual([])
