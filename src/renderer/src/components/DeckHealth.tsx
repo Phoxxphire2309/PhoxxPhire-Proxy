@@ -21,6 +21,9 @@ export function DeckHealth(): React.JSX.Element | null {
   const bulkSwitchPrintings = useDeckStore((state) => state.bulkSwitchPrintings)
   const bulkRunning = useDeckStore((state) => state.bulkRunning)
   const upscalerAvailable = useUpscaleStore((state) => state.available) === true
+  // Subscribe to the upscaled set so the panel re-renders (and clears) once a
+  // low-res card has been upscaled — upscaling never changes its source scan.
+  const upscaled = useUpscaleStore((state) => state.upscaled)
   const open = useDeckUiStore((state) => state.open)
   const [missingTokens, setMissingTokens] = useState<Card[]>([])
 
@@ -34,7 +37,10 @@ export function DeckHealth(): React.JSX.Element | null {
   )
   const idsKey = cards.map((card) => card.id).join(',')
 
-  const lowRes = cards.filter((card) => !isHighRes(card))
+  // A card needs attention when its source scan is low-res and it hasn't been
+  // upscaled (the "Best scan" fix instead swaps in a high-res printing, which
+  // makes isHighRes true and drops it from this list directly).
+  const lowRes = cards.filter((card) => !isHighRes(card) && !upscaled[card.id])
 
   // Detected tokens this deck creates that aren't already in it.
   useEffect(() => {
@@ -78,7 +84,7 @@ export function DeckHealth(): React.JSX.Element | null {
     return (
       <div className="dhealth dhealth--ok">
         <span className="dhealth__dot dhealth__dot--ok" aria-hidden="true" />
-        <span className="dhealth__oktext">Print-ready — every scan is high-resolution.</span>
+        <span className="dhealth__oktext">Print-ready — every card is high-resolution.</span>
       </div>
     )
   }
