@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import { SearchBar } from '@renderer/components/SearchBar'
-import { Filters } from '@renderer/components/Filters'
+import { Sidebar } from '@renderer/components/Sidebar'
 import { CardGrid } from '@renderer/components/CardGrid'
 import { CardDetail } from '@renderer/components/CardDetail'
-import { DeckPanel } from '@renderer/components/DeckPanel'
-import { DeckTabs } from '@renderer/components/DeckTabs'
-import { UpscaleControls } from '@renderer/components/UpscaleControls'
+import { DeckGridView } from '@renderer/components/DeckGridView'
+import { DeckActions } from '@renderer/components/DeckActions'
+import { DeckDialogs } from '@renderer/components/DeckDialogs'
+import { SettingsView } from '@renderer/components/SettingsView'
 import { ToastContainer } from '@renderer/components/ToastContainer'
 import { UpscaleProgress } from '@renderer/components/UpscaleProgress'
 import { BulkProgress } from '@renderer/components/BulkProgress'
 import { ConfirmHost } from '@renderer/components/ConfirmHost'
-import { PrintPartner } from '@renderer/components/PrintPartner'
 import { Onboarding } from '@renderer/components/Onboarding'
 import logo from '@renderer/assets/phoxxphire-logo.png'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
@@ -22,6 +22,7 @@ export function App(): React.JSX.Element {
   const applyStatus = useUpscaleStore((state) => state.applyStatus)
   const theme = useUiStore((state) => state.theme)
   const toggleTheme = useUiStore((state) => state.toggleTheme)
+  const view = useUiStore((state) => state.view)
   const setOnboarded = useUiStore((state) => state.setOnboarded)
   const [showOnboarding, setShowOnboarding] = useState(false)
 
@@ -63,50 +64,59 @@ export function App(): React.JSX.Element {
     <div className="app">
       <div className="app__bg" aria-hidden="true" style={{ backgroundImage: `url(${logo})` }} />
 
-      <nav className="rail" aria-label="Primary">
-        <img className="rail__logo" src={logo} alt="PhoxxPhire Proxy" />
-        <span className="rail__spacer" />
-        <button
-          className="rail__btn"
-          type="button"
-          onClick={toggleTheme}
-          aria-label="Toggle light/dark theme"
-          title="Toggle theme"
-        >
-          {theme === 'dark' ? '☾' : '☀'}
-        </button>
-        <button
-          className="rail__btn"
-          type="button"
-          onClick={() => setShowOnboarding(true)}
-          aria-label="Help / quick tour"
-          title="Quick tour"
-        >
-          ?
-        </button>
-      </nav>
+      <Sidebar />
 
       <div className="app__main">
         <header className="topbar">
-          <SearchBar />
-          <Filters />
+          {view === 'search' && <SearchBar />}
+          {view !== 'search' && <div className="topbar__spacer" />}
           <div className="topbar__right">
-            <PrintPartner compact />
-            <UpscaleControls />
+            <button
+              className="rail__btn"
+              type="button"
+              onClick={toggleTheme}
+              aria-label="Toggle light/dark theme"
+              title="Toggle theme"
+            >
+              {theme === 'dark' ? '☾' : '☀'}
+            </button>
+            <button
+              className="rail__btn"
+              type="button"
+              onClick={() => setShowOnboarding(true)}
+              aria-label="Help / quick tour"
+              title="Quick tour"
+            >
+              ?
+            </button>
           </div>
         </header>
 
         <div className="app__body">
-          <main className="app__results">
-            <CardGrid />
-          </main>
-          <aside className="app__deck">
-            <DeckTabs />
-            <DeckPanel />
-          </aside>
+          {view === 'search' && (
+            <main className="app__results">
+              <CardGrid />
+            </main>
+          )}
+          {view === 'decks' && (
+            <>
+              <main className="app__results">
+                <DeckGridView />
+              </main>
+              <aside className="app__deck">
+                <DeckActions />
+              </aside>
+            </>
+          )}
+          {view === 'settings' && (
+            <main className="app__results">
+              <SettingsView />
+            </main>
+          )}
         </div>
       </div>
 
+      <DeckDialogs />
       <CardDetail />
       <ToastContainer />
       <UpscaleProgress />

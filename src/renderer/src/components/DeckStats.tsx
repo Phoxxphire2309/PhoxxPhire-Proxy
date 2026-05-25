@@ -16,13 +16,13 @@ import {
 } from '@shared/legality'
 import { useDeckStore } from '@renderer/state/deckStore'
 
-const COLOR_META: { key: ManaColor; label: string; swatch: string }[] = [
-  { key: 'W', label: 'White', swatch: '#f3e9c6' },
-  { key: 'U', label: 'Blue', swatch: '#3b82f6' },
-  { key: 'B', label: 'Black', swatch: '#5b5563' },
-  { key: 'R', label: 'Red', swatch: '#ef4444' },
-  { key: 'G', label: 'Green', swatch: '#22a55b' },
-  { key: 'C', label: 'Colourless', swatch: '#9aa0aa' }
+const COLOR_META: { key: ManaColor; label: string; swatch: string; ink: string }[] = [
+  { key: 'W', label: 'White', swatch: '#f7efd2', ink: '#5b5326' },
+  { key: 'U', label: 'Blue', swatch: '#3b82f6', ink: '#0b2a5e' },
+  { key: 'B', label: 'Black', swatch: '#4a4651', ink: '#0c0a10' },
+  { key: 'R', label: 'Red', swatch: '#ef4444', ink: '#5e0f0f' },
+  { key: 'G', label: 'Green', swatch: '#22a55b', ink: '#0c3a20' },
+  { key: 'C', label: 'Colourless', swatch: '#c2c6cf', ink: '#3a3e47' }
 ]
 
 const isRealCard = (typeLine: string | undefined): boolean => !/Token|Emblem/.test(typeLine ?? '')
@@ -139,7 +139,13 @@ export function DeckStats(): React.JSX.Element {
       <div className="stats__colors">
         {COLOR_META.filter((c) => stats.colors[c.key] > 0).map((c) => (
           <span className="stats__color" key={c.key} title={c.label}>
-            <span className="stats__swatch" style={{ background: c.swatch }} aria-hidden="true" />
+            <span
+              className="stats__pip"
+              style={{ '--pip': c.swatch, '--pip-ink': c.ink } as React.CSSProperties}
+              aria-hidden="true"
+            >
+              {c.key}
+            </span>
             {stats.colors[c.key]}
           </span>
         ))}

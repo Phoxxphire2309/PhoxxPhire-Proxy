@@ -87,79 +87,89 @@ export function SearchBar(): React.JSX.Element {
         runSearch()
       }}
     >
-      <div className="search__box">
-        <input
-          id="card-search"
-          className="search__input"
-          type="search"
-          value={query}
-          onChange={(event) => {
-            suppressOpen.current = false
-            setQuery(event.target.value)
-          }}
-          onKeyDown={onKeyDown}
-          onBlur={() =>
-            setTimeout(() => {
-              setOpen(false)
-              setShowRecents(false)
-            }, 120)
-          }
-          onFocus={() => {
-            if (suggestions.length > 0) setOpen(true)
-            else if (query.trim().length === 0 && recents.length > 0) setShowRecents(true)
-          }}
-          placeholder="Search Scryfall — e.g. lightning bolt, t:goblin, set:mh3"
-          aria-label="Card search query"
-          autoComplete="off"
-          spellCheck={false}
-        />
-        {open && (
-          <ul className="search__suggestions">
-            {suggestions.map((suggestion, index) => (
-              <li key={suggestion}>
-                <button
-                  type="button"
-                  className={`search__suggestion${index === highlight ? ' is-active' : ''}`}
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => choose(suggestion)}
-                >
-                  {suggestion}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
-        {!open && showRecents && recents.length > 0 && (
-          <ul className="search__suggestions">
-            <li className="search__recents-head">Recent searches</li>
-            {recents.map((recent) => (
-              <li key={recent}>
-                <button
-                  type="button"
-                  className="search__suggestion"
-                  onMouseDown={(event) => event.preventDefault()}
-                  onClick={() => choose(recent)}
-                >
-                  ↺ {recent}
-                </button>
-              </li>
-            ))}
-          </ul>
-        )}
+      <div className="searchbar">
+        <span className="searchbar__icon" aria-hidden="true">
+          ⌕
+        </span>
+        <div className="search__box">
+          <input
+            id="card-search"
+            className="searchbar__input"
+            type="search"
+            value={query}
+            onChange={(event) => {
+              suppressOpen.current = false
+              setQuery(event.target.value)
+            }}
+            onKeyDown={onKeyDown}
+            onBlur={() =>
+              setTimeout(() => {
+                setOpen(false)
+                setShowRecents(false)
+              }, 120)
+            }
+            onFocus={() => {
+              if (suggestions.length > 0) setOpen(true)
+              else if (query.trim().length === 0 && recents.length > 0) setShowRecents(true)
+            }}
+            placeholder="Search Scryfall — e.g. lightning bolt, t:goblin, set:mh3"
+            aria-label="Card search query"
+            autoComplete="off"
+            spellCheck={false}
+          />
+          {open && (
+            <ul className="search__suggestions">
+              {suggestions.map((suggestion, index) => (
+                <li key={suggestion}>
+                  <button
+                    type="button"
+                    className={`search__suggestion${index === highlight ? ' is-active' : ''}`}
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => choose(suggestion)}
+                  >
+                    {suggestion}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+          {!open && showRecents && recents.length > 0 && (
+            <ul className="search__suggestions">
+              <li className="search__recents-head">Recent searches</li>
+              {recents.map((recent) => (
+                <li key={recent}>
+                  <button
+                    type="button"
+                    className="search__suggestion"
+                    onMouseDown={(event) => event.preventDefault()}
+                    onClick={() => choose(recent)}
+                  >
+                    ↺ {recent}
+                  </button>
+                </li>
+              ))}
+            </ul>
+          )}
+        </div>
+        <a
+          className="searchbar__help"
+          href="https://scryfall.com/docs/syntax"
+          target="_blank"
+          rel="noreferrer"
+          title="Scryfall search syntax reference"
+          aria-label="Search syntax help"
+        >
+          ?
+        </a>
+        <button
+          className="searchbar__btn"
+          type="submit"
+          disabled={status === 'loading'}
+          aria-label="Search"
+        >
+          {status === 'loading' ? '…' : '⌕'}
+        </button>
       </div>
-      <button className="search__button" type="submit" disabled={status === 'loading'}>
-        {status === 'loading' ? 'Searching…' : 'Search'}
-      </button>
-      <a
-        className="search__help"
-        href="https://scryfall.com/docs/syntax"
-        target="_blank"
-        rel="noreferrer"
-        title="Scryfall search syntax reference"
-        aria-label="Search syntax help"
-      >
-        ?
-      </a>
     </form>
   )
 }

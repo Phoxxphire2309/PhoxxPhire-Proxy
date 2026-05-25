@@ -13,6 +13,7 @@ import {
   isNonFoil,
   nonFoilPrintings,
   type Card,
+  type SearchOptions,
   type SearchResult
 } from '@shared/scryfall'
 import { squareOffCorners } from '../image/processor'
@@ -90,8 +91,8 @@ export class ScryfallService {
     await this.cache.init()
   }
 
-  async search(query: string): Promise<SearchResult> {
-    const result = await this.client.search(query)
+  async search(query: string, options?: SearchOptions): Promise<SearchResult> {
+    const result = await this.client.search(query, options)
     await Promise.all(result.cards.map((card) => this.cache.putCard(card)))
     return result
   }

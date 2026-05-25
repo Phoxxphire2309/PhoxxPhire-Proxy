@@ -70,29 +70,33 @@ export function BasicLandDialog({ onClose }: { onClose: () => void }): React.JSX
         <h2 className="detail__name">Basic lands</h2>
         <p className="detail__hint">Set how many of each basic land to add to the deck.</p>
 
-        <ul className="tokens__list">
+        <ul className="pickgrid">
           {BASICS.map((basic) => (
-            <li className="tokens__item" key={basic}>
-              <span className="stats__swatch" style={{ background: SWATCH[basic] }} aria-hidden />
-              <div className="tokens__info">
-                <span className="ditem__name">{basic}</span>
+            <li className="pickgrid__item" key={basic}>
+              <div
+                className="pickgrid__art landtile"
+                style={{ '--land': SWATCH[basic] } as React.CSSProperties}
+              >
+                <span className="landtile__name">{basic}</span>
               </div>
-              <div className="ditem__qty">
-                <button
-                  type="button"
-                  onClick={() => setCount(basic, counts[basic] - 1)}
-                  aria-label={`Decrease ${basic}`}
-                >
-                  −
-                </button>
-                <span className="ditem__count">{counts[basic]}</span>
-                <button
-                  type="button"
-                  onClick={() => setCount(basic, counts[basic] + 1)}
-                  aria-label={`Increase ${basic}`}
-                >
-                  +
-                </button>
+              <div className="pickgrid__bar">
+                <div className="dgrid__qty">
+                  <button
+                    type="button"
+                    onClick={() => setCount(basic, counts[basic] - 1)}
+                    aria-label={`Decrease ${basic}`}
+                  >
+                    −
+                  </button>
+                  <span>{counts[basic]}</span>
+                  <button
+                    type="button"
+                    onClick={() => setCount(basic, counts[basic] + 1)}
+                    aria-label={`Increase ${basic}`}
+                  >
+                    +
+                  </button>
+                </div>
               </div>
             </li>
           ))}

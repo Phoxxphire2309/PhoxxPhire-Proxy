@@ -1,4 +1,10 @@
-import type { Card, ScryfallCard, ScryfallList, SearchResult } from '@shared/scryfall'
+import type {
+  Card,
+  ScryfallCard,
+  ScryfallList,
+  SearchOptions,
+  SearchResult
+} from '@shared/scryfall'
 import { RateLimiter } from './rate-limiter'
 import { normalizeCard } from './normalize'
 
@@ -50,13 +56,17 @@ export class ScryfallClient {
   }
 
   /** Full-text search. A Scryfall 404 (no matches) is mapped to an empty result. */
-  async search(query: string): Promise<SearchResult> {
+  async search(query: string, options: SearchOptions = {}): Promise<SearchResult> {
     try {
-      const list = await this.request<ScryfallList<ScryfallCard>>('/cards/search', {
+      const params: Record<string, string> = {
         q: query,
         unique: 'cards',
         include_extras: 'false'
-      })
+      }
+      if (options.order) params.order = options.order
+      if (options.dir) params.dir = options.dir
+      if (options.page && options.page > 1) params.page = String(options.page)
+      const list = await this.request<ScryfallList<ScryfallCard>>('/cards/search', params)
       return {
         cards: list.data.map(normalizeCard).filter((card) => card.faces.length > 0),
         totalCards: list.total_cards ?? list.data.length,

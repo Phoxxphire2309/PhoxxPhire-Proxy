@@ -16,7 +16,7 @@ function formatBytes(bytes: number): string {
   return `${value.toFixed(value >= 10 ? 0 : 1)} ${units[unit]}`
 }
 
-export function UpscaleControls(): React.JSX.Element {
+export function UpscaleControls({ compact = false }: { compact?: boolean }): React.JSX.Element {
   const available = useUpscaleStore((state) => state.available)
   const model = useUpscaleStore((state) => state.model)
   const scale = useUpscaleStore((state) => state.scale)
@@ -118,30 +118,32 @@ export function UpscaleControls(): React.JSX.Element {
         </select>
       </label>
 
-      <span
-        className="controls__cache"
-        title={cachePath ? `On-disk cache: ${cachePath}` : 'On-disk image cache'}
-      >
-        {cacheBytes === null ? '—' : formatBytes(cacheBytes)}
-        <button
-          type="button"
-          className="controls__clear"
-          onClick={() => void runCacheOp(() => window.phoxx.rebuildImageCache())}
-          disabled={busy || cacheBytes === 0}
-          title="Drop cached images so they re-download and re-process with the latest fixes (keeps your searched cards)"
+      {!compact && (
+        <span
+          className="controls__cache"
+          title={cachePath ? `On-disk cache: ${cachePath}` : 'On-disk image cache'}
         >
-          Rebuild
-        </button>
-        <button
-          type="button"
-          className="controls__clear"
-          onClick={() => void runCacheOp(() => window.phoxx.clearCache())}
-          disabled={busy || cacheBytes === 0}
-          title="Delete everything cached (images and card data)"
-        >
-          Clear
-        </button>
-      </span>
+          {cacheBytes === null ? '—' : formatBytes(cacheBytes)}
+          <button
+            type="button"
+            className="controls__clear"
+            onClick={() => void runCacheOp(() => window.phoxx.rebuildImageCache())}
+            disabled={busy || cacheBytes === 0}
+            title="Drop cached images so they re-download and re-process with the latest fixes (keeps your searched cards)"
+          >
+            Rebuild
+          </button>
+          <button
+            type="button"
+            className="controls__clear"
+            onClick={() => void runCacheOp(() => window.phoxx.clearCache())}
+            disabled={busy || cacheBytes === 0}
+            title="Delete everything cached (images and card data)"
+          >
+            Clear
+          </button>
+        </span>
+      )}
     </div>
   )
 }

@@ -92,39 +92,41 @@ export function TokenDialog({ onClose }: { onClose: () => void }): React.JSX.Ele
               {tokens.length} token{tokens.length === 1 ? '' : 's'} found. Set a quantity (0 to
               skip) and add the ones you want.
             </p>
-            <ul className="tokens__list">
+            <ul className="pickgrid">
               {tokens.map((token) => {
                 const quantity = quantities[token.id] ?? 0
                 return (
-                  <li className="tokens__item" key={token.id}>
-                    <img
-                      className="tokens__thumb"
-                      src={faceImageUrl(token.id, 0, 'source')}
-                      alt={token.name}
-                      loading="lazy"
-                      draggable={false}
-                    />
-                    <div className="tokens__info">
-                      <span className="ditem__name">{token.name}</span>
-                      <span className="ditem__meta">{token.setCode.toUpperCase()}</span>
+                  <li className="pickgrid__item" key={token.id}>
+                    <div className="pickgrid__art">
+                      <img
+                        src={faceImageUrl(token.id, 0, 'source')}
+                        alt={token.name}
+                        loading="lazy"
+                        draggable={false}
+                      />
                     </div>
-                    <div className="ditem__qty">
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(token.id, quantity - 1)}
-                        aria-label={`Decrease ${token.name}`}
-                      >
-                        −
-                      </button>
-                      <span className="ditem__count">{quantity}</span>
-                      <button
-                        type="button"
-                        onClick={() => setQuantity(token.id, quantity + 1)}
-                        aria-label={`Increase ${token.name}`}
-                      >
-                        +
-                      </button>
+                    <div className="pickgrid__bar">
+                      <div className="dgrid__qty">
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(token.id, quantity - 1)}
+                          aria-label={`Decrease ${token.name}`}
+                        >
+                          −
+                        </button>
+                        <span>{quantity}</span>
+                        <button
+                          type="button"
+                          onClick={() => setQuantity(token.id, quantity + 1)}
+                          aria-label={`Increase ${token.name}`}
+                        >
+                          +
+                        </button>
+                      </div>
                     </div>
+                    <span className="pickgrid__name" title={token.name}>
+                      {token.name}
+                    </span>
                   </li>
                 )
               })}

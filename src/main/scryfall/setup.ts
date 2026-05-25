@@ -2,6 +2,7 @@ import { join } from 'node:path'
 import { BrowserWindow, ipcMain, net } from 'electron'
 import { IpcChannel } from '@shared/ipc'
 import type { ImportProgress } from '@shared/decklist'
+import type { SearchOptions } from '@shared/scryfall'
 import { CardCache } from './cache'
 import { ScryfallClient } from './client'
 import { ScryfallService } from './service'
@@ -30,7 +31,9 @@ export async function initScryfall(
   const service = new ScryfallService(client, cache, fetch, net.fetch as unknown as typeof fetch)
   await service.init()
 
-  ipcMain.handle(IpcChannel.ScryfallSearch, (_event, query: string) => service.search(query))
+  ipcMain.handle(IpcChannel.ScryfallSearch, (_event, query: string, options?: SearchOptions) =>
+    service.search(query, options)
+  )
   ipcMain.handle(IpcChannel.ScryfallAutocomplete, (_event, query: string) =>
     service.autocomplete(query)
   )

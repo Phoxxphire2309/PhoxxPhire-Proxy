@@ -246,6 +246,15 @@ export interface SearchResult {
   hasMore: boolean
 }
 
+/** Optional ordering + pagination for a card search. */
+export interface SearchOptions {
+  /** Scryfall `order` value (e.g. 'name', 'cmc', 'usd', 'released'); empty = default. */
+  order?: string
+  dir?: 'asc' | 'desc'
+  /** 1-based page (Scryfall returns up to 175 cards per page). */
+  page?: number
+}
+
 /** Custom Electron protocol used to serve cached / upscaled images. */
 export const IMAGE_PROTOCOL = 'phoxx-image'
 

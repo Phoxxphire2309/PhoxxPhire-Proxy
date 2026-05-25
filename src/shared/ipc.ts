@@ -28,7 +28,7 @@ import type {
   PrintOutcome
 } from './layout'
 import type { MpcCard, MpcExportOutcome } from './mpc'
-import type { Card, SearchResult } from './scryfall'
+import type { Card, SearchOptions, SearchResult } from './scryfall'
 import type { InstallPhase } from './upscaleInstall'
 
 export const IpcChannel = {
@@ -119,7 +119,7 @@ export interface PhoxxApi {
   /** Returns the running application version (from package.json). */
   getVersion(): Promise<string>
   /** Full-text Scryfall search; returns normalized cards (first page). */
-  searchCards(query: string): Promise<SearchResult>
+  searchCards(query: string, options?: SearchOptions): Promise<SearchResult>
   /** Card-name autocomplete suggestions for a partial query. */
   autocomplete(query: string): Promise<string[]>
   /** All printings (across sets) of the card with the given Scryfall oracle id. */

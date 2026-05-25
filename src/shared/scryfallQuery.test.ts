@@ -8,6 +8,7 @@ describe('composeQuery', () => {
 
   it('appends colour, type, rarity, format, set, and language clauses', () => {
     const query = composeQuery('bolt', {
+      ...EMPTY_FILTERS,
       colors: ['r'],
       type: 'instant',
       rarity: 'common',
@@ -16,6 +17,17 @@ describe('composeQuery', () => {
       language: 'ja'
     })
     expect(query).toBe('bolt c>=r t:instant r:common f:modern set:mh3 lang:ja')
+  })
+
+  it('appends subtype, artist, and mana-value bounds', () => {
+    const query = composeQuery('', {
+      ...EMPTY_FILTERS,
+      subtype: 'goblin',
+      artist: 'John Avon',
+      manaMin: '2',
+      manaMax: '4'
+    })
+    expect(query).toBe('t:goblin a:"John Avon" mv>=2 mv<=4')
   })
 
   it('omits the language clause for the default (English) value', () => {
