@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import { bestUsd, faceImageUrl, formatUsd } from '@shared/scryfall'
 import { DECK_SECTIONS, DECK_SECTION_LABELS, type DeckSection } from '@shared/deck'
+import { GROUP_OPTIONS, groupDeckItems, type GroupBy } from '@shared/deckGroup'
 import type { DecklistFormat } from '@shared/decklistExport'
 import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
 import { useDeckUiStore } from '@renderer/state/deckUiStore'
@@ -96,6 +98,7 @@ export function DeckGridView(): React.JSX.Element {
   const canUndo = useDeckStore((state) => state.past.length > 0)
   const canRedo = useDeckStore((state) => state.future.length > 0)
   const open = useDeckUiStore((state) => state.open)
+  const [groupBy, setGroupBy] = useState<GroupBy>('none')
 
   const total = items.reduce((sum, item) => sum + item.quantities.reduce((a, b) => a + b, 0), 0)
   const totalPrice = items.reduce(
@@ -191,14 +194,42 @@ export function DeckGridView(): React.JSX.Element {
         </p>
       ) : (
         <>
-          <p className="deck__eyebrow deck__eyebrow--cards">
-            Cards <span className="deck__count">{total}</span>
-          </p>
-          <ul className="dgrid">
-            {items.map((item) => (
-              <DeckGridCard key={item.card.id} item={item} />
-            ))}
-          </ul>
+          <div className="dview__cardsbar">
+            <p className="deck__eyebrow deck__eyebrow--cards">
+              Cards <span className="deck__count">{total}</span>
+            </p>
+            <label className="dview__groupby">
+              <span>Group by</span>
+              <select
+                value={groupBy}
+                onChange={(event) => setGroupBy(event.target.value as GroupBy)}
+              >
+                {GROUP_OPTIONS.map((option) => (
+                  <option key={option.key} value={option.key}>
+                    {option.label}
+                  </option>
+                ))}
+              </select>
+            </label>
+          </div>
+
+          {groupDeckItems(items, groupBy).map((group) => (
+            <div className="dgroup" key={group.key}>
+              {group.label && (
+                <h3 className="dgroup__head">
+                  {group.label}{' '}
+                  <span className="deck__count">
+                    {group.items.reduce((sum, item) => sum + (item.quantities[0] ?? 0), 0)}
+                  </span>
+                </h3>
+              )}
+              <ul className="dgrid">
+                {group.items.map((item) => (
+                  <DeckGridCard key={item.card.id} item={item} />
+                ))}
+              </ul>
+            </div>
+          ))}
         </>
       )}
 

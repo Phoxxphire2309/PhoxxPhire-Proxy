@@ -2947,11 +2947,56 @@ h3 {
   margin-bottom: 2px;
 }
 
+.dview__cardsbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.dview__cardsbar .deck__eyebrow--cards {
+  margin: 18px 0 14px;
+  padding-top: 0;
+  border-top: none;
+  flex: 1;
+}
+
+.dview__groupby {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.dview__groupby select {
+  padding: 6px 26px 6px 10px;
+  font-size: 13px;
+  color: var(--text);
+  background: var(--panel);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.dgroup {
+  margin-bottom: 8px;
+}
+
+.dgroup__head {
+  margin: 6px 0 12px;
+  font-size: 13px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: var(--muted);
+}
+
 .dgrid {
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
   gap: 18px;
-  margin: 0;
+  margin: 0 0 18px;
   padding: 0;
   list-style: none;
 }

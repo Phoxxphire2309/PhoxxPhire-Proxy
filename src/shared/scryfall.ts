@@ -61,6 +61,7 @@ export interface ScryfallCard {
   cmc?: number
   type_line?: string
   colors?: string[]
+  rarity?: string
   finishes?: string[]
   image_uris?: ScryfallImageUris
   card_faces?: ScryfallCardFace[]
@@ -124,6 +125,8 @@ export interface Card {
   typeLine?: string
   /** Colour letters present on the card (W/U/B/R/G). */
   colors?: string[]
+  /** Rarity: 'common' | 'uncommon' | 'rare' | 'mythic' (or special). */
+  rarity?: string
   /** Available finishes for this printing: 'nonfoil' | 'foil' | 'etched'. */
   finishes?: string[]
   /** Per-format legality from Scryfall, e.g. { modern: 'legal', vintage: 'restricted' }. */
