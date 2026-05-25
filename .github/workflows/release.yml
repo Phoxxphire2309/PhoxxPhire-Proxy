@@ -42,15 +42,19 @@ jobs:
         # build only; the installers are uploaded as workflow artifacts below.
         shell: bash
         run: |
+          # Without a macOS signing cert, skip signing entirely — ad-hoc signing
+          # on a runner errors ("<root> not a file"). Harmless on Windows/Linux.
+          EXTRA=""
+          if [ "${{ runner.os }}" = "macOS" ] && [ -z "${{ secrets.MAC_CSC_LINK }}" ]; then
+            EXTRA="-c.mac.identity=null"
+          fi
+          npm run build
           if [ "${{ github.event_name }}" = "push" ]; then
-            npm run release
+            # Version tag → publish the installers to the GitHub release.
+            npx electron-builder --publish always $EXTRA
           else
-            # Manual run: build unsigned installers only.
-            #  --publish never  → no implicit CI publish (fails with no release)
-            #  -c.mac.identity=null → skip macOS code signing (no cert in CI);
-            #    ad-hoc signing otherwise errors. Harmless on Windows/Linux.
-            npm run build
-            npx electron-builder --publish never -c.mac.identity=null
+            # Manual run → build only; installers are uploaded as artifacts below.
+            npx electron-builder --publish never $EXTRA
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
