@@ -2,7 +2,7 @@ import { spawnSync } from 'node:child_process'
 import { createWriteStream } from 'node:fs'
 import { cp, mkdir, mkdtemp, readdir, rm } from 'node:fs/promises'
 import { tmpdir } from 'node:os'
-import { join } from 'node:path'
+import { dirname, join } from 'node:path'
 import { Readable } from 'node:stream'
 import { pipeline } from 'node:stream/promises'
 import type { InstallPhase } from '@shared/upscaleInstall'
@@ -94,6 +94,15 @@ export async function installUpscaler(
     const target = join(vendorDir, binaryName())
     await cp(foundBinary, target)
     await cp(foundModels, join(vendorDir, 'models'), { recursive: true })
+    // Windows needs the Vulkan loader DLL(s) alongside the executable to run.
+    if (process.platform === 'win32') {
+      const binDir = dirname(foundBinary)
+      for (const entry of await readdir(binDir)) {
+        if (entry.toLowerCase().endsWith('.dll')) {
+          await cp(join(binDir, entry), join(vendorDir, entry))
+        }
+      }
+    }
     if (process.platform !== 'win32') spawnSync('chmod', ['+x', target])
     if (process.platform === 'darwin') {
       spawnSync('xattr', ['-dr', 'com.apple.quarantine', vendorDir])

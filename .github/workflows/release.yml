@@ -4,6 +4,8 @@ on:
   push:
     tags:
       - 'v*'
+  # Manual builds: produce downloadable installers without publishing a release.
+  workflow_dispatch:
 
 permissions:
   contents: write
@@ -28,8 +30,36 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      - name: Build and publish installer
-        run: npm run release
+      # The Real-ESRGAN models aren't committed, so every build provisions the
+      # upscaler. macOS keeps the repo's universal binary (Intel + Apple Silicon)
+      # and just refreshes the models; other OSes fetch their native binary
+      # (plus vulkan-1.dll on Windows) and models.
+      - name: Provision upscaler (macOS — keep universal binary)
+        if: runner.os == 'macOS'
+        shell: bash
+        run: |
+          cp resources/vendor/realesrgan-ncnn-vulkan "$RUNNER_TEMP/upscaler-universal"
+          node scripts/fetch-upscaler.mjs --force
+          cp "$RUNNER_TEMP/upscaler-universal" resources/vendor/realesrgan-ncnn-vulkan
+          chmod +x resources/vendor/realesrgan-ncnn-vulkan
+
+      - name: Provision upscaler (Windows/Linux — fetch native)
+        if: runner.os != 'macOS'
+        shell: bash
+        run: |
+          rm -f resources/vendor/realesrgan-ncnn-vulkan
+          node scripts/fetch-upscaler.mjs --force
+
+      - name: Build installer
+        # On a version tag: build + publish a GitHub release. On a manual run:
+        # build only; the installers are uploaded as workflow artifacts below.
+        shell: bash
+        run: |
+          if [ "${{ github.event_name }}" = "push" ]; then
+            npm run release
+          else
+            npm run package
+          fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Signing cert for the current OS (base64 .p12/.pfx) + its password.
@@ -42,3 +72,14 @@ jobs:
           APPLE_ID: ${{ secrets.APPLE_ID }}
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
+
+      - name: Upload installers (manual runs)
+        if: github.event_name == 'workflow_dispatch'
+        uses: actions/upload-artifact@v4
+        with:
+          name: installers-${{ matrix.os }}
+          path: |
+            dist/*.dmg
+            dist/*.exe
+            dist/*.AppImage
+          if-no-files-found: ignore

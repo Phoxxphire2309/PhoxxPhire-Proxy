@@ -106,6 +106,17 @@ async function main() {
     await cp(foundBinary, target)
     await cp(foundModels, join(vendorDir, 'models'), { recursive: true })
 
+    // Windows ships the Vulkan loader (vulkan-1.dll) next to the executable; it
+    // must travel with the binary or the upscaler can't start.
+    if (process.platform === 'win32') {
+      const binDir = dirname(foundBinary)
+      for (const entry of await readdir(binDir)) {
+        if (entry.toLowerCase().endsWith('.dll')) {
+          await cp(join(binDir, entry), join(vendorDir, entry))
+        }
+      }
+    }
+
     if (process.platform !== 'win32') {
       spawnSync('chmod', ['+x', target])
     }
