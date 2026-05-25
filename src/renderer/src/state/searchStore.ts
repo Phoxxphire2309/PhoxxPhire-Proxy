@@ -14,6 +14,9 @@ export type ViewMode = 'grid' | 'list'
 const MAX_RECENTS = 8
 /** Scryfall returns up to this many cards per page. */
 export const PAGE_SIZE = 175
+/** Debounce for auto-searching as filters change. */
+const FILTER_DEBOUNCE_MS = 350
+let filterDebounce: ReturnType<typeof setTimeout> | undefined
 
 interface SearchState {
   query: string
@@ -54,8 +57,16 @@ export const useSearchStore = create<SearchState>((set, get) => ({
   recents: [],
 
   setQuery: (query) => set({ query }),
-  setFilters: (filters) => set((state) => ({ filters: { ...state.filters, ...filters } })),
-  resetFilters: () => set({ filters: EMPTY_FILTERS }),
+  setFilters: (filters) => {
+    set((state) => ({ filters: { ...state.filters, ...filters } }))
+    clearTimeout(filterDebounce)
+    filterDebounce = setTimeout(() => void get().search(), FILTER_DEBOUNCE_MS)
+  },
+  resetFilters: () => {
+    set({ filters: EMPTY_FILTERS })
+    clearTimeout(filterDebounce)
+    filterDebounce = setTimeout(() => void get().search(), FILTER_DEBOUNCE_MS)
+  },
   setSort: (sort) => {
     set({ sort })
     void get().search()

@@ -2205,6 +2205,47 @@ h3 {
   }
 }
 
+/* Loading skeleton tile (card-shaped). */
+.skel {
+  aspect-ratio: 63 / 88;
+  border-radius: 14px;
+  border: 1px solid var(--border-soft);
+  background: linear-gradient(
+    100deg,
+    var(--panel) 30%,
+    color-mix(in srgb, var(--surface) 70%, var(--accent-soft)) 50%,
+    var(--panel) 70%
+  );
+  background-size: 200% 100%;
+  animation: shimmer 1.3s ease-in-out infinite;
+}
+
+/* Empty state (no results / nothing searched yet). */
+.emptystate {
+  padding: 48px 16px;
+  text-align: center;
+}
+
+.emptystate__title {
+  margin: 0 0 6px;
+  font-size: 16px;
+  font-weight: 700;
+}
+
+.emptystate__hint {
+  margin: 0;
+  font-size: 13px;
+  color: var(--muted);
+}
+
+.emptystate code {
+  padding: 1px 6px;
+  font-size: 12px;
+  color: var(--accent);
+  background: var(--accent-soft);
+  border-radius: 5px;
+}
+
 .tile__badge {
   position: absolute;
   left: 8px;
@@ -2350,6 +2391,26 @@ h3 {
   background: var(--panel);
   border: 1px solid var(--border);
   border-radius: 16px;
+}
+
+/* Inline (Search) variant: the card detail fills the right inspector column. */
+.app__deck--inspector {
+  animation: panel-in 0.18s cubic-bezier(0.2, 0.7, 0.3, 1);
+}
+
+.detail--inline .detail__panel {
+  width: 100%;
+  max-height: none;
+  padding: 0;
+  overflow: visible;
+  background: transparent;
+  border: none;
+  border-radius: 0;
+}
+
+/* Stack the image over the info in the narrow inspector column. */
+.detail--inline .detail__main {
+  flex-direction: column;
 }
 
 .detail__close {

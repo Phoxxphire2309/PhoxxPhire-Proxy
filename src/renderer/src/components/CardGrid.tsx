@@ -229,9 +229,21 @@ export function CardGrid(): React.JSX.Element {
       {status === 'error' ? (
         <p className="grid__message grid__message--error">{error}</p>
       ) : status === 'loading' ? (
-        <p className="grid__message">Searching Scryfall…</p>
+        <ul className="grid" aria-label="Loading results" aria-busy="true">
+          {Array.from({ length: 15 }).map((_unused, index) => (
+            <li key={index} className="grid__item">
+              <div className="skel" />
+            </li>
+          ))}
+        </ul>
       ) : !hasResults ? (
-        <p className="grid__message">No cards yet — try a search above.</p>
+        <div className="emptystate">
+          <p className="emptystate__title">No cards to show</p>
+          <p className="emptystate__hint">
+            Search by name, or try syntax like <code>t:dragon</code>, <code>c:rg</code>, or{' '}
+            <code>set:mh3</code>.
+          </p>
+        </div>
       ) : viewMode === 'grid' ? (
         <ul className="grid">
           {cards.map((card) => (

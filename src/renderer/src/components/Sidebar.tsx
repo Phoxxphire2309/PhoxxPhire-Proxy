@@ -28,7 +28,6 @@ export function Sidebar(): React.JSX.Element {
   const filters = useSearchStore((state) => state.filters)
   const setFilters = useSearchStore((state) => state.setFilters)
   const resetFilters = useSearchStore((state) => state.resetFilters)
-  const search = useSearchStore((state) => state.search)
   const view = useUiStore((state) => state.view)
   const setView = useUiStore((state) => state.setView)
   const deckCount = useDeckStore((state) =>
@@ -43,8 +42,6 @@ export function Sidebar(): React.JSX.Element {
       : [...filters.colors, code]
     setFilters({ colors })
   }
-
-  const apply = (): void => void search()
 
   return (
     <aside className="sidebar">
@@ -217,10 +214,6 @@ export function Sidebar(): React.JSX.Element {
                 ))}
               </select>
             </label>
-
-            <button type="button" className="filt__apply" onClick={apply}>
-              Apply filters
-            </button>
           </>
         )}
 

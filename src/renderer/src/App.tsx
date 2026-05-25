@@ -15,6 +15,7 @@ import { Onboarding } from '@renderer/components/Onboarding'
 import logo from '@renderer/assets/phoxxphire-logo.png'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore } from '@renderer/state/uiStore'
+import { usePrintingStore } from '@renderer/state/printingStore'
 import { loadPersistedState, startPersisting } from '@renderer/state/persist'
 
 export function App(): React.JSX.Element {
@@ -23,6 +24,7 @@ export function App(): React.JSX.Element {
   const theme = useUiStore((state) => state.theme)
   const toggleTheme = useUiStore((state) => state.toggleTheme)
   const view = useUiStore((state) => state.view)
+  const detailCard = usePrintingStore((state) => state.detailCard)
   const setOnboarded = useUiStore((state) => state.setOnboarded)
   const [showOnboarding, setShowOnboarding] = useState(false)
 
@@ -94,9 +96,16 @@ export function App(): React.JSX.Element {
 
         <div className="app__body">
           {view === 'search' && (
-            <main className="app__results">
-              <CardGrid />
-            </main>
+            <>
+              <main className="app__results">
+                <CardGrid />
+              </main>
+              {detailCard && (
+                <aside className="app__deck app__deck--inspector">
+                  <CardDetail variant="panel" />
+                </aside>
+              )}
+            </>
           )}
           {view === 'decks' && (
             <>
@@ -117,7 +126,7 @@ export function App(): React.JSX.Element {
       </div>
 
       <DeckDialogs />
-      <CardDetail />
+      {view !== 'search' && <CardDetail />}
       <ToastContainer />
       <UpscaleProgress />
       <BulkProgress />
