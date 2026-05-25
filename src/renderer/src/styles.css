@@ -479,43 +479,37 @@ h3 {
 
 .filt__colors {
   display: flex;
-  gap: 6px;
+  justify-content: space-between;
+  gap: 4px;
 }
 
 .filt__pip {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 30px;
-  height: 30px;
-  font-size: 14px;
-  font-weight: 800;
-  color: var(--pip-ink);
+  padding: 0;
+  font-size: 19px;
+  line-height: 1;
+  background: none;
+  border: none;
   border-radius: 50%;
-  background: radial-gradient(circle at 32% 28%, #ffffff55, transparent 55%), var(--pip);
-  border: 2px solid transparent;
-  box-shadow: inset 0 0 0 1px rgba(0, 0, 0, 0.3);
   cursor: pointer;
-  opacity: 0.45;
-  filter: saturate(0.85);
+  opacity: 0.4;
+  filter: saturate(0.8);
   transition:
     opacity 0.15s ease,
     transform 0.12s ease,
-    box-shadow 0.15s ease,
     filter 0.15s ease;
 }
 
 .filt__pip:hover {
-  opacity: 0.85;
+  opacity: 0.8;
 }
 
 .filt__pip.is-on {
   opacity: 1;
   filter: saturate(1.1);
-  transform: scale(1.08);
-  box-shadow:
-    inset 0 0 0 1px rgba(0, 0, 0, 0.3),
-    0 0 0 2px var(--ring);
+  transform: scale(1.1);
 }
 
 .filt__apply,
@@ -1425,6 +1419,26 @@ h3 {
   font-size: 14px;
   font-weight: 700;
   font-variant-numeric: tabular-nums;
+}
+
+.stats__color .ms {
+  font-size: 18px;
+}
+
+/* Mana cost as mana-font symbols */
+.manacost {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  font-size: 18px;
+  line-height: 1;
+}
+
+.detail__namerow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
 }
 
 .stats__pip {

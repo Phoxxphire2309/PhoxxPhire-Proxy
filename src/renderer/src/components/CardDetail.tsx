@@ -11,6 +11,7 @@ import { usePrintingStore } from '@renderer/state/printingStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { upscaleCardWithConfirm } from '@renderer/state/upscaleActions'
 import { useTextProxyStore } from '@renderer/state/textProxyStore'
+import { ManaCost } from '@renderer/components/ManaCost'
 import { useDeckStore } from '@renderer/state/deckStore'
 
 export function CardDetail({
@@ -163,7 +164,10 @@ export function CardDetail({
         )}
 
         <div className="detail__info">
-          <h2 className="detail__name">{face?.name ?? displayed.name}</h2>
+          <div className="detail__namerow">
+            <h2 className="detail__name">{face?.name ?? displayed.name}</h2>
+            {face?.manaCost && <ManaCost cost={face.manaCost} />}
+          </div>
           <p className="detail__meta">
             {displayed.setCode.toUpperCase()} · #{displayed.collectorNumber} · {displayed.layout}
             {displayed.imageStatus !== undefined && (

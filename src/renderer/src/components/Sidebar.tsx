@@ -13,13 +13,13 @@ const NAV: { view: AppView; label: string; icon: string }[] = [
   { view: 'settings', label: 'Settings', icon: '⚙' }
 ]
 
-const COLORS: { code: string; label: string; symbol: string; swatch: string; ink: string }[] = [
-  { code: 'w', label: 'White', symbol: 'W', swatch: '#f7efd2', ink: '#5b5326' },
-  { code: 'u', label: 'Blue', symbol: 'U', swatch: '#3b82f6', ink: '#0b2a5e' },
-  { code: 'b', label: 'Black', symbol: 'B', swatch: '#4a4651', ink: '#0c0a10' },
-  { code: 'r', label: 'Red', symbol: 'R', swatch: '#ef4444', ink: '#5e0f0f' },
-  { code: 'g', label: 'Green', symbol: 'G', swatch: '#22a55b', ink: '#0c3a20' },
-  { code: 'c', label: 'Colourless', symbol: 'C', swatch: '#c2c6cf', ink: '#3a3e47' }
+const COLORS: { code: string; label: string }[] = [
+  { code: 'w', label: 'White' },
+  { code: 'u', label: 'Blue' },
+  { code: 'b', label: 'Black' },
+  { code: 'r', label: 'Red' },
+  { code: 'g', label: 'Green' },
+  { code: 'c', label: 'Colourless' }
 ]
 
 const RARITIES = ['common', 'uncommon', 'rare', 'mythic']
@@ -118,15 +118,12 @@ export function Sidebar(): React.JSX.Element {
                       key={color.code}
                       type="button"
                       className={`filt__pip${on ? ' is-on' : ''}`}
-                      style={
-                        { '--pip': color.swatch, '--pip-ink': color.ink } as React.CSSProperties
-                      }
                       onClick={() => toggleColor(color.code)}
                       aria-pressed={on}
                       aria-label={color.label}
                       title={color.label}
                     >
-                      {color.symbol}
+                      <i className={`ms ms-${color.code} ms-cost`} aria-hidden="true" />
                     </button>
                   )
                 })}
