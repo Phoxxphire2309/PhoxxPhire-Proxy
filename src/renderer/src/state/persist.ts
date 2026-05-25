@@ -1,5 +1,6 @@
 import type { AppState } from '@shared/appState'
 import type { GroupBy } from '@shared/deckGroup'
+import type { DeckSortKey } from '@shared/deckSort'
 import type { SortKey } from '@shared/scryfallQuery'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useDecksStore } from '@renderer/state/decksStore'
@@ -23,6 +24,7 @@ export async function loadPersistedState(): Promise<void> {
   if (state.onboarded) useUiStore.getState().setOnboarded(true)
   if (state.ui?.view) useUiStore.getState().setView(state.ui.view as AppView)
   if (state.ui?.deckGroupBy) useUiStore.getState().setDeckGroupBy(state.ui.deckGroupBy as GroupBy)
+  if (state.ui?.deckSortBy) useUiStore.getState().setDeckSortBy(state.ui.deckSortBy as DeckSortKey)
   // Set sort/view mode directly so restoring doesn't fire a search on launch.
   if (state.ui?.sort) useSearchStore.setState({ sort: state.ui.sort as SortKey })
   if (state.ui?.viewMode) useSearchStore.setState({ viewMode: state.ui.viewMode as ViewMode })
@@ -72,6 +74,7 @@ function snapshot(): AppState {
     ui: {
       view: ui.view,
       deckGroupBy: ui.deckGroupBy,
+      deckSortBy: ui.deckSortBy,
       sort: useSearchStore.getState().sort,
       viewMode: useSearchStore.getState().viewMode
     }

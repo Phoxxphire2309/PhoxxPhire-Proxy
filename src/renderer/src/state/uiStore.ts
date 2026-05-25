@@ -1,6 +1,7 @@
 import { create } from 'zustand'
 import type { ThemeName } from '@shared/appState'
 import type { GroupBy } from '@shared/deckGroup'
+import type { DeckSortKey } from '@shared/deckSort'
 
 /** The primary view selected from the left nav. */
 export type AppView = 'search' | 'decks' | 'settings'
@@ -11,6 +12,8 @@ interface UiState {
   view: AppView
   /** How the Decks view groups cards. */
   deckGroupBy: GroupBy
+  /** How the Decks view orders cards (within each group). */
+  deckSortBy: DeckSortKey
   /** Whether the first-run onboarding has been dismissed. */
   onboarded: boolean
   /** Whether the quick-tour overlay is open. */
@@ -19,6 +22,7 @@ interface UiState {
   toggleTheme: () => void
   setView: (view: AppView) => void
   setDeckGroupBy: (groupBy: GroupBy) => void
+  setDeckSortBy: (sortBy: DeckSortKey) => void
   setOnboarded: (value: boolean) => void
   setTourOpen: (value: boolean) => void
 }
@@ -32,6 +36,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   theme: 'dark',
   view: 'search',
   deckGroupBy: 'none',
+  deckSortBy: 'manual',
   onboarded: false,
   tourOpen: false,
   setTheme: (theme) => {
@@ -41,6 +46,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
   setView: (view) => set({ view }),
   setDeckGroupBy: (deckGroupBy) => set({ deckGroupBy }),
+  setDeckSortBy: (deckSortBy) => set({ deckSortBy }),
   setOnboarded: (value) => set({ onboarded: value }),
   setTourOpen: (value) => set({ tourOpen: value })
 }))

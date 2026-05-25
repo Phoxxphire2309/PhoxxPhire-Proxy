@@ -72,11 +72,34 @@ export function normalizeCard(raw: ScryfallCard): Card {
     ...(imageStatus ? { imageStatus } : {}),
     ...(typeof raw.cmc === 'number' ? { cmc: raw.cmc } : {}),
     ...(raw.type_line !== undefined ? { typeLine: raw.type_line } : {}),
-    ...(Array.isArray(raw.colors) ? { colors: raw.colors } : {}),
+    ...(() => {
+      const colors = extractColors(raw)
+      return colors ? { colors } : {}
+    })(),
     ...(raw.rarity !== undefined ? { rarity: raw.rarity } : {}),
     ...(Array.isArray(raw.finishes) ? { finishes: raw.finishes } : {}),
     ...(raw.legalities ? { legalities: raw.legalities } : {})
   }
+}
+
+const WUBRG: ReadonlySet<string> = new Set(['W', 'U', 'B', 'R', 'G'])
+
+/**
+ * A card's colours. Prefers Scryfall's top-level `colors`, but multi-faced
+ * cards (modal DFC, transform) report colours only per face, so we union the
+ * faces' `colors` (and, as a backstop, the colours in their mana costs) when
+ * the top level is absent — otherwise such cards look colourless.
+ */
+function extractColors(raw: ScryfallCard): string[] | undefined {
+  if (Array.isArray(raw.colors)) return raw.colors
+  const found = new Set<string>()
+  for (const face of raw.card_faces ?? []) {
+    for (const color of face.colors ?? []) found.add(color)
+    for (const match of (face.mana_cost ?? '').matchAll(/\{([^}]+)\}/g)) {
+      for (const symbol of match[1]!) if (WUBRG.has(symbol)) found.add(symbol)
+    }
+  }
+  return found.size > 0 ? [...found] : undefined
 }
 
 /**

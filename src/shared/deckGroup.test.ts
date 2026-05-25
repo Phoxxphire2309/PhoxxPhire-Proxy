@@ -55,6 +55,20 @@ describe('groupDeckItems', () => {
     expect(labels).toEqual(['White', 'Blue', 'Multicolour', 'Colourless'])
   })
 
+  it('derives colour from face mana cost when a multi-faced card has no top-level colours', () => {
+    // Modal DFCs report colours only per face, so card.colors is absent; the
+    // front's {1}{W}{U} cost must place it under Multicolour, not Colourless.
+    const mdfc = entry({
+      id: 'mdfc',
+      faces: [
+        { name: 'Aang, Swift Savior', imageUrl: 'x', manaCost: '{1}{W}{U}' },
+        { name: 'Aang and La', imageUrl: 'y' }
+      ]
+    })
+    const labels = groupDeckItems([mdfc], 'color').map((g) => g.label)
+    expect(labels).toEqual(['Multicolour'])
+  })
+
   it('groups by mana value ascending with a 7+ bucket', () => {
     const items = [
       entry({ id: 'a', cmc: 9 }),

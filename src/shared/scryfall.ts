@@ -26,6 +26,8 @@ export interface ScryfallCardFace {
   power?: string
   toughness?: string
   loyalty?: string
+  /** Per-face colours; the only place multi-faced cards (modal DFC) report them. */
+  colors?: string[]
 }
 
 /**

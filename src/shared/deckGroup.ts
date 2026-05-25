@@ -44,9 +44,27 @@ const RARITY_LABELS: Record<string, string> = {
   bonus: 'Bonus'
 }
 
+/**
+ * A card's colour codes (WUBRG). Falls back to the colours implied by each
+ * face's mana cost when the card carries no top-level `colors` — modal DFCs and
+ * other multi-faced cards keep colours per face, which would otherwise make
+ * them look colourless.
+ */
+export function cardColorCodes(card: Card): string[] {
+  const declared = (card.colors ?? []).filter((c) => c in COLOR_NAMES)
+  if (declared.length > 0) return declared
+  const found = new Set<string>()
+  for (const face of card.faces) {
+    for (const match of (face.manaCost ?? '').matchAll(/\{([^}]+)\}/g)) {
+      for (const symbol of match[1]!) if (symbol in COLOR_NAMES) found.add(symbol)
+    }
+  }
+  return [...found]
+}
+
 /** A card's colour bucket: a single colour, Multicolour, or Colourless. */
 function colorGroup(card: Card): { key: string; label: string } {
-  const colors = (card.colors ?? []).filter((c) => c in COLOR_NAMES)
+  const colors = cardColorCodes(card)
   if (colors.length === 0) return { key: 'z-colorless', label: 'Colourless' }
   if (colors.length > 1) return { key: 'y-multi', label: 'Multicolour' }
   const code = colors[0]!

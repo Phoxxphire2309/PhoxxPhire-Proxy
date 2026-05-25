@@ -3288,17 +3288,47 @@ h3 {
   cursor: pointer;
 }
 
+.dview__controls {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
 .dgroup {
   margin-bottom: 8px;
 }
 
+/* Group header doubles as a collapse toggle. */
 .dgroup__head {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  width: 100%;
   margin: 6px 0 12px;
+  padding: 0;
   font-size: 13px;
   font-weight: 700;
   letter-spacing: 0.04em;
   text-transform: uppercase;
   color: var(--muted);
+  text-align: left;
+  background: transparent;
+  border: none;
+  cursor: pointer;
+}
+
+.dgroup__head:hover {
+  color: var(--text);
+}
+
+.dgroup__chev {
+  display: inline-block;
+  font-size: 11px;
+  transition: transform 0.15s ease;
+}
+
+.dgroup__chev.is-collapsed {
+  transform: rotate(-90deg);
 }
 
 .dgrid {

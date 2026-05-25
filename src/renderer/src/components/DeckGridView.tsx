@@ -1,6 +1,8 @@
+import { useState } from 'react'
 import { bestUsd, faceImageUrl, formatUsd } from '@shared/scryfall'
 import { DECK_SECTIONS, DECK_SECTION_LABELS, type DeckSection } from '@shared/deck'
 import { GROUP_OPTIONS, groupDeckItems, type GroupBy } from '@shared/deckGroup'
+import { DECK_SORT_OPTIONS, sortDeckItems, type DeckSortKey } from '@shared/deckSort'
 import type { DecklistFormat } from '@shared/decklistExport'
 import { useUiStore } from '@renderer/state/uiStore'
 import { useTextProxyStore } from '@renderer/state/textProxyStore'
@@ -102,6 +104,11 @@ export function DeckGridView(): React.JSX.Element {
   const open = useDeckUiStore((state) => state.open)
   const groupBy = useUiStore((state) => state.deckGroupBy)
   const setGroupBy = useUiStore((state) => state.setDeckGroupBy)
+  const sortBy = useUiStore((state) => state.deckSortBy)
+  const setSortBy = useUiStore((state) => state.setDeckSortBy)
+  const [collapsed, setCollapsed] = useState<Record<string, boolean>>({})
+  const toggleGroup = (key: string): void =>
+    setCollapsed((current) => ({ ...current, [key]: !current[key] }))
 
   const total = items.reduce((sum, item) => sum + item.quantities.reduce((a, b) => a + b, 0), 0)
   const totalPrice = items.reduce(
@@ -205,38 +212,62 @@ export function DeckGridView(): React.JSX.Element {
             <p className="deck__eyebrow deck__eyebrow--cards">
               Cards <span className="deck__count">{total}</span>
             </p>
-            <label className="dview__groupby">
-              <span>Group by</span>
-              <select
-                value={groupBy}
-                onChange={(event) => setGroupBy(event.target.value as GroupBy)}
-              >
-                {GROUP_OPTIONS.map((option) => (
-                  <option key={option.key} value={option.key}>
-                    {option.label}
-                  </option>
-                ))}
-              </select>
-            </label>
+            <div className="dview__controls">
+              <label className="dview__groupby">
+                <span>Sort by</span>
+                <select
+                  value={sortBy}
+                  onChange={(event) => setSortBy(event.target.value as DeckSortKey)}
+                >
+                  {DECK_SORT_OPTIONS.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+              <label className="dview__groupby">
+                <span>Group by</span>
+                <select
+                  value={groupBy}
+                  onChange={(event) => setGroupBy(event.target.value as GroupBy)}
+                >
+                  {GROUP_OPTIONS.map((option) => (
+                    <option key={option.key} value={option.key}>
+                      {option.label}
+                    </option>
+                  ))}
+                </select>
+              </label>
+            </div>
           </div>
 
-          {groupDeckItems(items, groupBy).map((group) => (
-            <div className="dgroup" key={group.key}>
-              {group.label && (
-                <h3 className="dgroup__head">
-                  {group.label}{' '}
-                  <span className="deck__count">
-                    {group.items.reduce((sum, item) => sum + (item.quantities[0] ?? 0), 0)}
-                  </span>
-                </h3>
-              )}
-              <ul className="dgrid">
-                {group.items.map((item) => (
-                  <DeckGridCard key={item.card.id} item={item} />
-                ))}
-              </ul>
-            </div>
-          ))}
+          {groupDeckItems(sortDeckItems(items, sortBy), groupBy).map((group) => {
+            const count = group.items.reduce((sum, item) => sum + (item.quantities[0] ?? 0), 0)
+            const isCollapsed = collapsed[group.key] === true
+            return (
+              <div className="dgroup" key={group.key}>
+                {group.label && (
+                  <button
+                    type="button"
+                    className="dgroup__head"
+                    onClick={() => toggleGroup(group.key)}
+                    aria-expanded={!isCollapsed}
+                  >
+                    <span className={`dgroup__chev${isCollapsed ? ' is-collapsed' : ''}`}>▾</span>
+                    {group.label} <span className="deck__count">{count}</span>
+                  </button>
+                )}
+                {!isCollapsed && (
+                  <ul className="dgrid">
+                    {group.items.map((item) => (
+                      <DeckGridCard key={item.card.id} item={item} />
+                    ))}
+                  </ul>
+                )}
+              </div>
+            )
+          })}
         </>
       )}
 

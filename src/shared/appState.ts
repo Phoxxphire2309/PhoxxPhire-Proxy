@@ -34,6 +34,7 @@ export interface AppState {
   ui?: {
     view?: string
     deckGroupBy?: string
+    deckSortBy?: string
     sort?: string
     viewMode?: string
   }
