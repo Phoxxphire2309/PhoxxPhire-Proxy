@@ -35,17 +35,24 @@ export function DeckHealth(): React.JSX.Element | null {
         .map((item) => item.card),
     [items]
   )
-  const idsKey = cards.map((card) => card.id).join(',')
-
   // A card needs attention when its source scan is low-res and it hasn't been
   // upscaled (the "Best scan" fix instead swaps in a high-res printing, which
   // makes isHighRes true and drops it from this list directly).
   const lowRes = cards.filter((card) => !isHighRes(card) && !upscaled[card.id])
 
+  // For token detection we pass *every* printable card id (tokens included):
+  // findTokens uses this list both as the cards to inspect and as the
+  // "already present" set, so a token you've added must be in it or it keeps
+  // getting re-suggested.
+  const printableIdsKey = items
+    .filter((item) => isPrintableSection(item.section))
+    .map((item) => item.card.id)
+    .join(',')
+
   // Detected tokens this deck creates that aren't already in it.
   useEffect(() => {
     let active = true
-    const ids = idsKey ? idsKey.split(',') : []
+    const ids = printableIdsKey ? printableIdsKey.split(',') : []
     if (ids.length === 0) {
       setMissingTokens([])
       return
@@ -57,7 +64,7 @@ export function DeckHealth(): React.JSX.Element | null {
     return () => {
       active = false
     }
-  }, [idsKey])
+  }, [printableIdsKey])
 
   if (cards.length === 0) return null
 
