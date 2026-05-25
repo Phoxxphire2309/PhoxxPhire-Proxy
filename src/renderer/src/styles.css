@@ -325,15 +325,112 @@ h3 {
 }
 
 .settings__title {
-  margin: 0 0 6px;
-  font-size: 16px;
+  margin: 0 0 4px;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.07em;
+  text-transform: uppercase;
+  color: var(--muted);
 }
 
 .settings__hint {
-  margin: 0 0 14px;
+  margin: 0;
   font-size: 13px;
   line-height: 1.5;
   color: var(--muted);
+}
+
+.settings__card--about .settings__hint a {
+  color: var(--accent);
+}
+
+/* A settings row: info on the left, control on the right. */
+.setting {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 0;
+  border-bottom: 1px solid var(--border-soft);
+}
+
+.setting:last-of-type {
+  border-bottom: none;
+}
+
+.settings__title + .setting {
+  padding-top: 8px;
+}
+
+.setting__info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.setting__title {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.setting__desc {
+  font-size: 12px;
+  line-height: 1.45;
+  color: var(--muted);
+}
+
+.setting__control {
+  flex-shrink: 0;
+}
+
+.setting__control select {
+  padding: 8px 30px 8px 12px;
+  font-size: 14px;
+  color: var(--text);
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+  cursor: pointer;
+}
+
+.setting__metric {
+  font-size: 15px;
+  font-weight: 700;
+  font-variant-numeric: tabular-nums;
+  color: var(--accent);
+}
+
+.setting__actions {
+  display: flex;
+  gap: 8px;
+  margin-top: 12px;
+}
+
+/* Segmented (theme) toggle */
+.segmented {
+  display: inline-flex;
+  padding: 3px;
+  gap: 2px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 10px;
+}
+
+.segmented button {
+  padding: 7px 14px;
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 7px;
+  cursor: pointer;
+}
+
+.segmented button.is-on {
+  color: #1a1206;
+  background: var(--accent-grad);
 }
 
 .topbar__spacer {
