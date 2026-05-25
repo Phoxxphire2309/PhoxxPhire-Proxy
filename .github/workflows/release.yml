@@ -45,10 +45,12 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             npm run release
           else
-            # Manual run: build only. --publish never stops electron-builder's
-            # implicit CI publish (which fails with no release to publish to).
+            # Manual run: build unsigned installers only.
+            #  --publish never  → no implicit CI publish (fails with no release)
+            #  -c.mac.identity=null → skip macOS code signing (no cert in CI);
+            #    ad-hoc signing otherwise errors. Harmless on Windows/Linux.
             npm run build
-            npx electron-builder --publish never
+            npx electron-builder --publish never -c.mac.identity=null
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
