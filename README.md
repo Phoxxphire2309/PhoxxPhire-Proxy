@@ -1,106 +1,113 @@
-# PhoxxPhire Proxy
+# PhoxxPhire Proxy Maker
 
-> A desktop tool for printing high-quality **Magic: The Gathering** proxies — with Real-ESRGAN AI upscaling baked into the pipeline.
+> A desktop app for printing high-quality **Magic: The Gathering** proxies — with Real-ESRGAN AI upscaling baked into the pipeline.
 
 [![CI](https://github.com/Phoxxphire2309/PhoxxPhire-Proxy/actions/workflows/ci.yml/badge.svg)](https://github.com/Phoxxphire2309/PhoxxPhire-Proxy/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-informational.svg)](LICENSE)
 
-PhoxxPhire Proxy pulls card data and art from the [Scryfall API](https://scryfall.com/docs/api),
-runs every image through **Real-ESRGAN** super-resolution for crisp text and clean edges, then
-lays cards out with configurable bleed and cut guides for print-ready PDF / PNG export.
+PhoxxPhire Proxy Maker pulls card data and art from the [Scryfall API](https://scryfall.com/docs/api),
+runs images through **Real-ESRGAN** super-resolution for crisp art and clean edges, then lays
+cards out with configurable bleed and cut guides for print-ready PDF / PNG / direct printing.
 
 **The upscaling pass is the point.** Scryfall's `png` art is 745×1040 (~300 DPI at card size).
-A clean 4× pass lifts that well past what any home or print-shop printer resolves, and the tool
+A clean 4× pass lifts that well past what any home or print-shop printer resolves, and the app
 can also **generate true bleed** by mirror-extending the art outward — neither of which other
 proxy tools do.
 
 ---
 
-## Screenshots
+## Download
 
-> Capture instructions: [`docs/screenshots/README.md`](docs/screenshots/README.md)
+Grab the latest installer from the [**Releases**](https://github.com/Phoxxphire2309/PhoxxPhire-Proxy/releases/latest) page:
 
-| Search & grid | Before / after upscaling |
+| Platform | File |
 | --- | --- |
-| ![Search and card grid](docs/screenshots/search.png) | ![Before/after upscale slider](docs/screenshots/upscale-compare.png) |
+| macOS (Apple Silicon) | `PhoxxPhire-Proxy-Maker-<version>-arm64.dmg` |
+| Windows | `PhoxxPhire-Proxy-Maker-Setup-<version>.exe` |
+| Linux | `PhoxxPhire-Proxy-Maker-<version>.AppImage` |
 
-| Card detail — printings & prices | Deck panel & PDF export |
-| --- | --- |
-| ![Card detail with printings and prices](docs/screenshots/card-detail.png) | ![Deck panel and export dialog](docs/screenshots/deck-export.png) |
+> **Unsigned builds.** The installers aren't code-signed yet, so the OS shows a first-launch
+> warning. See [Installing an unsigned build](#installing-an-unsigned-build) below — it's a
+> one-time step. The app notifies you in-app when a newer release is available.
 
 ---
 
 ## Features
 
 **Image quality (the moat)**
-- **Real-ESRGAN 4× upscaling** of every card via the `realesrgan-ncnn-vulkan` binary (GPU, Vulkan/Metal).
+- **Real-ESRGAN upscaling** of every card via the `realesrgan-ncnn-vulkan` binary (GPU, Vulkan/Metal).
 - **AI bleed** — mirror-extends art into the bleed margin instead of stretching or leaving white.
 - Model picker (`x4plus` / anime) and 2×/4× output (2× ≈ 600 DPI, the print sweet spot).
 - Drag **before/after slider** to compare original vs upscaled.
-- Smart cache: upscaled images stored as JPEG (~40× smaller than PNG) with an LRU size cap.
+- **Deck print-quality report** — grades every card (HD scan / upscaled / low-res / text proxy) with one-click "raise all to best quality".
+- Smart cache: thumbnails for browsing, full-resolution only for printing, with an LRU size cap.
 
 **Sourcing & search**
-- Scryfall search with **autocomplete** and an **advanced filter** builder (colour, type, rarity, format, set).
-- **Card detail** view: zoom, flip double-faced cards, switch between every **printing/set**, and see per-printing **prices**.
+- Scryfall search with **autocomplete**, live **filters** (colour, type, rarity, format, set, artist, mana value, language) and sorting.
+- **Card detail** view: flip double-faced cards, switch between every **printing** (filter by set, newest first), and see per-printing **prices**.
+- **Custom card upload** — drop in your own art and it's treated like any card (upscaled, bled, printed).
 
 **Deck building**
-- Import a decklist by **paste** (plain text / MTG Arena format) or by **URL** (Archidekt, Moxfield), with an option to **exclude foils** so cheaper non-foil scans are chosen.
-- Export the decklist back out as **text**, **MTG Arena**, or **CSV** (with prices).
-- **Custom card upload** — drop in your own art and it's treated like any card (upscaled, bled, printed).
-- Deck **sections** (commander / main / sideboard / maybeboard), **undo/redo**, deck **stats**, a **collection / wishlist**, and **basic-land** helper.
-- **Switch every card's printing** in one click — best scan, cheapest, newest, or most expensive (non-foils preferred) — with a progress popup.
-- **Pre-upscale all** (asks whether to do every card or only the low-res ones) and a **sample opening hand** playtest draw.
-- Save / load decks and full projects, with a running deck price.
+- **Multiple deck tabs**, **undo/redo**, drag-and-drop, deck **sections** (commander / main / sideboard / maybeboard).
+- Import by **paste** (text / MTG Arena) or **URL** (Archidekt, Moxfield), with an option to **exclude foils**.
+- Export the list as **text**, **MTG Arena**, or **CSV**; save / load decks and full projects.
+- **Group** (type / colour / rarity / mana value / section) and **sort** within groups, with collapsible groups.
+- Deck **stats**, **format legality**, price-by-section, **combo detection** (Commander Spellbook), **token** + **basic-land** helpers, and a **sample-hand** draw.
+- **Deck health** panel + **switch every printing** in one click (best scan / cheapest / newest / most expensive).
 
 **Print & export**
-- Page sizes A4 / Letter / Legal / A3 / custom, portrait or landscape, with per-edge margins and scale calibration.
-- Configurable **bleed** (extend / solid / zoom), **cut guides** (outline / corner marks), and **duplex card backs** (double-faced cards print their real second face).
-- **WYSIWYG print preview** with drag-to-reorder and spacers.
-- **Calibration page** to verify your printer isn't silently scaling.
-- **Print directly** to a printer, or export a print-ready **PDF**, per-card **PNG**s, a **ZIP** bundle, or a **MakePlayingCards (MPC Autofill)** order.
+- Page sizes A4 / Letter / Legal / A3 / custom, portrait or landscape, per-edge margins, and **scale calibration**.
+- Configurable **bleed** (extend / solid / zoom), **cut guides** (outline / corner marks), a **card-back library** for duplex, and **duplex registration** offsets to align fronts and backs.
+- **Print presets** — save whole page-setup profiles ("Home inkjet", "Print-shop A3") and switch in one click.
+- **WYSIWYG print preview** with drag-to-reorder, spacers, and per-card 180° rotation.
+- **Print directly**, or export a print-ready **PDF**, per-card **PNG**s, a **ZIP**, a **cut-file SVG**, or a **MakePlayingCards (MPC Autofill)** order.
 
 **App**
-- Persists your deck, settings, and theme across sessions.
-- Light / dark theme, toast notifications, `Cmd/Ctrl+K` to focus search.
-- **One-click upscaler install** from inside the app; auto-update scaffolding for packaged builds.
+- Persists decks, presets, settings, and theme across sessions.
+- Light / dark theme, **command palette** (`Cmd/Ctrl+K`), toast notifications, a guided first-run tour.
+- **In-app update banner** that links to a new release, plus auto-update scaffolding for signed builds.
 
 ---
 
-## How it relates to other tools
+## Installing an unsigned build
 
-The workflow is inspired by the concept behind
-[MTGProxyPrinter](https://github.com/luziferius/MTGProxyPrinter) (GPL-3.0), but this is an
-**independent, clean-room implementation** written from scratch — no code shared or derived —
-on a different stack (Electron + React + TypeScript) with the Real-ESRGAN pipeline as a
-first-class feature. Released under MIT.
+Because the installers aren't code-signed, the OS guards them on first launch. One-time fix:
 
-The upscaler is the [`realesrgan-ncnn-vulkan`](https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan)
-binary (BSD-3-Clause) — the same engine [Upscayl](https://github.com/upscayl/upscayl) bundles —
-invoked directly as a subprocess, so there's no dependency on a separate GUI app.
+**macOS** — after dragging the app to Applications:
+
+```bash
+/usr/bin/xattr -rd com.apple.quarantine "/Applications/PhoxxPhire Proxy Maker.app"
+codesign --force --deep --sign - "/Applications/PhoxxPhire Proxy Maker.app"
+```
+
+Then open it normally. (The first command clears the download quarantine; the second gives the
+app an ad-hoc signature so Apple Silicon will run it.)
+
+**Windows** — SmartScreen shows "Windows protected your PC": click **More info → Run anyway**.
+
+The permanent fix on both platforms is code signing — see [docs/SIGNING.md](docs/SIGNING.md). The
+release workflow already reads signing secrets when they're present.
 
 ---
 
-## Run it
-
-There are no pre-built installers yet — for now you run it from source:
+## Run from source
 
 ```bash
 npm install
 npm run dev
 ```
 
-`npm install` pulls dependencies; `npm run dev` launches the app with hot reload. Then click
-**Install upscaler** in the header to download the Real-ESRGAN engine (~50 MB) — no
-terminal needed. Without it the app still works; it just shows original Scryfall art instead of
-upscaled.
+`npm install` pulls dependencies; `npm run dev` launches the app with hot reload. Then open
+**Settings → Install upscaler** to download the Real-ESRGAN engine (~50 MB) — no terminal
+needed. Without it the app still works; it just shows original Scryfall art instead of upscaled.
 
 **Requirements:** Node.js ≥ 22.12, and a GPU with **Vulkan** support for upscaling (Macs use
-Metal automatically). Decks are saved/loaded as `.json` from the deck panel's **Save** / **Load**.
+Metal automatically).
 
-Platform notes for the in-app upscaler install:
+Platform notes for the upscaler:
 
-- **macOS** — Apple Silicon and Intel both work (the binary is a universal Mach-O); uses built-in `unzip`.
-- **Windows** — keep GPU drivers current; extraction uses built-in PowerShell.
+- **macOS** — Apple Silicon and Intel both work (universal Mach-O binary); uses built-in `unzip`.
+- **Windows** — keep GPU drivers current; ships `vulkan-1.dll` alongside the binary.
 - **Linux** — needs Vulkan drivers (e.g. `mesa-vulkan-drivers`) and `unzip` on `PATH`.
 
 ### Scripts
@@ -109,27 +116,27 @@ Platform notes for the in-app upscaler install:
 | --- | --- |
 | `npm run dev` | Run in development with HMR |
 | `npm run build` | Type-check + bundle (main / preload / renderer) |
+| `npm run package` | Build an unsigned installer for the current OS into `dist/` |
 | `npm run setup:upscaler` | Pre-provision the Real-ESRGAN binary instead of the in-app button |
 | `npm run lint` / `typecheck` / `test` | Quality gates |
 | `npm run format` | Prettier write |
 
 ---
 
-## Packaging & distribution (not yet published)
+## Releasing
 
-The app isn't distributed as installers yet, but the tooling is ready for when it is:
+Bump `version` in `package.json`, then push a matching tag:
 
 ```bash
-npm run package
+git tag v1.0.1 && git push origin v1.0.1
 ```
 
-This builds an unsigned installer for the current OS into `dist/` (`.dmg` / `.exe` / `.AppImage`).
-
-Pushing a Git tag like `v0.1.0` (matching `package.json`'s version) triggers the **release
-workflow** (`.github/workflows/release.yml`), which builds installers on macOS, Windows, and
-Linux runners and attaches them to a GitHub Release. **Code signing** (Apple notarisation /
-Windows certificate) is wired but inactive until you add certificates as repo secrets — see
-**[docs/SIGNING.md](docs/SIGNING.md)**.
+The **release workflow** (`.github/workflows/release.yml`) builds installers on macOS, Windows,
+and Linux runners and attaches them — plus the `latest*.yml` auto-update manifests — to a GitHub
+Release (created as a draft; click **Publish** when ready). Running the workflow manually
+(**Actions → Release → Run workflow**) instead produces the installers as downloadable artifacts
+without publishing. **Code signing** (Apple notarisation / Windows certificate) activates
+automatically when the relevant repo secrets are set — see **[docs/SIGNING.md](docs/SIGNING.md)**.
 
 ---
 
@@ -144,9 +151,8 @@ Electron's three processes keep a clean security boundary:
 - **Renderer** is the React UI; images flow through a custom `phoxx-image://` protocol that
   serves cached/upscaled files — the single seam where upscaling and bleed are applied.
 
-Upscaling runs **one GPU job at a time** with an in-flight dedup guard (two concurrent jobs on
-the same image corrupt each other's tiles), and the binary always runs at a clean 4× — `sharp`
-then downscales to the chosen output size and encodes JPEG.
+Upscaling runs **one GPU job at a time** with an in-flight dedup guard, and the binary runs at a
+clean 4×; `sharp` then downscales to the chosen output size and encodes JPEG.
 
 ### Tech stack
 
@@ -166,22 +172,35 @@ then downscales to the chosen output size and encodes JPEG.
 
 ```
 src/
-  main/        # Electron main: scryfall, upscale, export, deck, custom, persist, update
+  main/        # Electron main: scryfall, upscale, export, deck, custom, cardback, combo, persist, update
   preload/     # contextBridge IPC surface
   renderer/    # React app (components + zustand stores)
-  shared/      # types + pure logic shared across processes (layout, query, decklist…)
+  shared/      # types + pure logic shared across processes (layout, query, decklist, deckSort…)
 resources/
   vendor/      # Real-ESRGAN binary + models (downloaded, not committed)
 ```
 
 ---
 
+## How it relates to other tools
+
+The workflow is inspired by the concept behind
+[MTGProxyPrinter](https://github.com/luziferius/MTGProxyPrinter) (GPL-3.0), but this is an
+**independent, clean-room implementation** written from scratch — no code shared or derived — on
+a different stack (Electron + React + TypeScript) with the Real-ESRGAN pipeline as a first-class
+feature. Released under MIT. The upscaler is the
+[`realesrgan-ncnn-vulkan`](https://github.com/xinntao/Real-ESRGAN-ncnn-vulkan) binary
+(BSD-3-Clause), invoked directly as a subprocess.
+
+---
+
 ## Testing
 
-200+ unit tests (Vitest) cover the pure logic — Scryfall client + rate limiter, card
-normalization, decklist parsing + export, deck-source parsing, query composition, layout maths,
-PDF generation, sample-hand shuffling, the upscale service, and the image processor. CI runs
-lint, type-check, Prettier, tests + coverage, a full build, and `npm audit` on every push.
+240+ unit tests (Vitest) cover the pure logic — Scryfall client + rate limiter, card
+normalization, decklist parsing/export, deck-source parsing, query composition, layout maths,
+PDF generation, sample-hand shuffling, the upscale service, the image processor, deck grouping
+and sorting, page-setup presets, and the update version check. CI runs lint, type-check,
+Prettier, tests + coverage, a full build, and `npm audit` on every push.
 
 ```bash
 npm test

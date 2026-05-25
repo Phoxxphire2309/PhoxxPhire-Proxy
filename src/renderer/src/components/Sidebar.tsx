@@ -3,7 +3,6 @@ import { hasActiveFilters, LANGUAGES } from '@shared/scryfallQuery'
 import { useSearchStore } from '@renderer/state/searchStore'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useDndStore } from '@renderer/state/dndStore'
-import { useDeckUiStore } from '@renderer/state/deckUiStore'
 import { useUiStore, type AppView } from '@renderer/state/uiStore'
 import { PrintPartner } from '@renderer/components/PrintPartner'
 
@@ -35,7 +34,6 @@ export function Sidebar(): React.JSX.Element {
   const deckCount = useDeckStore((state) =>
     state.items.reduce((sum, item) => sum + (item.quantities[0] ?? 0), 0)
   )
-  const openModal = useDeckUiStore((state) => state.open)
   const addToDeck = useDeckStore((state) => state.add)
   const draggingCard = useDndStore((state) => state.draggingCard)
   const setDragging = useDndStore((state) => state.setDragging)
@@ -88,12 +86,6 @@ export function Sidebar(): React.JSX.Element {
             )}
           </button>
         ))}
-        <button className="nav__item" type="button" onClick={() => openModal('collection')}>
-          <span className="nav__icon" aria-hidden="true">
-            ▣
-          </span>
-          <span className="nav__label">Collection</span>
-        </button>
       </nav>
 
       <div className="sidebar__scroll">
