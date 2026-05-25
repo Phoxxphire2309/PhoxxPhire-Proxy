@@ -45,7 +45,10 @@ jobs:
           if [ "${{ github.event_name }}" = "push" ]; then
             npm run release
           else
-            npm run package
+            # Manual run: build only. --publish never stops electron-builder's
+            # implicit CI publish (which fails with no release to publish to).
+            npm run build
+            npx electron-builder --publish never
           fi
         env:
           GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
