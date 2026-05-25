@@ -30,25 +30,12 @@ jobs:
       - name: Install dependencies
         run: npm ci
 
-      # The Real-ESRGAN models aren't committed, so every build provisions the
-      # upscaler. macOS keeps the repo's universal binary (Intel + Apple Silicon)
-      # and just refreshes the models; other OSes fetch their native binary
-      # (plus vulkan-1.dll on Windows) and models.
-      - name: Provision upscaler (macOS — keep universal binary)
-        if: runner.os == 'macOS'
-        shell: bash
-        run: |
-          cp resources/vendor/realesrgan-ncnn-vulkan "$RUNNER_TEMP/upscaler-universal"
-          node scripts/fetch-upscaler.mjs --force
-          cp "$RUNNER_TEMP/upscaler-universal" resources/vendor/realesrgan-ncnn-vulkan
-          chmod +x resources/vendor/realesrgan-ncnn-vulkan
-
-      - name: Provision upscaler (Windows/Linux — fetch native)
-        if: runner.os != 'macOS'
-        shell: bash
-        run: |
-          rm -f resources/vendor/realesrgan-ncnn-vulkan
-          node scripts/fetch-upscaler.mjs --force
+      # The upscaler binary + models live under resources/vendor (gitignored),
+      # so every build fetches the native Real-ESRGAN binary and models for its
+      # OS. The macOS asset is a universal binary (Intel + Apple Silicon); the
+      # Windows asset also brings vulkan-1.dll, which fetch-upscaler copies.
+      - name: Provision Real-ESRGAN upscaler (binary + models)
+        run: node scripts/fetch-upscaler.mjs --force
 
       - name: Build installer
         # On a version tag: build + publish a GitHub release. On a manual run:
