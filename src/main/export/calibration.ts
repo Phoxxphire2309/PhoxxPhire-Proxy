@@ -20,7 +20,7 @@ export async function buildCalibrationPdf(options: ExportOptions): Promise<Uint8
     page.drawText(value, { x, y, size, font, color: INK })
   }
 
-  text('PhoxxPhire Proxy — print calibration', mmToPt(15), height - mmToPt(18), 14)
+  text('PhoxxPhire Proxy Maker — print calibration', mmToPt(15), height - mmToPt(18), 14)
   text('Print this page at 100% / "Actual size" (no fit-to-page).', mmToPt(15), height - mmToPt(26))
   text(
     'Measure the square below — each side must be exactly 100 mm.',

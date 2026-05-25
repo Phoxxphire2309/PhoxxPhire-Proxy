@@ -7,7 +7,7 @@ interface Step {
 
 const STEPS: Step[] = [
   {
-    title: 'Welcome to PhoxxPhire Proxy',
+    title: 'Welcome to PhoxxPhire Proxy Maker',
     points: [
       'The MTG proxy printer that AI-upscales every card before printing — for sharp, true-to-size proxies.',
       'Use the arrows to take the tour, or close it and dive in. You can reopen this any time from the “?” in the header.'

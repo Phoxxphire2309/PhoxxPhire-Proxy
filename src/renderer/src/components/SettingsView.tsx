@@ -238,8 +238,8 @@ export function SettingsView(): React.JSX.Element {
       <section className="settings__card settings__card--about">
         <h2 className="settings__title">About</h2>
         <p className="settings__hint">
-          PhoxxPhire Proxy{version ? ` v${version}` : ''} — print-ready MTG proxies with Real-ESRGAN
-          upscaling. Card data &amp; images from{' '}
+          PhoxxPhire Proxy Maker{version ? ` v${version}` : ''} — print-ready MTG proxies with
+          Real-ESRGAN upscaling. Card data &amp; images from{' '}
           <a href="https://scryfall.com" target="_blank" rel="noreferrer">
             Scryfall
           </a>
