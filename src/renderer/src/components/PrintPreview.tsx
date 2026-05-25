@@ -10,6 +10,7 @@ import { faceImageUrl } from '@shared/scryfall'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useOrderStore } from '@renderer/state/orderStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
+import { useTextProxyStore } from '@renderer/state/textProxyStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 import { toast } from '@renderer/state/toastStore'
 
@@ -44,6 +45,7 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
   const syncFromDeck = useOrderStore((state) => state.syncFromDeck)
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
+  const proxies = useTextProxyStore((state) => state.proxies)
   const options = usePageSetupStore((state) => state.options)
 
   const dragIndex = useRef<number | null>(null)
@@ -92,7 +94,8 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
   const exportPdf = async (): Promise<void> => {
     const exportSlots: ExportSlot[] = slots.map((slot) => ({
       ...slot,
-      upscale: Boolean(upscaledSet[slot.cardId])
+      upscale: Boolean(upscaledSet[slot.cardId]),
+      textProxy: Boolean(proxies[slot.cardId])
     }))
     try {
       const outcome = await window.phoxx.exportPdf({ slots: exportSlots, options })
@@ -171,7 +174,7 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
                           src={faceImageUrl(
                             spec.cardId,
                             spec.faceIndex,
-                            isUpscaled ? 'upscaled' : 'thumb',
+                            proxies[spec.cardId] ? 'proxy' : isUpscaled ? 'upscaled' : 'thumb',
                             isUpscaled ? settingsVersion : undefined
                           )}
                           alt=""

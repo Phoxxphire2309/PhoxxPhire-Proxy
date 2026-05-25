@@ -20,6 +20,12 @@ export interface ScryfallImageUris {
 export interface ScryfallCardFace {
   name: string
   image_uris?: ScryfallImageUris
+  mana_cost?: string
+  type_line?: string
+  oracle_text?: string
+  power?: string
+  toughness?: string
+  loyalty?: string
 }
 
 /**
@@ -60,6 +66,11 @@ export interface ScryfallCard {
   image_status?: string
   cmc?: number
   type_line?: string
+  mana_cost?: string
+  oracle_text?: string
+  power?: string
+  toughness?: string
+  loyalty?: string
   colors?: string[]
   rarity?: string
   finishes?: string[]
@@ -86,6 +97,13 @@ export interface CardFace {
   imageUrl: string
   /** Medium JPEG URL for browsing thumbnails; falls back to `imageUrl` if absent. */
   thumbUrl?: string
+  /** Oracle data, used to render text proxies when no scan is wanted. */
+  manaCost?: string
+  typeLine?: string
+  oracleText?: string
+  power?: string
+  toughness?: string
+  loyalty?: string
 }
 
 /** Parsed per-printing prices (numbers, or null when unavailable). */
@@ -267,9 +285,10 @@ export const IMAGE_PROTOCOL = 'phoxx-image'
  * Which variant of a face image to serve:
  *  - `thumb`    — a medium JPEG for browsing (small, fast; never print-quality),
  *  - `source`   — the full-resolution PNG used for printing/upscaling,
- *  - `upscaled` — the Real-ESRGAN result.
+ *  - `upscaled` — the Real-ESRGAN result,
+ *  - `proxy`    — a rendered text proxy (oracle data, no scan).
  */
-export type ImageQuality = 'thumb' | 'source' | 'upscaled'
+export type ImageQuality = 'thumb' | 'source' | 'upscaled' | 'proxy'
 
 /**
  * Renderer-facing URL for a card face image. The main process resolves this to

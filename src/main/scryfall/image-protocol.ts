@@ -24,6 +24,7 @@ function parseQuality(value: string | undefined): ImageQuality | null {
   if (value === undefined || value === 'upscaled') return 'upscaled'
   if (value === 'source') return 'source'
   if (value === 'thumb') return 'thumb'
+  if (value === 'proxy') return 'proxy'
   return null
 }
 

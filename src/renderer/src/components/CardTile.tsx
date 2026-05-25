@@ -3,6 +3,7 @@ import { bestUsd, faceImageUrl, formatUsd, type Card } from '@shared/scryfall'
 import { faceKey, useUpscaleStore } from '@renderer/state/upscaleStore'
 import { upscaleCardWithConfirm } from '@renderer/state/upscaleActions'
 import { useDndStore } from '@renderer/state/dndStore'
+import { useTextProxyStore } from '@renderer/state/textProxyStore'
 
 function statusBadge(status: string | undefined): string | null {
   switch (status) {
@@ -35,9 +36,10 @@ export function CardTile({
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
   const unmarkUpscaled = useUpscaleStore((state) => state.unmarkUpscaled)
   const setDragging = useDndStore((state) => state.setDragging)
+  const isProxy = useTextProxyStore((state) => Boolean(state.proxies[card.id]))
   const status = useUpscaleStore((state) => state.statuses[faceKey(card.id, faceIndex)])
 
-  const quality = upscaled ? 'upscaled' : 'thumb'
+  const quality = isProxy ? 'proxy' : upscaled ? 'upscaled' : 'thumb'
   const src = faceImageUrl(card.id, faceIndex, quality, upscaled ? settingsVersion : undefined)
   const isDoubleFaced = card.faces.length > 1
   const face = card.faces[faceIndex] ?? card.faces[0]

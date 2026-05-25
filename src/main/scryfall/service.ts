@@ -17,6 +17,7 @@ import {
   type SearchResult
 } from '@shared/scryfall'
 import { squareOffCorners } from '../image/processor'
+import { renderTextProxy } from '../image/textProxy'
 import { CardCache } from './cache'
 import { ScryfallClient } from './client'
 import { fetchDeckLines } from './deck-sources'
@@ -286,5 +287,36 @@ export class ScryfallService {
       IMAGE_DOWNLOAD_TIMEOUT_MS
     )
     return this.cache.writeThumb(cardId, faceIndex, data)
+  }
+
+  /** Renders (once) a text proxy from a face's oracle data and caches the PNG. */
+  async ensureProxyImage(cardId: string, faceIndex: number): Promise<string> {
+    if (await this.cache.hasProxy(cardId, faceIndex)) {
+      return this.cache.proxyImagePath(cardId, faceIndex)
+    }
+
+    let card = await this.cache.getCard(cardId)
+    if (!card) {
+      card = await this.client.getById(cardId)
+      await this.cache.putCard(card)
+    }
+
+    const face = card.faces[faceIndex]
+    if (!face) {
+      throw new Error(`Card ${cardId} has no face at index ${faceIndex}`)
+    }
+
+    const png = await renderTextProxy({
+      name: face.name,
+      setCode: card.setCode,
+      collectorNumber: card.collectorNumber,
+      ...(face.manaCost ? { manaCost: face.manaCost } : {}),
+      ...((face.typeLine ?? card.typeLine) ? { typeLine: face.typeLine ?? card.typeLine } : {}),
+      ...(face.oracleText ? { oracleText: face.oracleText } : {}),
+      ...(face.power !== undefined ? { power: face.power } : {}),
+      ...(face.toughness !== undefined ? { toughness: face.toughness } : {}),
+      ...(face.loyalty !== undefined ? { loyalty: face.loyalty } : {})
+    })
+    return this.cache.writeProxy(cardId, faceIndex, png)
   }
 }

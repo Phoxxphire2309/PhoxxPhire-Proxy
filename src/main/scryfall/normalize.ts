@@ -95,11 +95,37 @@ function extractRelatedTokens(raw: ScryfallCard): RelatedToken[] {
   return tokens
 }
 
+/** Oracle text fields (for text proxies) from a card or a card face. */
+function faceOracle(source: {
+  mana_cost?: string
+  type_line?: string
+  oracle_text?: string
+  power?: string
+  toughness?: string
+  loyalty?: string
+}): Partial<CardFace> {
+  return {
+    ...(source.mana_cost ? { manaCost: source.mana_cost } : {}),
+    ...(source.type_line ? { typeLine: source.type_line } : {}),
+    ...(source.oracle_text ? { oracleText: source.oracle_text } : {}),
+    ...(source.power !== undefined ? { power: source.power } : {}),
+    ...(source.toughness !== undefined ? { toughness: source.toughness } : {}),
+    ...(source.loyalty !== undefined ? { loyalty: source.loyalty } : {})
+  }
+}
+
 function extractFaces(raw: ScryfallCard): CardFace[] {
   const topImage = pickImage(raw.image_uris)
   if (topImage) {
     const thumb = pickThumb(raw.image_uris)
-    return [{ name: raw.name, imageUrl: topImage, ...(thumb ? { thumbUrl: thumb } : {}) }]
+    return [
+      {
+        name: raw.name,
+        imageUrl: topImage,
+        ...(thumb ? { thumbUrl: thumb } : {}),
+        ...faceOracle(raw)
+      }
+    ]
   }
 
   const faces: CardFace[] = []
@@ -107,7 +133,12 @@ function extractFaces(raw: ScryfallCard): CardFace[] {
     const imageUrl = pickImage(face.image_uris)
     if (imageUrl) {
       const thumb = pickThumb(face.image_uris)
-      faces.push({ name: face.name, imageUrl, ...(thumb ? { thumbUrl: thumb } : {}) })
+      faces.push({
+        name: face.name,
+        imageUrl,
+        ...(thumb ? { thumbUrl: thumb } : {}),
+        ...faceOracle(face)
+      })
     }
   }
   return faces

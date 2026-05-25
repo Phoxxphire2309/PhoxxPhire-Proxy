@@ -80,6 +80,7 @@ app.whenReady().then(async () => {
   const resolver: FaceImageResolver = {
     resolve: (cardId, faceIndex, quality) => {
       if (quality === 'thumb') return scryfall.ensureThumbImage(cardId, faceIndex)
+      if (quality === 'proxy') return scryfall.ensureProxyImage(cardId, faceIndex)
       if (quality === 'upscaled' && upscale.available())
         return upscale.ensureUpscaled(cardId, faceIndex)
       return scryfall.ensureFaceImage(cardId, faceIndex)

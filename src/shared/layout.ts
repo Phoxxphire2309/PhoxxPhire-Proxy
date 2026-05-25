@@ -184,6 +184,8 @@ export interface ExportSlot {
   rotate?: boolean
   /** A blank layout spacer — occupies a grid cell but prints nothing. */
   spacer?: boolean
+  /** Print a rendered text proxy (oracle data) instead of the card scan. */
+  textProxy?: boolean
 }
 
 export interface ExportRequest {

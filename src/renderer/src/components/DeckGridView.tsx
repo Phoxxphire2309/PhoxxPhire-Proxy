@@ -3,6 +3,7 @@ import { DECK_SECTIONS, DECK_SECTION_LABELS, type DeckSection } from '@shared/de
 import { GROUP_OPTIONS, groupDeckItems, type GroupBy } from '@shared/deckGroup'
 import type { DecklistFormat } from '@shared/decklistExport'
 import { useUiStore } from '@renderer/state/uiStore'
+import { useTextProxyStore } from '@renderer/state/textProxyStore'
 import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
 import { useDeckUiStore } from '@renderer/state/deckUiStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
@@ -14,6 +15,7 @@ function DeckGridCard({ item }: { item: DeckItem }): React.JSX.Element {
   const setSection = useDeckStore((state) => state.setSection)
   const remove = useDeckStore((state) => state.remove)
   const openDeck = usePrintingStore((state) => state.openDeck)
+  const isProxy = useTextProxyStore((state) => Boolean(state.proxies[item.card.id]))
 
   const faceCount = Math.max(1, item.card.faces.length)
   const qty = item.quantities[0] ?? 0
@@ -30,7 +32,7 @@ function DeckGridCard({ item }: { item: DeckItem }): React.JSX.Element {
         aria-label={`Change version of ${item.card.name}`}
       >
         <img
-          src={faceImageUrl(item.card.id, 0, 'thumb')}
+          src={faceImageUrl(item.card.id, 0, isProxy ? 'proxy' : 'thumb')}
           alt={item.card.name}
           loading="lazy"
           draggable={false}

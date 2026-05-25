@@ -20,6 +20,8 @@ export interface ExportServiceDeps {
   resolveCard: (cardId: string) => Promise<Card>
   /** Path to a face image — upscaled when `useUpscaled` is set and available, else source. */
   ensureImage: (cardId: string, faceIndex: number, useUpscaled: boolean) => Promise<string>
+  /** Path to a rendered text-proxy image for a face (required for `textProxy` slots). */
+  proxyImage?: (cardId: string, faceIndex: number) => Promise<string>
   /** Optionally transform image bytes (e.g. add mirrored bleed). Defaults to passthrough. */
   processImage?: (bytes: Uint8Array, options: ExportOptions) => Promise<Uint8Array>
   /** Render a face image to MPC full-bleed spec (required for `exportMpc`). */
@@ -72,7 +74,7 @@ export class ExportService {
     pageCount: number
   }> {
     const slotKey = (slot: ExportSlot): string =>
-      `${slot.upscale ? 'u' : 's'} ${slot.faceIndex} ${slot.cardId}`
+      `${slot.textProxy ? 'p' : slot.upscale ? 'u' : 's'} ${slot.faceIndex} ${slot.cardId}`
 
     // Prepare each unique image (per card / face / quality) exactly once. Blank
     // spacer slots carry no image and map to index -1.
@@ -85,7 +87,10 @@ export class ExportService {
     let completed = 0
     for (const key of keys) {
       const slot = uniqueSlots.get(key)!
-      const path = await this.deps.ensureImage(slot.cardId, slot.faceIndex, slot.upscale)
+      const path =
+        slot.textProxy && this.deps.proxyImage
+          ? await this.deps.proxyImage(slot.cardId, slot.faceIndex)
+          : await this.deps.ensureImage(slot.cardId, slot.faceIndex, slot.upscale)
       const bytes = new Uint8Array(await readFile(path))
       uniqueImages.push(
         this.deps.processImage ? await this.deps.processImage(bytes, options) : bytes

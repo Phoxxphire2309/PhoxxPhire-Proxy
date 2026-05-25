@@ -83,6 +83,7 @@ export function initExport(options: ExportSetupOptions): void {
       useUpscaled && options.upscale.available()
         ? options.upscale.ensureUpscaled(cardId, faceIndex)
         : options.scryfall.ensureFaceImage(cardId, faceIndex),
+    proxyImage: (cardId, faceIndex) => options.scryfall.ensureProxyImage(cardId, faceIndex),
     processImage: async (bytes, exportOptions) => {
       const bled = await extendBleed(bytes, exportOptions.bleedMm, exportOptions.bleedMode)
       return applyColorProfile(bled, exportOptions.colorProfile)

@@ -6,6 +6,7 @@ import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 import { useCollectionStore } from '@renderer/state/collectionStore'
 import { useRotateStore } from '@renderer/state/rotateStore'
+import { useTextProxyStore } from '@renderer/state/textProxyStore'
 import { PrintPartner } from '@renderer/components/PrintPartner'
 
 type Phase = 'configure' | 'running' | 'done' | 'error'
@@ -24,6 +25,7 @@ export function ExportDialog({
   const options = usePageSetupStore((state) => state.options)
   const collection = useCollectionStore()
   const rotated = useRotateStore((state) => state.rotated)
+  const proxies = useTextProxyStore((state) => state.proxies)
   const [phase, setPhase] = useState<Phase>('configure')
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   const [message, setMessage] = useState<string>('')
@@ -72,7 +74,8 @@ export function ExportDialog({
             cardId: slot.cardId,
             faceIndex: slot.faceIndex,
             upscale: Boolean(upscaledSet[slot.cardId]),
-            rotate: Boolean(rotated[slot.cardId])
+            rotate: Boolean(rotated[slot.cardId]),
+            textProxy: Boolean(proxies[slot.cardId])
           }
     )
   const totalCards = exportSlots.length

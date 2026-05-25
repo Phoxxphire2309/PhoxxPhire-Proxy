@@ -10,6 +10,7 @@ import {
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { upscaleCardWithConfirm } from '@renderer/state/upscaleActions'
+import { useTextProxyStore } from '@renderer/state/textProxyStore'
 import { useDeckStore } from '@renderer/state/deckStore'
 
 export function CardDetail({
@@ -25,6 +26,8 @@ export function CardDetail({
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
   const scale = useUpscaleStore((state) => state.scale)
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
+  const proxies = useTextProxyStore((state) => state.proxies)
+  const toggleProxy = useTextProxyStore((state) => state.toggle)
 
   const [printings, setPrintings] = useState<Card[]>([])
   const [loadingPrintings, setLoadingPrintings] = useState(false)
@@ -85,9 +88,12 @@ export function CardDetail({
   const betterAvailable =
     best !== null && best.id !== displayed.id && isHighRes(best) && !isHighRes(displayed)
   const upscaled = Boolean(upscaledSet[displayed.id])
-  const showCompare = upscalerAvailable && upscaled
+  const isProxy = Boolean(proxies[displayed.id])
+  const showCompare = upscalerAvailable && upscaled && !isProxy
   const sourceSrc = faceImageUrl(displayed.id, faceIndex, 'source')
-  const thumbSrc = faceImageUrl(displayed.id, faceIndex, 'thumb')
+  const thumbSrc = isProxy
+    ? faceImageUrl(displayed.id, faceIndex, 'proxy')
+    : faceImageUrl(displayed.id, faceIndex, 'thumb')
   const upscaledSrc = faceImageUrl(displayed.id, faceIndex, 'upscaled', settingsVersion)
 
   const panel = (
@@ -208,6 +214,14 @@ export function CardDetail({
                 ⤺ Flip face
               </button>
             )}
+            <button
+              className={`toggle${isProxy ? ' is-on' : ''}`}
+              type="button"
+              onClick={() => toggleProxy(displayed.id)}
+              title="Print a clean text-only proxy from the card's rules text instead of the scan"
+            >
+              {isProxy ? '✓ Text proxy' : 'Text proxy'}
+            </button>
           </div>
 
           <h3 className="detail__sub">

@@ -92,6 +92,11 @@ export class CardCache {
     return join(this.imagesDir, `${sanitize(id)}-${faceIndex}-thumb.jpg`)
   }
 
+  /** Rendered text-proxy path (PNG). */
+  proxyImagePath(id: string, faceIndex: number): string {
+    return join(this.imagesDir, `${sanitize(id)}-${faceIndex}-proxy.png`)
+  }
+
   /** Upscaled variant path (JPEG), keyed by model + scale so settings coexist. */
   upscaledImagePath(id: string, faceIndex: number, model: string, scale: number): string {
     return join(this.imagesDir, `${sanitize(id)}-${faceIndex}-${sanitize(model)}-x${scale}.jpg`)
@@ -119,6 +124,10 @@ export class CardCache {
 
   async hasThumb(id: string, faceIndex: number): Promise<boolean> {
     return exists(this.thumbImagePath(id, faceIndex))
+  }
+
+  async hasProxy(id: string, faceIndex: number): Promise<boolean> {
+    return exists(this.proxyImagePath(id, faceIndex))
   }
 
   /** Whether an arbitrary cache file (e.g. an upscaled variant) exists. */
@@ -203,6 +212,15 @@ export class CardCache {
   /** Atomically write a browsing thumbnail (JPEG). */
   async writeThumb(id: string, faceIndex: number, data: Uint8Array): Promise<string> {
     const dest = this.thumbImagePath(id, faceIndex)
+    const tmp = `${dest}.tmp-${process.pid}-${Date.now()}`
+    await writeFile(tmp, data)
+    await rename(tmp, dest)
+    return dest
+  }
+
+  /** Atomically write a rendered text proxy (PNG). */
+  async writeProxy(id: string, faceIndex: number, data: Uint8Array): Promise<string> {
+    const dest = this.proxyImagePath(id, faceIndex)
     const tmp = `${dest}.tmp-${process.pid}-${Date.now()}`
     await writeFile(tmp, data)
     await rename(tmp, dest)
