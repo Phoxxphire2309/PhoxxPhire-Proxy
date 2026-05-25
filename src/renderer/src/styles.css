@@ -2797,6 +2797,34 @@ h3 {
   border-top: 1px solid var(--border);
 }
 
+/* When the heading shares a row with the set filter, the row carries the rule. */
+.detail__subrow {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 4px 0 12px;
+  padding-top: 16px;
+  border-top: 1px solid var(--border);
+}
+
+.detail__sub--inline {
+  margin: 0;
+  padding-top: 0;
+  border-top: none;
+}
+
+.prints__setfilter {
+  padding: 5px 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--text);
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  cursor: pointer;
+}
+
 .detail__hint {
   color: var(--muted);
   font-size: 14px;

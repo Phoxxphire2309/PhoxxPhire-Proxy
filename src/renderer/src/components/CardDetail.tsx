@@ -35,6 +35,7 @@ export function CardDetail({
   const [faceIndex, setFaceIndex] = useState(0)
   const [compare, setCompare] = useState(50)
   const [dragging, setDragging] = useState(false)
+  const [setFilter, setSetFilter] = useState('')
   const compareRef = useRef<HTMLDivElement>(null)
 
   // Map a pointer X position to a 0–100 split across the comparison image.
@@ -64,6 +65,7 @@ export function CardDetail({
 
   // Load all printings for the displayed card's oracle id.
   useEffect(() => {
+    setSetFilter('') // a new card has a different set list
     if (!oracleId) {
       setPrintings([])
       return
@@ -88,6 +90,11 @@ export function CardDetail({
   const best = bestPrinting(printings)
   // Scryfall returns printings oldest→newest; show them newest-first for browsing.
   const printingsNewestFirst = [...printings].reverse()
+  // Distinct sets across all printings, for the set filter dropdown.
+  const setCodes = [...new Set(printings.map((printing) => printing.setCode))].sort()
+  const visiblePrintings = setFilter
+    ? printingsNewestFirst.filter((printing) => printing.setCode === setFilter)
+    : printingsNewestFirst
   const betterAvailable =
     best !== null && best.id !== displayed.id && isHighRes(best) && !isHighRes(displayed)
   const upscaled = Boolean(upscaledSet[displayed.id])
@@ -236,16 +243,35 @@ export function CardDetail({
             </button>
           </div>
 
-          <h3 className="detail__sub">
-            Printings{printings.length ? ` (${printings.length})` : ''}
-          </h3>
+          <div className="detail__subrow">
+            <h3 className="detail__sub detail__sub--inline">
+              Printings{printings.length ? ` (${visiblePrintings.length})` : ''}
+            </h3>
+            {setCodes.length > 1 && (
+              <select
+                className="prints__setfilter"
+                value={setFilter}
+                onChange={(event) => setSetFilter(event.target.value)}
+                aria-label="Filter printings by set"
+              >
+                <option value="">All sets ({printings.length})</option>
+                {setCodes.map((code) => (
+                  <option key={code} value={code}>
+                    {code.toUpperCase()}
+                  </option>
+                ))}
+              </select>
+            )}
+          </div>
           {loadingPrintings ? (
             <p className="detail__hint">Loading printings…</p>
           ) : printings.length <= 1 ? (
             <p className="detail__hint">No other printings found.</p>
+          ) : visiblePrintings.length === 0 ? (
+            <p className="detail__hint">No printings in {setFilter.toUpperCase()}.</p>
           ) : (
             <ul className="prints">
-              {printingsNewestFirst.map((printing) => (
+              {visiblePrintings.map((printing) => (
                 <li key={printing.id}>
                   <button
                     type="button"
