@@ -18,6 +18,7 @@ import type { ScryfallService } from '../scryfall/service'
 import type { UpscaleService } from '../upscale/service'
 import { applyColorProfile, buildMpcCardBack, buildMpcImage, extendBleed } from '../image/processor'
 import { buildCalibrationPdf } from './calibration'
+import { buildCutFileSvg } from './cutfile'
 import { ExportService } from './service'
 
 export interface ExportSetupOptions {
@@ -188,6 +189,25 @@ export function initExport(options: ExportSetupOptions): void {
       }
       const pdf = await buildCalibrationPdf(exportOptions)
       await writeFile(filePath, pdf)
+      return { canceled: false, path: filePath }
+    }
+  )
+
+  ipcMain.handle(
+    IpcChannel.ExportCutFile,
+    async (_event, exportOptions: ExportOptions): Promise<CalibrationOutcome> => {
+      const { canceled, filePath } = await dialog.showSaveDialog({
+        title: 'Save cut file',
+        defaultPath: 'cut-file.svg',
+        filters: [{ name: 'SVG', extensions: ['svg'] }]
+      })
+      if (canceled || !filePath) return { canceled: true }
+      await writeFile(filePath, buildCutFileSvg(exportOptions, false), 'utf8')
+      // For duplex, also write a mirrored back cut file alongside it.
+      if (exportOptions.cardBack !== 'none') {
+        const backPath = filePath.replace(/\.svg$/i, '') + '-back.svg'
+        await writeFile(backPath, buildCutFileSvg(exportOptions, true), 'utf8')
+      }
       return { canceled: false, path: filePath }
     }
   )

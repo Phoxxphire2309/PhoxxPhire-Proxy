@@ -40,6 +40,7 @@ const api: PhoxxApi = {
   exportZip: (slots) => ipcRenderer.invoke(IpcChannel.ExportZip, slots),
   exportMpc: (cards) => ipcRenderer.invoke(IpcChannel.ExportMpc, cards),
   exportCalibration: (options) => ipcRenderer.invoke(IpcChannel.ExportCalibration, options),
+  exportCutFile: (options) => ipcRenderer.invoke(IpcChannel.ExportCutFile, options),
   onExportProgress: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, data: ExportProgress): void =>
       listener(data)

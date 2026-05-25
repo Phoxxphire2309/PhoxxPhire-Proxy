@@ -160,6 +160,12 @@ export function ExportDialog({
       return outcome.canceled ? null : `Saved calibration page to ${outcome.path}`
     })
 
+  const exportCutFile = (): Promise<void> =>
+    runGuarded(async () => {
+      const outcome = await window.phoxx.exportCutFile(options)
+      return outcome.canceled ? null : `Saved cut file to ${outcome.path}`
+    })
+
   const running = phase === 'running'
 
   return (
@@ -225,6 +231,15 @@ export function ExportDialog({
                 onClick={() => void exportCalibration()}
               >
                 Calibration page
+              </button>
+              <button
+                className="toggle"
+                type="button"
+                disabled={running}
+                onClick={() => void exportCutFile()}
+                title="SVG cut paths + registration marks for a Cricut/Silhouette or guillotine"
+              >
+                Cut file (SVG)
               </button>
               <button
                 className="toggle"

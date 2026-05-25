@@ -72,6 +72,7 @@ export const IpcChannel = {
   ExportZip: 'export:zip',
   ExportMpc: 'export:mpc',
   ExportCalibration: 'export:calibration',
+  ExportCutFile: 'export:cutFile',
   /** Main → renderer push channel for export progress. */
   ExportProgress: 'export:progress'
 } as const
@@ -172,6 +173,8 @@ export interface PhoxxApi {
   exportMpc(cards: MpcCard[]): Promise<MpcExportOutcome>
   /** Save a print-calibration PDF for the given page options. */
   exportCalibration(options: ExportOptions): Promise<CalibrationOutcome>
+  /** Save an SVG cut file (trim paths + registration marks) for cutting machines. */
+  exportCutFile(options: ExportOptions): Promise<CalibrationOutcome>
   /** Subscribe to export progress; returns an unsubscribe function. */
   onExportProgress(listener: (progress: ExportProgress) => void): () => void
   /** Whether the Real-ESRGAN binary is provisioned and usable. */
