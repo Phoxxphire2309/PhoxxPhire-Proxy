@@ -21,6 +21,8 @@ export interface AppState {
   decks?: { id: string; name: string; items: SavedDeckItemLite[] }[]
   activeDeckId?: string
   upscale?: { model: string; scale: number }
+  /** Card ids the user has upscaled, so deck health stays accurate across launches. */
+  upscaledCardIds?: string[]
   showSource?: boolean
   theme?: ThemeName
   onboarded?: boolean

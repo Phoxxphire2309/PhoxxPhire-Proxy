@@ -41,6 +41,12 @@ export async function loadPersistedState(): Promise<void> {
   if (state.upscale) {
     await useUpscaleStore.getState().setSettings(state.upscale)
   }
+  // Restore which cards were upscaled (the images are still on disk) so deck
+  // health doesn't re-flag them as low-res. This only sets the flag; it never
+  // triggers a fresh upscale on launch.
+  if (state.upscaledCardIds && state.upscaledCardIds.length > 0) {
+    useUpscaleStore.getState().markManyUpscaled(state.upscaledCardIds)
+  }
 }
 
 function snapshot(): AppState {
@@ -54,6 +60,7 @@ function snapshot(): AppState {
     decks: tabs,
     activeDeckId: activeId,
     upscale: { model: upscale.model, scale: upscale.scale },
+    upscaledCardIds: Object.keys(upscale.upscaled),
     theme: ui.theme,
     onboarded: ui.onboarded,
     pageSetup: usePageSetupStore.getState().options,
