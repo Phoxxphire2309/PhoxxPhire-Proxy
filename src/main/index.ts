@@ -1,5 +1,5 @@
 import { join } from 'node:path'
-import { app, BrowserWindow, ipcMain, shell } from 'electron'
+import { app, BrowserWindow, ipcMain, net, shell } from 'electron'
 import { IpcChannel } from '@shared/ipc'
 import {
   handleImageProtocol,
@@ -12,6 +12,7 @@ import { initExport } from './export/setup'
 import { initDeckIo } from './deck/setup'
 import { initCustomCards } from './custom/setup'
 import { initCardBack } from './cardback/setup'
+import { initCombos } from './combo/setup'
 import { initPersistence } from './persist/setup'
 import { initAutoUpdate } from './update/setup'
 
@@ -92,6 +93,7 @@ app.whenReady().then(async () => {
   initExport({ scryfall, upscale, cardBack })
   initDeckIo()
   initCustomCards(cache)
+  initCombos(net.fetch as unknown as typeof fetch)
   initPersistence()
 
   createWindow()

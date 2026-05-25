@@ -14,6 +14,7 @@ const api: PhoxxApi = {
   importDeckUrl: (url, excludeFoils) =>
     ipcRenderer.invoke(IpcChannel.ScryfallImportUrl, url, excludeFoils),
   findTokens: (cardIds) => ipcRenderer.invoke(IpcChannel.ScryfallFindTokens, cardIds),
+  findCombos: (cards) => ipcRenderer.invoke(IpcChannel.CombosFind, cards),
   onImportProgress: (listener) => {
     const handler = (_event: Electron.IpcRendererEvent, data: ImportProgress): void =>
       listener(data)

@@ -10,6 +10,7 @@ export type DeckModal =
   | 'preview'
   | 'pageSetup'
   | 'sampleHand'
+  | 'combos'
 
 interface DeckUiState {
   modal: DeckModal | null

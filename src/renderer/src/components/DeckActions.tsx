@@ -83,6 +83,7 @@ export function DeckActions(): React.JSX.Element {
           disabled={bulkRunning}
         />
         <Row icon="♠" label="Sample hand" onClick={() => open('sampleHand')} />
+        <Row icon="⚡" label="Combos" onClick={() => open('combos')} />
         <Row icon="◈" label="Tokens" onClick={() => open('tokens')} />
         <Row icon="⬣" label="Basic lands" onClick={() => open('lands')} />
       </nav>

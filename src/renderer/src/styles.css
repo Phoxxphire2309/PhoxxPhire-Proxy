@@ -1557,6 +1557,43 @@ h3 {
   text-shadow: 0 1px 1px rgba(255, 255, 255, 0.35);
 }
 
+/* Combos dialog */
+.combos {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin: 16px 0 0;
+  padding: 0;
+  max-height: 56vh;
+  overflow-y: auto;
+  list-style: none;
+}
+
+.combo {
+  padding: 12px 14px;
+  background: var(--bg);
+  border: 1px solid var(--border-soft);
+  border-radius: 11px;
+}
+
+.combo__cards {
+  font-size: 14px;
+  font-weight: 700;
+}
+
+.combo__produces {
+  margin-top: 4px;
+  font-size: 13px;
+  color: var(--accent);
+}
+
+.combo__desc {
+  margin: 8px 0 0;
+  font-size: 12px;
+  line-height: 1.5;
+  color: var(--muted);
+}
+
 /* Import dialog */
 .import {
   width: min(620px, 100%);

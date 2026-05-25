@@ -15,6 +15,7 @@ import type {
   SavedDeck,
   SavedProject
 } from './deck'
+import type { ComboCardInput, ComboResult } from './combo'
 import type { DeckResolution, ImportProgress } from './decklist'
 import type { DecklistExportOutcome, DecklistFormat } from './decklistExport'
 import type {
@@ -39,6 +40,7 @@ export const IpcChannel = {
   ScryfallResolveDeck: 'scryfall:resolveDeck',
   ScryfallImportUrl: 'scryfall:importUrl',
   ScryfallFindTokens: 'scryfall:findTokens',
+  CombosFind: 'combos:find',
   /** Main → renderer push channel for per-card deck-import progress. */
   ScryfallImportProgress: 'scryfall:importProgress',
   DeckSave: 'deck:save',
@@ -130,6 +132,8 @@ export interface PhoxxApi {
   importDeckUrl(url: string, excludeFoils?: boolean): Promise<DeckResolution>
   /** Distinct tokens / emblems created by the given deck cards, ready to add. */
   findTokens(cardIds: string[]): Promise<Card[]>
+  /** Find the combos present in the deck via the Commander Spellbook API. */
+  findCombos(cards: ComboCardInput[]): Promise<ComboResult>
   /** Subscribe to per-card deck-import progress; returns an unsubscribe function. */
   onImportProgress(listener: (progress: ImportProgress) => void): () => void
   /** Save a deck to a JSON file (prompts for a path). */
