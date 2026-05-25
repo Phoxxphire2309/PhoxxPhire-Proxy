@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react'
+import { useEffect } from 'react'
 import { SearchBar } from '@renderer/components/SearchBar'
 import { Sidebar } from '@renderer/components/Sidebar'
 import { CardGrid } from '@renderer/components/CardGrid'
@@ -21,13 +21,12 @@ import { loadPersistedState, startPersisting } from '@renderer/state/persist'
 export function App(): React.JSX.Element {
   const loadSettings = useUpscaleStore((state) => state.loadSettings)
   const applyStatus = useUpscaleStore((state) => state.applyStatus)
-  const theme = useUiStore((state) => state.theme)
-  const toggleTheme = useUiStore((state) => state.toggleTheme)
   const view = useUiStore((state) => state.view)
   const detailCard = usePrintingStore((state) => state.detailCard)
   const detailOrigin = usePrintingStore((state) => state.origin)
   const setOnboarded = useUiStore((state) => state.setOnboarded)
-  const [showOnboarding, setShowOnboarding] = useState(false)
+  const tourOpen = useUiStore((state) => state.tourOpen)
+  const setTourOpen = useUiStore((state) => state.setTourOpen)
 
   // Load settings + persisted state, then begin persisting changes.
   useEffect(() => {
@@ -38,17 +37,17 @@ export function App(): React.JSX.Element {
       await loadPersistedState()
       stop = startPersisting()
       // First-run guide, once we know whether it's been seen.
-      if (!useUiStore.getState().onboarded) setShowOnboarding(true)
+      if (!useUiStore.getState().onboarded) setTourOpen(true)
     })()
     return () => {
       unsubscribeStatus()
       stop?.()
     }
-  }, [loadSettings, applyStatus])
+  }, [loadSettings, applyStatus, setTourOpen])
 
   const dismissOnboarding = (): void => {
     setOnboarded(true)
-    setShowOnboarding(false)
+    setTourOpen(false)
   }
 
   // Cmd/Ctrl+K focuses the search box.
@@ -70,30 +69,11 @@ export function App(): React.JSX.Element {
       <Sidebar />
 
       <div className="app__main">
-        <header className="topbar">
-          {view === 'search' && <SearchBar />}
-          {view !== 'search' && <div className="topbar__spacer" />}
-          <div className="topbar__right">
-            <button
-              className="rail__btn"
-              type="button"
-              onClick={toggleTheme}
-              aria-label="Toggle light/dark theme"
-              title="Toggle theme"
-            >
-              {theme === 'dark' ? '☾' : '☀'}
-            </button>
-            <button
-              className="rail__btn"
-              type="button"
-              onClick={() => setShowOnboarding(true)}
-              aria-label="Help / quick tour"
-              title="Quick tour"
-            >
-              ?
-            </button>
-          </div>
-        </header>
+        {view === 'search' && (
+          <header className="topbar">
+            <SearchBar />
+          </header>
+        )}
 
         <div className="app__body">
           {view === 'search' && (
@@ -132,7 +112,7 @@ export function App(): React.JSX.Element {
       <UpscaleProgress />
       <BulkProgress />
       <ConfirmHost />
-      {showOnboarding && <Onboarding onClose={dismissOnboarding} />}
+      {tourOpen && <Onboarding onClose={dismissOnboarding} />}
     </div>
   )
 }

@@ -13,11 +13,14 @@ interface UiState {
   deckGroupBy: GroupBy
   /** Whether the first-run onboarding has been dismissed. */
   onboarded: boolean
+  /** Whether the quick-tour overlay is open. */
+  tourOpen: boolean
   setTheme: (theme: ThemeName) => void
   toggleTheme: () => void
   setView: (view: AppView) => void
   setDeckGroupBy: (groupBy: GroupBy) => void
   setOnboarded: (value: boolean) => void
+  setTourOpen: (value: boolean) => void
 }
 
 /** Reflects the theme onto the document so CSS variables switch. */
@@ -30,6 +33,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   view: 'search',
   deckGroupBy: 'none',
   onboarded: false,
+  tourOpen: false,
   setTheme: (theme) => {
     applyTheme(theme)
     set({ theme })
@@ -37,5 +41,6 @@ export const useUiStore = create<UiState>((set, get) => ({
   toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
   setView: (view) => set({ view }),
   setDeckGroupBy: (deckGroupBy) => set({ deckGroupBy }),
-  setOnboarded: (value) => set({ onboarded: value })
+  setOnboarded: (value) => set({ onboarded: value }),
+  setTourOpen: (value) => set({ tourOpen: value })
 }))

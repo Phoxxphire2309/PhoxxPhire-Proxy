@@ -56,6 +56,7 @@ export function SettingsView(): React.JSX.Element {
   const setSettings = useUpscaleStore((state) => state.setSettings)
   const loadSettings = useUpscaleStore((state) => state.loadSettings)
   const openModal = useDeckUiStore((state) => state.open)
+  const setTourOpen = useUiStore((state) => state.setTourOpen)
 
   const [cacheBytes, setCacheBytes] = useState<number | null>(null)
   const [cachePath, setCachePath] = useState<string | null>(null)
@@ -221,6 +222,15 @@ export function SettingsView(): React.JSX.Element {
         >
           <button className="toggle" type="button" onClick={() => openModal('pageSetup')}>
             Open…
+          </button>
+        </Setting>
+      </section>
+
+      <section className="settings__card">
+        <h2 className="settings__title">Help</h2>
+        <Setting title="Quick tour" description="Replay the first-run walkthrough of the app.">
+          <button className="toggle" type="button" onClick={() => setTourOpen(true)}>
+            Start tour
           </button>
         </Setting>
       </section>

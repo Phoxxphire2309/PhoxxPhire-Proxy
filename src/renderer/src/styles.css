@@ -313,53 +313,50 @@ h3 {
 /* Settings view */
 .settings {
   max-width: 720px;
+  margin: 0 auto;
 }
 
 .settings__card {
-  margin-top: 18px;
-  padding: 18px;
-  background: var(--panel);
-  border: 1px solid var(--border-soft);
-  border-radius: 16px;
+  margin-top: 14px;
+  padding: 2px 20px 10px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 14px;
   box-shadow: var(--highlight), var(--shadow-1);
 }
 
 .settings__title {
-  margin: 0 0 4px;
-  font-size: 12px;
+  margin: 0;
+  padding: 15px 0 4px;
+  font-size: 11px;
   font-weight: 700;
-  letter-spacing: 0.07em;
+  letter-spacing: 0.08em;
   text-transform: uppercase;
   color: var(--muted);
 }
 
 .settings__hint {
   margin: 0;
+  padding: 12px 0 4px;
   font-size: 13px;
   line-height: 1.5;
   color: var(--muted);
+  border-top: 1px solid var(--border-soft);
 }
 
 .settings__card--about .settings__hint a {
   color: var(--accent);
 }
 
-/* A settings row: info on the left, control on the right. */
+/* A settings row: info on the left, control on the right. Top borders divide
+   the section header from the first row, and rows from one another. */
 .setting {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 16px;
-  padding: 14px 0;
-  border-bottom: 1px solid var(--border-soft);
-}
-
-.setting:last-of-type {
-  border-bottom: none;
-}
-
-.settings__title + .setting {
-  padding-top: 8px;
+  padding: 13px 0;
+  border-top: 1px solid var(--border-soft);
 }
 
 .setting__info {
