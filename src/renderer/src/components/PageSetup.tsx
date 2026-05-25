@@ -20,9 +20,22 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
   const options = usePageSetupStore((state) => state.options)
   const set = usePageSetupStore((state) => state.set)
   const reset = usePageSetupStore((state) => state.reset)
+  const presets = usePageSetupStore((state) => state.presets)
+  const savePreset = usePageSetupStore((state) => state.savePreset)
+  const applyPreset = usePageSetupStore((state) => state.applyPreset)
+  const deletePreset = usePageSetupStore((state) => state.deletePreset)
   const items = useDeckStore((state) => state.items)
   const [library, setLibrary] = useState<CardBackLibrary>({ backs: [], selectedId: null })
   const [measuredMm, setMeasuredMm] = useState('')
+  const [presetName, setPresetName] = useState('')
+
+  const saveCurrentPreset = (): void => {
+    const name = presetName.trim()
+    if (!name) return
+    savePreset(name)
+    setPresetName('')
+    toast(`Saved preset “${name}”`, 'success')
+  }
 
   useEffect(() => {
     void window.phoxx.getCardBacks().then(setLibrary)
@@ -107,6 +120,65 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
 
         <div className="setup__body">
           <div className="setup__form">
+            <h3 className="setup__section">Presets</h3>
+            <div className="preset">
+              {presets.length > 0 ? (
+                <ul className="preset__list">
+                  {presets.map((preset) => (
+                    <li className="preset__chip" key={preset.id}>
+                      <button
+                        type="button"
+                        className="preset__apply"
+                        onClick={() => applyPreset(preset.id)}
+                        title={`Load “${preset.name}” settings`}
+                      >
+                        {preset.name}
+                      </button>
+                      <button
+                        type="button"
+                        className="preset__remove"
+                        onClick={() => deletePreset(preset.id)}
+                        aria-label={`Delete preset ${preset.name}`}
+                        title="Delete preset"
+                      >
+                        ✕
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              ) : (
+                <span className="detail__hint">
+                  Save the settings below as a named profile to switch between printers in one
+                  click.
+                </span>
+              )}
+              <div className="preset__save">
+                <input
+                  className="search__input"
+                  type="text"
+                  value={presetName}
+                  placeholder="Preset name (e.g. Home inkjet)"
+                  onChange={(event) => setPresetName(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      saveCurrentPreset()
+                    }
+                  }}
+                  aria-label="Name for a new page-setup preset"
+                />
+                <button
+                  className="toggle"
+                  type="button"
+                  onClick={saveCurrentPreset}
+                  disabled={!presetName.trim()}
+                >
+                  Save current
+                </button>
+              </div>
+            </div>
+
+            <h3 className="setup__section">Paper</h3>
             <label className="export__field">
               <span>Page size</span>
               <select
@@ -159,6 +231,7 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
               </>
             )}
 
+            <h3 className="setup__section">Margins &amp; spacing</h3>
             {field('Bleed', 'bleedMm', 6)}
             {field('Margin top', 'marginTopMm', 100)}
             {field('Margin right', 'marginRightMm', 100)}
@@ -167,6 +240,7 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
             {field('Column spacing', 'columnSpacingMm')}
             {field('Row spacing', 'rowSpacingMm')}
 
+            <h3 className="setup__section">Bleed &amp; cut guides</h3>
             {options.bleedMm > 0 && (
               <label className="export__field">
                 <span>Bleed style</span>
@@ -193,6 +267,7 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
               </select>
             </label>
 
+            <h3 className="setup__section">Card backs</h3>
             <label className="export__field">
               <span>Card backs (duplex)</span>
               <select
@@ -244,6 +319,7 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
               </div>
             )}
 
+            <h3 className="setup__section">Colour &amp; scale</h3>
             <label className="export__field">
               <span>Printer colour</span>
               <select

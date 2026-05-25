@@ -11,11 +11,13 @@ import { ToastContainer } from '@renderer/components/ToastContainer'
 import { UpscaleProgress } from '@renderer/components/UpscaleProgress'
 import { BulkProgress } from '@renderer/components/BulkProgress'
 import { ConfirmHost } from '@renderer/components/ConfirmHost'
+import { CommandPalette } from '@renderer/components/CommandPalette'
 import { Onboarding } from '@renderer/components/Onboarding'
 import logo from '@renderer/assets/phoxxphire-logo.png'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore } from '@renderer/state/uiStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
+import { usePaletteStore } from '@renderer/state/paletteStore'
 import { loadPersistedState, startPersisting } from '@renderer/state/persist'
 
 export function App(): React.JSX.Element {
@@ -50,12 +52,12 @@ export function App(): React.JSX.Element {
     setTourOpen(false)
   }
 
-  // Cmd/Ctrl+K focuses the search box.
+  // Cmd/Ctrl+K opens the command palette.
   useEffect(() => {
     const onKey = (event: KeyboardEvent): void => {
       if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'k') {
         event.preventDefault()
-        document.getElementById('card-search')?.focus()
+        usePaletteStore.getState().toggle()
       }
     }
     window.addEventListener('keydown', onKey)
@@ -112,6 +114,7 @@ export function App(): React.JSX.Element {
       <UpscaleProgress />
       <BulkProgress />
       <ConfirmHost />
+      <CommandPalette />
       {tourOpen && <Onboarding onClose={dismissOnboarding} />}
     </div>
   )

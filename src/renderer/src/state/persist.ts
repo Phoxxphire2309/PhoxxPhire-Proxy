@@ -32,6 +32,7 @@ export async function loadPersistedState(): Promise<void> {
     useDeckStore.getState().setItems(state.deck)
   }
   if (state.pageSetup) usePageSetupStore.getState().replace(state.pageSetup)
+  if (state.pagePresets) usePageSetupStore.getState().restorePresets(state.pagePresets)
   if (state.collection) {
     useCollectionStore.getState().restore(state.collection.owned, state.collection.skipOwned)
   }
@@ -56,6 +57,7 @@ function snapshot(): AppState {
     theme: ui.theme,
     onboarded: ui.onboarded,
     pageSetup: usePageSetupStore.getState().options,
+    pagePresets: usePageSetupStore.getState().presets,
     collection: {
       owned: Object.keys(useCollectionStore.getState().owned),
       skipOwned: useCollectionStore.getState().skipOwned

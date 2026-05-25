@@ -4,6 +4,13 @@ import type { Card } from './scryfall'
 
 export type ThemeName = 'dark' | 'light'
 
+/** A named, saved page-setup profile (e.g. "Home inkjet", "Print-shop A3 + bleed"). */
+export interface PagePreset {
+  id: string
+  name: string
+  options: ExportOptions
+}
+
 type SavedDeckItemLite = { card: Card; quantities: number[]; section?: DeckSection }
 
 /** Persisted application state, restored on launch. */
@@ -18,6 +25,8 @@ export interface AppState {
   theme?: ThemeName
   onboarded?: boolean
   pageSetup?: ExportOptions
+  /** Saved page-setup presets the user can switch between. */
+  pagePresets?: PagePreset[]
   collection?: { owned: string[]; skipOwned: boolean }
   /** UI preferences: active view, deck grouping, and search sort/view mode. */
   ui?: {

@@ -4,6 +4,7 @@ import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { preUpscaleDeckWithConfirm } from '@renderer/state/upscaleActions'
 import { confirm } from '@renderer/state/confirmStore'
 import { DeckStats } from '@renderer/components/DeckStats'
+import { DeckHealth } from '@renderer/components/DeckHealth'
 
 /** One uniform action row: icon badge, label, and a trailing affordance. */
 function Row({
@@ -67,6 +68,7 @@ export function DeckActions(): React.JSX.Element {
 
   return (
     <div className="dactions">
+      <DeckHealth />
       <DeckStats />
 
       <button className="deck__export" type="button" onClick={() => open('export')}>

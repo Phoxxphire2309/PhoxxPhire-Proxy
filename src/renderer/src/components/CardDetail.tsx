@@ -86,6 +86,8 @@ export function CardDetail({
   const isDoubleFaced = displayed.faces.length > 1
   // Best-quality printing for upscaling: offer a switch when a higher-res scan exists.
   const best = bestPrinting(printings)
+  // Scryfall returns printings oldest→newest; show them newest-first for browsing.
+  const printingsNewestFirst = [...printings].reverse()
   const betterAvailable =
     best !== null && best.id !== displayed.id && isHighRes(best) && !isHighRes(displayed)
   const upscaled = Boolean(upscaledSet[displayed.id])
@@ -178,12 +180,18 @@ export function CardDetail({
           </p>
           {betterAvailable && best && (
             <button
-              className="toggle"
+              className="detail__suggest"
               type="button"
               onClick={() => choose(best)}
               title="Switch to a higher-resolution printing for a sharper upscale"
             >
-              ✦ Use best-quality printing ({best.setCode.toUpperCase()})
+              <span className="detail__suggest-icon" aria-hidden="true">
+                ✦
+              </span>
+              <span className="detail__suggest-text">
+                Use best-quality printing
+                <span className="detail__suggest-set">{best.setCode.toUpperCase()}</span>
+              </span>
             </button>
           )}
           <p className="detail__price" title="Estimated market price from Scryfall, updated daily">
@@ -237,7 +245,7 @@ export function CardDetail({
             <p className="detail__hint">No other printings found.</p>
           ) : (
             <ul className="prints">
-              {printings.map((printing) => (
+              {printingsNewestFirst.map((printing) => (
                 <li key={printing.id}>
                   <button
                     type="button"
