@@ -12,6 +12,7 @@ import { UpscaleProgress } from '@renderer/components/UpscaleProgress'
 import { BulkProgress } from '@renderer/components/BulkProgress'
 import { ConfirmHost } from '@renderer/components/ConfirmHost'
 import { CommandPalette } from '@renderer/components/CommandPalette'
+import { UpdateBanner } from '@renderer/components/UpdateBanner'
 import { Onboarding } from '@renderer/components/Onboarding'
 import logo from '@renderer/assets/phoxxphire-logo.png'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
@@ -115,6 +116,7 @@ export function App(): React.JSX.Element {
       <BulkProgress />
       <ConfirmHost />
       <CommandPalette />
+      <UpdateBanner />
       {tourOpen && <Onboarding onClose={dismissOnboarding} />}
     </div>
   )

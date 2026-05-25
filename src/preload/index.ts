@@ -6,6 +6,7 @@ import type { InstallPhase } from '@shared/upscaleInstall'
 
 const api: PhoxxApi = {
   getVersion: () => ipcRenderer.invoke(IpcChannel.AppGetVersion),
+  checkForUpdate: () => ipcRenderer.invoke(IpcChannel.UpdateCheck),
   searchCards: (query, options) => ipcRenderer.invoke(IpcChannel.ScryfallSearch, query, options),
   autocomplete: (query) => ipcRenderer.invoke(IpcChannel.ScryfallAutocomplete, query),
   getPrintings: (oracleId) => ipcRenderer.invoke(IpcChannel.ScryfallPrints, oracleId),

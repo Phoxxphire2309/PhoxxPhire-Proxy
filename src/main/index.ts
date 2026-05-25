@@ -14,7 +14,7 @@ import { initCustomCards } from './custom/setup'
 import { initCardBack } from './cardback/setup'
 import { initCombos } from './combo/setup'
 import { initPersistence } from './persist/setup'
-import { initAutoUpdate } from './update/setup'
+import { initAutoUpdate, initUpdateCheck } from './update/setup'
 
 const isDev = !app.isPackaged
 
@@ -94,6 +94,7 @@ app.whenReady().then(async () => {
   initDeckIo()
   initCustomCards(cache)
   initCombos(net.fetch as unknown as typeof fetch)
+  initUpdateCheck(net.fetch as unknown as typeof fetch)
   initPersistence()
 
   createWindow()

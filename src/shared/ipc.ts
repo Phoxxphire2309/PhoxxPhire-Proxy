@@ -34,6 +34,7 @@ import type { InstallPhase } from './upscaleInstall'
 
 export const IpcChannel = {
   AppGetVersion: 'app:getVersion',
+  UpdateCheck: 'update:check',
   ScryfallSearch: 'scryfall:search',
   ScryfallAutocomplete: 'scryfall:autocomplete',
   ScryfallPrints: 'scryfall:prints',
@@ -118,10 +119,20 @@ export interface UpscaleStatusEvent {
   error?: string
 }
 
+/** A newer published release than the running build. */
+export interface UpdateInfo {
+  /** The newer version, e.g. "1.1.0". */
+  version: string
+  /** The release page to download it from. */
+  url: string
+}
+
 /** Surface exposed to the renderer via `contextBridge`. Grows per build phase. */
 export interface PhoxxApi {
   /** Returns the running application version (from package.json). */
   getVersion(): Promise<string>
+  /** Checks GitHub Releases for a newer version; null if up to date or offline. */
+  checkForUpdate(): Promise<UpdateInfo | null>
   /** Full-text Scryfall search; returns normalized cards (first page). */
   searchCards(query: string, options?: SearchOptions): Promise<SearchResult>
   /** Card-name autocomplete suggestions for a partial query. */

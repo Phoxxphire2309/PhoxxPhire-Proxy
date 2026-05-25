@@ -3768,6 +3768,54 @@ h3 {
   font-variant-numeric: tabular-nums;
 }
 
+/* "New version available" bar */
+.updatebar {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 90;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 7px 8px 7px 16px;
+  background: var(--panel);
+  border: 1px solid color-mix(in srgb, var(--accent) 45%, var(--border));
+  border-radius: 999px;
+  box-shadow: var(--highlight), var(--shadow-3);
+}
+
+.updatebar__text {
+  font-size: 13px;
+  font-weight: 600;
+  color: var(--text);
+}
+
+.updatebar__link {
+  padding: 5px 13px;
+  font-size: 12px;
+  font-weight: 700;
+  color: #1a1206;
+  background: var(--accent-grad);
+  border-radius: 999px;
+  text-decoration: none;
+}
+
+.updatebar__close {
+  width: 24px;
+  height: 24px;
+  font-size: 12px;
+  color: var(--muted);
+  background: transparent;
+  border: none;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.updatebar__close:hover {
+  color: var(--text);
+}
+
 .dactions__nav {
   margin-top: 4px;
   margin-bottom: 0;
