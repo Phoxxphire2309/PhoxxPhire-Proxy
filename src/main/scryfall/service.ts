@@ -258,4 +258,33 @@ export class ScryfallService {
     const squared = await squareOffCorners(data)
     return this.cache.writeImage(cardId, faceIndex, squared)
   }
+
+  /**
+   * Lazily downloads (once) a medium JPEG thumbnail for browsing — far smaller
+   * than the full source PNG, so scrolling search results doesn't fill the cache
+   * with print-quality images. No corner squaring (display only).
+   */
+  async ensureThumbImage(cardId: string, faceIndex: number): Promise<string> {
+    if (await this.cache.hasThumb(cardId, faceIndex)) {
+      return this.cache.thumbImagePath(cardId, faceIndex)
+    }
+
+    let card = await this.cache.getCard(cardId)
+    if (!card) {
+      card = await this.client.getById(cardId)
+      await this.cache.putCard(card)
+    }
+
+    const face = card.faces[faceIndex]
+    if (!face) {
+      throw new Error(`Card ${cardId} has no face at index ${faceIndex}`)
+    }
+
+    const data = await downloadImage(
+      face.thumbUrl ?? face.imageUrl,
+      this.fetchFn,
+      IMAGE_DOWNLOAD_TIMEOUT_MS
+    )
+    return this.cache.writeThumb(cardId, faceIndex, data)
+  }
 }

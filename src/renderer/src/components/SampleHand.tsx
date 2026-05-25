@@ -85,7 +85,7 @@ export function SampleHand({ onClose }: { onClose: () => void }): React.JSX.Elem
                 <img
                   key={`${card.cardId}:${index}`}
                   className="hand__card"
-                  src={faceImageUrl(card.cardId, 0, 'source')}
+                  src={faceImageUrl(card.cardId, 0, 'thumb')}
                   alt={card.name}
                   title={card.name}
                   loading="lazy"

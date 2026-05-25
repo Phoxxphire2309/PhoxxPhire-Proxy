@@ -35,7 +35,7 @@ export function CardTile({
   const unmarkUpscaled = useUpscaleStore((state) => state.unmarkUpscaled)
   const status = useUpscaleStore((state) => state.statuses[faceKey(card.id, faceIndex)])
 
-  const quality = upscaled ? 'upscaled' : 'source'
+  const quality = upscaled ? 'upscaled' : 'thumb'
   const src = faceImageUrl(card.id, faceIndex, quality, upscaled ? settingsVersion : undefined)
   const isDoubleFaced = card.faces.length > 1
   const face = card.faces[faceIndex] ?? card.faces[0]

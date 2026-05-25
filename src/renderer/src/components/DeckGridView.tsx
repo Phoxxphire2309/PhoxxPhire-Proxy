@@ -30,7 +30,7 @@ function DeckGridCard({ item }: { item: DeckItem }): React.JSX.Element {
         aria-label={`Change version of ${item.card.name}`}
       >
         <img
-          src={faceImageUrl(item.card.id, 0, 'source')}
+          src={faceImageUrl(item.card.id, 0, 'thumb')}
           alt={item.card.name}
           loading="lazy"
           draggable={false}

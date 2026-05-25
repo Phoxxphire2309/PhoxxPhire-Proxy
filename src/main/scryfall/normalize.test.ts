@@ -13,12 +13,19 @@ const base: ScryfallCard = {
 }
 
 describe('normalizeCard', () => {
-  it('maps a single-faced card to one face using the png image', () => {
+  it('maps a single-faced card to one face using the png image + a thumb', () => {
     const card = normalizeCard({
       ...base,
       image_uris: { png: 'https://img/bolt.png', large: 'https://img/bolt-large.jpg' }
     })
-    expect(card.faces).toEqual([{ name: 'Lightning Bolt', imageUrl: 'https://img/bolt.png' }])
+    // Full image is the PNG; the browsing thumb prefers normal, else large/small.
+    expect(card.faces).toEqual([
+      {
+        name: 'Lightning Bolt',
+        imageUrl: 'https://img/bolt.png',
+        thumbUrl: 'https://img/bolt-large.jpg'
+      }
+    ])
     expect(card.oracleId).toBe('oracle-1')
     expect(card.setCode).toBe('lea')
   })

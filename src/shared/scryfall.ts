@@ -82,8 +82,10 @@ export interface ScryfallList<T> {
 /** A single printable face of a card (one for most cards, two for DFCs). */
 export interface CardFace {
   name: string
-  /** Source (Scryfall) image URL for this face, highest quality available. */
+  /** Source (Scryfall) image URL for this face, highest quality available (PNG). */
   imageUrl: string
+  /** Medium JPEG URL for browsing thumbnails; falls back to `imageUrl` if absent. */
+  thumbUrl?: string
 }
 
 /** Parsed per-printing prices (numbers, or null when unavailable). */
@@ -261,8 +263,13 @@ export interface SearchOptions {
 /** Custom Electron protocol used to serve cached / upscaled images. */
 export const IMAGE_PROTOCOL = 'phoxx-image'
 
-/** Which variant of a face image to serve: the raw Scryfall download or the upscaled one. */
-export type ImageQuality = 'source' | 'upscaled'
+/**
+ * Which variant of a face image to serve:
+ *  - `thumb`    — a medium JPEG for browsing (small, fast; never print-quality),
+ *  - `source`   — the full-resolution PNG used for printing/upscaling,
+ *  - `upscaled` — the Real-ESRGAN result.
+ */
+export type ImageQuality = 'thumb' | 'source' | 'upscaled'
 
 /**
  * Renderer-facing URL for a card face image. The main process resolves this to

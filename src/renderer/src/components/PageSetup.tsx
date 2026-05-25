@@ -328,7 +328,7 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
                   >
                     {face && (
                       <img
-                        src={faceImageUrl(face.cardId, face.faceIndex, 'source')}
+                        src={faceImageUrl(face.cardId, face.faceIndex, 'thumb')}
                         alt=""
                         loading="lazy"
                         draggable={false}

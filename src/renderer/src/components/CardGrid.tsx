@@ -82,7 +82,7 @@ function ListRow({ card }: { card: Card }): React.JSX.Element {
       <button className="rlist__main" type="button" onClick={() => openGrid(card.id, displayed)}>
         <img
           className="rlist__thumb"
-          src={faceImageUrl(displayed.id, 0, 'source')}
+          src={faceImageUrl(displayed.id, 0, 'thumb')}
           alt=""
           loading="lazy"
           draggable={false}

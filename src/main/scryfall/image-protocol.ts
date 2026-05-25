@@ -23,6 +23,7 @@ export function registerImageProtocolScheme(): void {
 function parseQuality(value: string | undefined): ImageQuality | null {
   if (value === undefined || value === 'upscaled') return 'upscaled'
   if (value === 'source') return 'source'
+  if (value === 'thumb') return 'thumb'
   return null
 }
 

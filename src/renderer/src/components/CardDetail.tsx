@@ -87,6 +87,7 @@ export function CardDetail({
   const upscaled = Boolean(upscaledSet[displayed.id])
   const showCompare = upscalerAvailable && upscaled
   const sourceSrc = faceImageUrl(displayed.id, faceIndex, 'source')
+  const thumbSrc = faceImageUrl(displayed.id, faceIndex, 'thumb')
   const upscaledSrc = faceImageUrl(displayed.id, faceIndex, 'upscaled', settingsVersion)
 
   const panel = (
@@ -149,7 +150,7 @@ export function CardDetail({
         ) : (
           <img
             className="detail__image"
-            src={sourceSrc}
+            src={thumbSrc}
             alt={face?.name ?? displayed.name}
             draggable={false}
           />
@@ -228,7 +229,7 @@ export function CardDetail({
                   >
                     <img
                       className="prints__thumb"
-                      src={faceImageUrl(printing.id, 0, 'source')}
+                      src={faceImageUrl(printing.id, 0, 'thumb')}
                       alt={`${printing.name} (${printing.setCode.toUpperCase()})`}
                       loading="lazy"
                       draggable={false}

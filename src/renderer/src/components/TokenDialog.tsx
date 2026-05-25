@@ -99,7 +99,7 @@ export function TokenDialog({ onClose }: { onClose: () => void }): React.JSX.Ele
                   <li className="pickgrid__item" key={token.id}>
                     <div className="pickgrid__art">
                       <img
-                        src={faceImageUrl(token.id, 0, 'source')}
+                        src={faceImageUrl(token.id, 0, 'thumb')}
                         alt={token.name}
                         loading="lazy"
                         draggable={false}

@@ -87,6 +87,11 @@ export class CardCache {
     return join(this.imagesDir, `${sanitize(id)}-${faceIndex}.png`)
   }
 
+  /** Browsing thumbnail path (medium JPEG); much smaller than the source PNG. */
+  thumbImagePath(id: string, faceIndex: number): string {
+    return join(this.imagesDir, `${sanitize(id)}-${faceIndex}-thumb.jpg`)
+  }
+
   /** Upscaled variant path (JPEG), keyed by model + scale so settings coexist. */
   upscaledImagePath(id: string, faceIndex: number, model: string, scale: number): string {
     return join(this.imagesDir, `${sanitize(id)}-${faceIndex}-${sanitize(model)}-x${scale}.jpg`)
@@ -110,6 +115,10 @@ export class CardCache {
 
   async hasImage(id: string, faceIndex: number): Promise<boolean> {
     return exists(this.sourceImagePath(id, faceIndex))
+  }
+
+  async hasThumb(id: string, faceIndex: number): Promise<boolean> {
+    return exists(this.thumbImagePath(id, faceIndex))
   }
 
   /** Whether an arbitrary cache file (e.g. an upscaled variant) exists. */
@@ -185,6 +194,15 @@ export class CardCache {
   /** Atomically write image bytes (temp file + rename) so readers never see a partial. */
   async writeImage(id: string, faceIndex: number, data: Uint8Array): Promise<string> {
     const dest = this.sourceImagePath(id, faceIndex)
+    const tmp = `${dest}.tmp-${process.pid}-${Date.now()}`
+    await writeFile(tmp, data)
+    await rename(tmp, dest)
+    return dest
+  }
+
+  /** Atomically write a browsing thumbnail (JPEG). */
+  async writeThumb(id: string, faceIndex: number, data: Uint8Array): Promise<string> {
+    const dest = this.thumbImagePath(id, faceIndex)
     const tmp = `${dest}.tmp-${process.pid}-${Date.now()}`
     await writeFile(tmp, data)
     await rename(tmp, dest)

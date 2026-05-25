@@ -171,7 +171,7 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
                           src={faceImageUrl(
                             spec.cardId,
                             spec.faceIndex,
-                            isUpscaled ? 'upscaled' : 'source',
+                            isUpscaled ? 'upscaled' : 'thumb',
                             isUpscaled ? settingsVersion : undefined
                           )}
                           alt=""
@@ -209,7 +209,7 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
                             src={faceImageUrl(
                               spec.cardId,
                               1,
-                              isUpscaled ? 'upscaled' : 'source',
+                              isUpscaled ? 'upscaled' : 'thumb',
                               isUpscaled ? settingsVersion : undefined
                             )}
                             alt=""

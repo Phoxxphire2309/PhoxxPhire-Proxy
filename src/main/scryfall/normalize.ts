@@ -26,6 +26,12 @@ function pickImage(uris: ScryfallImageUris | undefined): string | null {
   return uris.png ?? uris.large ?? uris.normal ?? null
 }
 
+/** Medium JPEG for browsing thumbnails (small + fast), or null if none. */
+function pickThumb(uris: ScryfallImageUris | undefined): string | null {
+  if (!uris) return null
+  return uris.normal ?? uris.large ?? uris.small ?? null
+}
+
 function parsePrice(value: string | null | undefined): number | null {
   if (value === null || value === undefined) return null
   const parsed = Number.parseFloat(value)
@@ -92,13 +98,17 @@ function extractRelatedTokens(raw: ScryfallCard): RelatedToken[] {
 function extractFaces(raw: ScryfallCard): CardFace[] {
   const topImage = pickImage(raw.image_uris)
   if (topImage) {
-    return [{ name: raw.name, imageUrl: topImage }]
+    const thumb = pickThumb(raw.image_uris)
+    return [{ name: raw.name, imageUrl: topImage, ...(thumb ? { thumbUrl: thumb } : {}) }]
   }
 
   const faces: CardFace[] = []
   for (const face of raw.card_faces ?? []) {
     const imageUrl = pickImage(face.image_uris)
-    if (imageUrl) faces.push({ name: face.name, imageUrl })
+    if (imageUrl) {
+      const thumb = pickThumb(face.image_uris)
+      faces.push({ name: face.name, imageUrl, ...(thumb ? { thumbUrl: thumb } : {}) })
+    }
   }
   return faces
 }

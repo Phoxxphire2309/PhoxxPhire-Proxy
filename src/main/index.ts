@@ -75,12 +75,15 @@ app.whenReady().then(async () => {
     scryfall
   })
 
-  // Serve upscaled images when available; otherwise fall back to the source.
+  // thumb → medium JPEG for browsing; upscaled → Real-ESRGAN (when available);
+  // source → full-resolution PNG for print/upscale.
   const resolver: FaceImageResolver = {
-    resolve: (cardId, faceIndex, quality) =>
-      quality === 'upscaled' && upscale.available()
-        ? upscale.ensureUpscaled(cardId, faceIndex)
-        : scryfall.ensureFaceImage(cardId, faceIndex)
+    resolve: (cardId, faceIndex, quality) => {
+      if (quality === 'thumb') return scryfall.ensureThumbImage(cardId, faceIndex)
+      if (quality === 'upscaled' && upscale.available())
+        return upscale.ensureUpscaled(cardId, faceIndex)
+      return scryfall.ensureFaceImage(cardId, faceIndex)
+    }
   }
   handleImageProtocol(resolver)
 
