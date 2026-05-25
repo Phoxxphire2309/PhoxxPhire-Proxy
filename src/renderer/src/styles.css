@@ -2703,9 +2703,71 @@ h3 {
   background: #4ade80;
 }
 
-.quality--low {
+.quality--low,
+.quality--lowres {
   color: #2a1206;
   background: #fbbf24;
+}
+
+.quality--upscaled {
+  color: #1a1206;
+  background: var(--accent);
+}
+
+.quality--proxy {
+  color: var(--text);
+  background: var(--border);
+}
+
+/* Deck quality report */
+.qreport__summary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 4px 0 14px;
+}
+
+.qreport__list {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 14px 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.qrow {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  padding: 6px 8px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 9px;
+}
+
+.qrow__thumb {
+  width: 34px;
+  height: 47px;
+  object-fit: cover;
+  border-radius: 4px;
+  flex: none;
+}
+
+.qrow__name {
+  flex: 1;
+  min-width: 0;
+  font-size: 14px;
+  font-weight: 500;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.qrow__set {
+  font-size: 12px;
+  color: var(--muted);
+  font-variant-numeric: tabular-nums;
 }
 
 .prints__hd {

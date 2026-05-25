@@ -53,6 +53,7 @@ export const IpcChannel = {
   CardBackList: 'cardback:list',
   CardBackSelect: 'cardback:select',
   CardBackDelete: 'cardback:delete',
+  CardBackImage: 'cardback:image',
   StateGet: 'state:get',
   StateSet: 'state:set',
   UpscaleAvailable: 'upscale:available',
@@ -157,6 +158,8 @@ export interface PhoxxApi {
   selectCardBack(id: string): Promise<CardBackLibrary>
   /** Delete a saved back from the library. */
   deleteCardBack(id: string): Promise<CardBackLibrary>
+  /** A data-URL of a card back (the given id, or the selected one), or null. */
+  getCardBackImage(id?: string): Promise<string | null>
   /** Read persisted app state (deck, settings, theme), or null if none saved. */
   getAppState(): Promise<AppState | null>
   /** Persist app state to disk. */

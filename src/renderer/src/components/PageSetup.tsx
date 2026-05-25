@@ -15,6 +15,8 @@ import { useDeckStore } from '@renderer/state/deckStore'
 import { toast } from '@renderer/state/toastStore'
 
 const numeric = (value: string): number => Math.max(0, Number(value) || 0)
+/** Duplex offsets can be negative; keep them within a sane ±10mm. */
+const clampOffset = (value: string): number => Math.min(10, Math.max(-10, Number(value) || 0))
 
 export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Element {
   const options = usePageSetupStore((state) => state.options)
@@ -317,6 +319,41 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
                     : 'No back selected — exports fall back to the plain back.'}
                 </span>
               </div>
+            )}
+
+            {options.cardBack !== 'none' && (
+              <>
+                <h3 className="setup__section">Duplex registration</h3>
+                <label className="export__field">
+                  <span>Back offset X (mm)</span>
+                  <input
+                    type="number"
+                    min={-10}
+                    max={10}
+                    step={0.5}
+                    value={options.backOffsetXMm}
+                    onChange={(event) => set('backOffsetXMm', clampOffset(event.target.value))}
+                  />
+                </label>
+                <label className="export__field">
+                  <span>Back offset Y (mm)</span>
+                  <input
+                    type="number"
+                    min={-10}
+                    max={10}
+                    step={0.5}
+                    value={options.backOffsetYMm}
+                    onChange={(event) => set('backOffsetYMm', clampOffset(event.target.value))}
+                  />
+                </label>
+                <div className="cardback">
+                  <span className="detail__hint">
+                    Print a duplex test page and hold it to the light. Measure how far the back sits
+                    from the front, then enter the shift here so backs line up: +X moves backs
+                    right, +Y moves them up. 0 = no change.
+                  </span>
+                </div>
+              </>
             )}
 
             <h3 className="setup__section">Colour &amp; scale</h3>

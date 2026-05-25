@@ -7,6 +7,7 @@ import {
   type Rect,
   type Slot
 } from '@shared/layout'
+import { mmToPt } from '@shared/units'
 
 const GUIDE_COLOR = rgb(0.55, 0.55, 0.55)
 const GUIDE_THICKNESS = 0.5
@@ -79,12 +80,19 @@ function drawCutGuide(page: PDFPage, pageHeight: number, cut: Rect, style: CutGu
 }
 
 /** Draws a plain card back into the bleed rect (mirrored horizontally for duplex). */
-function drawBack(page: PDFPage, pageWidth: number, pageHeight: number, slot: Slot): void {
+function drawBack(
+  page: PDFPage,
+  pageWidth: number,
+  pageHeight: number,
+  slot: Slot,
+  offX = 0,
+  offY = 0
+): void {
   const mirroredX = pageWidth - (slot.bleed.x + slot.bleed.width)
   const y = pageHeight - (slot.bleed.y + slot.bleed.height)
   page.drawRectangle({
-    x: mirroredX,
-    y,
+    x: mirroredX + offX,
+    y: y + offY,
     width: slot.bleed.width,
     height: slot.bleed.height,
     color: BACK_COLOR
@@ -177,6 +185,10 @@ export async function buildProxyPdf(
 
     if (options.cardBack !== 'none') {
       const backPage = doc.addPage([layout.pageWidthPt, layout.pageHeightPt])
+      // Duplex registration: shift every back by the calibrated offset so backs
+      // line up with fronts after the printer's duplex flip (+X right, +Y up).
+      const offX = mmToPt(options.backOffsetXMm ?? 0)
+      const offY = mmToPt(options.backOffsetYMm ?? 0)
       for (let slotIndex = 0; slotIndex < slotsOnPage; slotIndex += 1) {
         if (blankOnPage[slotIndex]) continue // no back for a spacer cell
         const slot = layout.slots[slotIndex]!
@@ -186,17 +198,17 @@ export async function buildProxyPdf(
           // Mirror the X position so backs line up with fronts under duplex printing.
           const mirroredX = layout.pageWidthPt - (slot.bleed.x + slot.bleed.width)
           backPage.drawImage(backArt, {
-            x: mirroredX,
-            y: layout.pageHeightPt - (slot.bleed.y + slot.bleed.height),
+            x: mirroredX + offX,
+            y: layout.pageHeightPt - (slot.bleed.y + slot.bleed.height) + offY,
             width: slot.bleed.width,
             height: slot.bleed.height
           })
         } else {
-          drawBack(backPage, layout.pageWidthPt, layout.pageHeightPt, slot)
+          drawBack(backPage, layout.pageWidthPt, layout.pageHeightPt, slot, offX, offY)
         }
         const mirroredCut: Rect = {
-          x: layout.pageWidthPt - (slot.cut.x + slot.cut.width),
-          y: slot.cut.y,
+          x: layout.pageWidthPt - (slot.cut.x + slot.cut.width) + offX,
+          y: slot.cut.y + offY,
           width: slot.cut.width,
           height: slot.cut.height
         }

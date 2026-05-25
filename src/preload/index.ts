@@ -32,6 +32,7 @@ const api: PhoxxApi = {
   getCardBacks: () => ipcRenderer.invoke(IpcChannel.CardBackList),
   selectCardBack: (id) => ipcRenderer.invoke(IpcChannel.CardBackSelect, id),
   deleteCardBack: (id) => ipcRenderer.invoke(IpcChannel.CardBackDelete, id),
+  getCardBackImage: (id) => ipcRenderer.invoke(IpcChannel.CardBackImage, id),
   getAppState: () => ipcRenderer.invoke(IpcChannel.StateGet),
   setAppState: (state) => ipcRenderer.invoke(IpcChannel.StateSet, state),
   exportPdf: (request) => ipcRenderer.invoke(IpcChannel.ExportPdf, request),

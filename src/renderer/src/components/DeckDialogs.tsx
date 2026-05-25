@@ -8,6 +8,7 @@ import { PrintPreview } from '@renderer/components/PrintPreview'
 import { PageSetup } from '@renderer/components/PageSetup'
 import { SampleHand } from '@renderer/components/SampleHand'
 import { ComboDialog } from '@renderer/components/ComboDialog'
+import { DeckQuality } from '@renderer/components/DeckQuality'
 
 /** Renders whichever deck modal is currently open (driven by the deck-ui store). */
 export function DeckDialogs(): React.JSX.Element {
@@ -28,6 +29,7 @@ export function DeckDialogs(): React.JSX.Element {
       {modal === 'pageSetup' && <PageSetup onClose={close} />}
       {modal === 'sampleHand' && <SampleHand onClose={close} />}
       {modal === 'combos' && <ComboDialog onClose={close} />}
+      {modal === 'quality' && <DeckQuality onClose={close} />}
     </>
   )
 }

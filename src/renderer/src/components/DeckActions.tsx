@@ -84,6 +84,7 @@ export function DeckActions(): React.JSX.Element {
           onClick={() => void chooseSwitch()}
           disabled={bulkRunning}
         />
+        <Row icon="◰" label="Print quality" onClick={() => open('quality')} />
         <Row icon="♠" label="Sample hand" onClick={() => open('sampleHand')} />
         <Row icon="⚡" label="Combos" onClick={() => open('combos')} />
         <Row icon="◈" label="Tokens" onClick={() => open('tokens')} />

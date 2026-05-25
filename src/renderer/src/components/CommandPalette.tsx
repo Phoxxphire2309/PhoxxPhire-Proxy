@@ -83,6 +83,12 @@ export function CommandPalette(): React.JSX.Element | null {
       },
       { id: 'act-export', label: 'Export PDF', group: 'Decks', run: deckAction('export') },
       { id: 'act-preview', label: 'Print preview', group: 'Decks', run: deckAction('preview') },
+      {
+        id: 'act-quality',
+        label: 'Print quality report',
+        group: 'Decks',
+        run: deckAction('quality')
+      },
       { id: 'act-sample', label: 'Sample hand', group: 'Decks', run: deckAction('sampleHand') },
       { id: 'act-combos', label: 'Find combos', group: 'Decks', run: deckAction('combos') },
       { id: 'act-tokens', label: 'Add tokens', group: 'Decks', run: deckAction('tokens') },

@@ -117,6 +117,16 @@ export function initCardBack(userDataDir: string): CardBackManager {
     }
   )
 
+  ipcMain.handle(IpcChannel.CardBackImage, async (_event, id?: string): Promise<string | null> => {
+    const library = await loadLibrary()
+    const targetId = id ?? library.selectedId
+    if (!targetId) return null
+    const path = imagePath(targetId)
+    if (!(await exists(path))) return null
+    const bytes = await readFile(path)
+    return `data:image/png;base64,${Buffer.from(bytes).toString('base64')}`
+  })
+
   return {
     getBytes: async () => {
       const { selectedId } = await loadLibrary()

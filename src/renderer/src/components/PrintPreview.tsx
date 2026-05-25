@@ -1,4 +1,4 @@
-import { Fragment, useEffect, useRef } from 'react'
+import { Fragment, useEffect, useRef, useState } from 'react'
 import {
   computePageLayout,
   pageCountFor,
@@ -49,6 +49,21 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
   const options = usePageSetupStore((state) => state.options)
 
   const dragIndex = useRef<number | null>(null)
+  const [customBackUrl, setCustomBackUrl] = useState<string | null>(null)
+
+  // Load the selected custom back as a data URL so the back pages show the real
+  // image instead of a placeholder.
+  useEffect(() => {
+    if (options.cardBack !== 'custom') {
+      setCustomBackUrl(null)
+      return
+    }
+    let active = true
+    void window.phoxx.getCardBackImage().then((url) => active && setCustomBackUrl(url))
+    return () => {
+      active = false
+    }
+  }, [options.cardBack])
 
   const duplex = options.cardBack !== 'none'
   // Stable signature of the deck's quantities + duplex (which pairs DFC faces).
@@ -217,6 +232,13 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
                             )}
                             alt=""
                             loading="lazy"
+                            style={mirrorStyle(slot.bleed)}
+                          />
+                        ) : options.cardBack === 'custom' && customBackUrl ? (
+                          <img
+                            className="preview__card"
+                            src={customBackUrl}
+                            alt=""
                             style={mirrorStyle(slot.bleed)}
                           />
                         ) : (

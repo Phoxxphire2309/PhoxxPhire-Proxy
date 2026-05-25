@@ -5,6 +5,7 @@ import {
   type ExportOptions,
   type Rect
 } from '@shared/layout'
+import { mmToPt } from '@shared/units'
 
 const GUIDE_COLOR = '#8c8c8c'
 const GUIDE_THICKNESS_PT = 0.5
@@ -127,13 +128,17 @@ export function buildPrintHtml(
 
     if (options.cardBack !== 'none') {
       const back: string[] = []
+      // Duplex registration offset (+X right, +Y up). HTML Y is top-down, so a
+      // positive (upward) Y offset subtracts from the top coordinate.
+      const offX = mmToPt(options.backOffsetXMm ?? 0)
+      const offY = mmToPt(options.backOffsetYMm ?? 0)
       for (let slotIndex = 0; slotIndex < slotsOnPage; slotIndex += 1) {
         if (blankOnPage[slotIndex]) continue
         const slot = layout.slots[slotIndex]!
         // Mirror X so backs line up with fronts under duplex printing.
         const mirrored: Rect = {
-          x: pw - (slot.bleed.x + slot.bleed.width),
-          y: slot.bleed.y,
+          x: pw - (slot.bleed.x + slot.bleed.width) + offX,
+          y: slot.bleed.y - offY,
           width: slot.bleed.width,
           height: slot.bleed.height
         }
@@ -145,8 +150,8 @@ export function buildPrintHtml(
             : `<div class="back" style="${rectStyle(mirrored)}"></div>`
         )
         const mirroredCut: Rect = {
-          x: pw - (slot.cut.x + slot.cut.width),
-          y: slot.cut.y,
+          x: pw - (slot.cut.x + slot.cut.width) + offX,
+          y: slot.cut.y - offY,
           width: slot.cut.width,
           height: slot.cut.height
         }

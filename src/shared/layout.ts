@@ -49,6 +49,14 @@ export interface ExportOptions {
   cutGuideStyle: CutGuideStyle
   /** When not 'none', interleave mirrored back pages for duplex printing. */
   cardBack: CardBackStyle
+  /**
+   * Duplex registration: shift every back-page card by this many mm to correct
+   * front/back misalignment from the printer's duplex flip. Positive X moves
+   * backs right, positive Y moves them up (on the printed back side). Found via
+   * the calibration test print. 0 = no compensation.
+   */
+  backOffsetXMm: number
+  backOffsetYMm: number
   bleedMode: BleedMode
   /**
    * Print-scale compensation: the printed card size is multiplied by this / 100.
@@ -78,6 +86,8 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   rowSpacingMm: 0,
   cutGuideStyle: 'corners',
   cardBack: 'none',
+  backOffsetXMm: 0,
+  backOffsetYMm: 0,
   bleedMode: 'extend',
   scalePercent: 100,
   colorProfile: 'none',
