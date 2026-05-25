@@ -25,6 +25,7 @@ export function App(): React.JSX.Element {
   const toggleTheme = useUiStore((state) => state.toggleTheme)
   const view = useUiStore((state) => state.view)
   const detailCard = usePrintingStore((state) => state.detailCard)
+  const detailOrigin = usePrintingStore((state) => state.origin)
   const setOnboarded = useUiStore((state) => state.setOnboarded)
   const [showOnboarding, setShowOnboarding] = useState(false)
 
@@ -100,7 +101,7 @@ export function App(): React.JSX.Element {
               <main className="app__results">
                 <CardGrid />
               </main>
-              {detailCard && (
+              {detailCard && detailOrigin === 'grid' && (
                 <aside className="app__deck app__deck--inspector">
                   <CardDetail variant="panel" />
                 </aside>
@@ -126,7 +127,7 @@ export function App(): React.JSX.Element {
       </div>
 
       <DeckDialogs />
-      {view !== 'search' && <CardDetail />}
+      {detailOrigin === 'deck' && <CardDetail />}
       <ToastContainer />
       <UpscaleProgress />
       <BulkProgress />

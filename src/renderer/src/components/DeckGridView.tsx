@@ -1,8 +1,8 @@
-import { useState } from 'react'
 import { bestUsd, faceImageUrl, formatUsd } from '@shared/scryfall'
 import { DECK_SECTIONS, DECK_SECTION_LABELS, type DeckSection } from '@shared/deck'
 import { GROUP_OPTIONS, groupDeckItems, type GroupBy } from '@shared/deckGroup'
 import type { DecklistFormat } from '@shared/decklistExport'
+import { useUiStore } from '@renderer/state/uiStore'
 import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
 import { useDeckUiStore } from '@renderer/state/deckUiStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
@@ -98,7 +98,8 @@ export function DeckGridView(): React.JSX.Element {
   const canUndo = useDeckStore((state) => state.past.length > 0)
   const canRedo = useDeckStore((state) => state.future.length > 0)
   const open = useDeckUiStore((state) => state.open)
-  const [groupBy, setGroupBy] = useState<GroupBy>('none')
+  const groupBy = useUiStore((state) => state.deckGroupBy)
+  const setGroupBy = useUiStore((state) => state.setDeckGroupBy)
 
   const total = items.reduce((sum, item) => sum + item.quantities.reduce((a, b) => a + b, 0), 0)
   const totalPrice = items.reduce(

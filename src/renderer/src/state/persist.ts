@@ -1,9 +1,12 @@
 import type { AppState } from '@shared/appState'
+import type { GroupBy } from '@shared/deckGroup'
+import type { SortKey } from '@shared/scryfallQuery'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useDecksStore } from '@renderer/state/decksStore'
 import { useCollectionStore } from '@renderer/state/collectionStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
-import { useUiStore } from '@renderer/state/uiStore'
+import { useUiStore, type AppView } from '@renderer/state/uiStore'
+import { useSearchStore, type ViewMode } from '@renderer/state/searchStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 
 /** Restores persisted state into the stores. Call once at startup. */
@@ -18,6 +21,11 @@ export async function loadPersistedState(): Promise<void> {
 
   if (state.theme) useUiStore.getState().setTheme(state.theme)
   if (state.onboarded) useUiStore.getState().setOnboarded(true)
+  if (state.ui?.view) useUiStore.getState().setView(state.ui.view as AppView)
+  if (state.ui?.deckGroupBy) useUiStore.getState().setDeckGroupBy(state.ui.deckGroupBy as GroupBy)
+  // Set sort/view mode directly so restoring doesn't fire a search on launch.
+  if (state.ui?.sort) useSearchStore.setState({ sort: state.ui.sort as SortKey })
+  if (state.ui?.viewMode) useSearchStore.setState({ viewMode: state.ui.viewMode as ViewMode })
   if (state.decks && state.decks.length > 0) {
     useDecksStore.getState().restore(state.decks, state.activeDeckId ?? state.decks[0]!.id)
   } else if (state.deck) {
@@ -51,6 +59,12 @@ function snapshot(): AppState {
     collection: {
       owned: Object.keys(useCollectionStore.getState().owned),
       skipOwned: useCollectionStore.getState().skipOwned
+    },
+    ui: {
+      view: ui.view,
+      deckGroupBy: ui.deckGroupBy,
+      sort: useSearchStore.getState().sort,
+      viewMode: useSearchStore.getState().viewMode
     }
   }
 }
@@ -72,6 +86,7 @@ export function startPersisting(): () => void {
     useCollectionStore.subscribe(schedule),
     useUpscaleStore.subscribe(schedule),
     useUiStore.subscribe(schedule),
+    useSearchStore.subscribe(schedule),
     usePageSetupStore.subscribe(schedule)
   ]
 

@@ -19,4 +19,11 @@ export interface AppState {
   onboarded?: boolean
   pageSetup?: ExportOptions
   collection?: { owned: string[]; skipOwned: boolean }
+  /** UI preferences: active view, deck grouping, and search sort/view mode. */
+  ui?: {
+    view?: string
+    deckGroupBy?: string
+    sort?: string
+    viewMode?: string
+  }
 }

@@ -1,5 +1,6 @@
 import { create } from 'zustand'
 import type { ThemeName } from '@shared/appState'
+import type { GroupBy } from '@shared/deckGroup'
 
 /** The primary view selected from the left nav. */
 export type AppView = 'search' | 'decks' | 'settings'
@@ -8,11 +9,14 @@ interface UiState {
   theme: ThemeName
   /** Active primary view (left nav → middle content). */
   view: AppView
+  /** How the Decks view groups cards. */
+  deckGroupBy: GroupBy
   /** Whether the first-run onboarding has been dismissed. */
   onboarded: boolean
   setTheme: (theme: ThemeName) => void
   toggleTheme: () => void
   setView: (view: AppView) => void
+  setDeckGroupBy: (groupBy: GroupBy) => void
   setOnboarded: (value: boolean) => void
 }
 
@@ -24,6 +28,7 @@ function applyTheme(theme: ThemeName): void {
 export const useUiStore = create<UiState>((set, get) => ({
   theme: 'dark',
   view: 'search',
+  deckGroupBy: 'none',
   onboarded: false,
   setTheme: (theme) => {
     applyTheme(theme)
@@ -31,5 +36,6 @@ export const useUiStore = create<UiState>((set, get) => ({
   },
   toggleTheme: () => get().setTheme(get().theme === 'dark' ? 'light' : 'dark'),
   setView: (view) => set({ view }),
+  setDeckGroupBy: (deckGroupBy) => set({ deckGroupBy }),
   setOnboarded: (value) => set({ onboarded: value })
 }))

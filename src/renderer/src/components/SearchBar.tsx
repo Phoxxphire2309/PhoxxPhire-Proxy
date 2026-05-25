@@ -16,6 +16,9 @@ export function SearchBar(): React.JSX.Element {
   // Set while a search is being run, so an in-flight debounced autocomplete
   // can't reopen the dropdown after the user has searched. Reset on next keystroke.
   const suppressOpen = useRef(false)
+  // Whether the input is focused — the dropdown only opens when it is, so it
+  // never auto-reopens when the component remounts (e.g. switching views back).
+  const focused = useRef(false)
 
   // Debounced autocomplete as the user types.
   useEffect(() => {
@@ -33,7 +36,7 @@ export function SearchBar(): React.JSX.Element {
       window.phoxx
         .autocomplete(term)
         .then((results) => {
-          if (suppressOpen.current) return
+          if (suppressOpen.current || !focused.current) return
           setSuggestions(results)
           setOpen(results.length > 0)
           setHighlight(-1)
@@ -102,13 +105,15 @@ export function SearchBar(): React.JSX.Element {
               setQuery(event.target.value)
             }}
             onKeyDown={onKeyDown}
-            onBlur={() =>
+            onBlur={() => {
+              focused.current = false
               setTimeout(() => {
                 setOpen(false)
                 setShowRecents(false)
               }, 120)
-            }
+            }}
             onFocus={() => {
+              focused.current = true
               if (suggestions.length > 0) setOpen(true)
               else if (query.trim().length === 0 && recents.length > 0) setShowRecents(true)
             }}

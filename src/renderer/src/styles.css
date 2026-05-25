@@ -2410,7 +2410,18 @@ h3 {
 
 /* Stack the image over the info in the narrow inspector column. */
 .detail--inline .detail__main {
-  flex-direction: column;
+  grid-template-columns: 1fr;
+  gap: 16px;
+}
+
+.detail--inline .detail__image,
+.detail--inline .compare {
+  max-width: 240px;
+  margin: 0 auto;
+}
+
+.detail--inline .detail__name {
+  font-size: 18px;
 }
 
 .detail__close {
