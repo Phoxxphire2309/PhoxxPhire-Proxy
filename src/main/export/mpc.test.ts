@@ -35,9 +35,11 @@ describe('buildMpcOrderXml', () => {
     expect(xml).toContain('<foil>false</foil>')
   })
 
-  it('emits a front card per entry with comma-joined slots', () => {
+  it('emits a front card per entry, with a cards/ id path and basename name', () => {
     const xml = buildMpcOrderXml(cards, 'cardback.png')
-    expect(xml).toContain('<id>lea-161-Lightning_Bolt.png</id>')
+    // <id> is a path the MPC Autofill tool resolves on disk; <name> is the basename.
+    expect(xml).toContain('<id>cards/lea-161-Lightning_Bolt.png</id>')
+    expect(xml).toContain('<name>lea-161-Lightning_Bolt.png</name>')
     expect(xml).toContain('<slots>0,1</slots>')
     expect(xml).toContain('<query>Lightning Bolt</query>')
   })
@@ -45,13 +47,16 @@ describe('buildMpcOrderXml', () => {
   it('emits a back entry only for double-faced cards, on the front slots', () => {
     const xml = buildMpcOrderXml(cards, 'cardback.png')
     const backs = xml.slice(xml.indexOf('<backs>'), xml.indexOf('</backs>'))
-    expect(backs).toContain('<id>mid-50-Front-back.png</id>')
+    expect(backs).toContain('<id>cards/mid-50-Front-back.png</id>')
     expect(backs).toContain('<slots>2</slots>')
     expect(backs).not.toContain('Lightning_Bolt')
   })
 
-  it('references the common cardback', () => {
-    expect(buildMpcOrderXml(cards, 'cardback.png')).toContain('<cardback>cardback.png</cardback>')
+  it('references the common cardback as a resolvable cards/ path', () => {
+    // A bare filename leaves the cardback unresolved in MPC Autofill; the path fixes it.
+    expect(buildMpcOrderXml(cards, 'cardback.png')).toContain(
+      '<cardback>cards/cardback.png</cardback>'
+    )
   })
 
   it('escapes XML-sensitive characters in queries and file names', () => {
@@ -59,7 +64,7 @@ describe('buildMpcOrderXml', () => {
       [{ fileName: 'a&b.png', query: 'Fire // Ice <2>', slots: [0] }],
       'back.png'
     )
-    expect(xml).toContain('<id>a&amp;b.png</id>')
+    expect(xml).toContain('<id>cards/a&amp;b.png</id>')
     expect(xml).toContain('<query>Fire // Ice &lt;2&gt;</query>')
   })
 })

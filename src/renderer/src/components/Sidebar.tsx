@@ -1,10 +1,16 @@
 import { useState } from 'react'
 import { hasActiveFilters, LANGUAGES } from '@shared/scryfallQuery'
 import { useSearchStore } from '@renderer/state/searchStore'
-import { useDeckStore } from '@renderer/state/deckStore'
+import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
+import { useDecksStore } from '@renderer/state/decksStore'
+import { useSavedDecksStore } from '@renderer/state/savedDecksStore'
 import { useDndStore } from '@renderer/state/dndStore'
 import { useUiStore, type AppView } from '@renderer/state/uiStore'
-import { PrintPartner } from '@renderer/components/PrintPartner'
+
+/** Total physical cards in a deck (front-face quantity per card). */
+function deckSize(items: DeckItem[]): number {
+  return items.reduce((total, item) => total + (item.quantities[0] ?? 0), 0)
+}
 
 const NAV: { view: AppView; label: string; icon: string }[] = [
   { view: 'search', label: 'Search', icon: '⌕' },
@@ -35,6 +41,14 @@ export function Sidebar(): React.JSX.Element {
     state.items.reduce((sum, item) => sum + (item.quantities[0] ?? 0), 0)
   )
   const addToDeck = useDeckStore((state) => state.add)
+  const deckItems = useDeckStore((state) => state.items)
+  const activeDeckName = useDecksStore(
+    (state) => state.tabs.find((tab) => tab.id === state.activeId)?.name ?? 'Deck'
+  )
+  const loadDeck = useDecksStore((state) => state.loadDeck)
+  const savedDecks = useSavedDecksStore((state) => state.decks)
+  const saveDeck = useSavedDecksStore((state) => state.save)
+  const removeDeck = useSavedDecksStore((state) => state.remove)
   const draggingCard = useDndStore((state) => state.draggingCard)
   const setDragging = useDndStore((state) => state.setDragging)
   const active = hasActiveFilters(filters)
@@ -245,15 +259,55 @@ export function Sidebar(): React.JSX.Element {
         )}
 
         {view === 'decks' && (
-          <p className="sidebar__hint">Your decks and their stats are in the main panel.</p>
+          <>
+            <div className="sidebar__sectionhead">
+              <span>Library</span>
+              <button
+                type="button"
+                className="sidebar__clear"
+                disabled={deckItems.length === 0}
+                onClick={() => saveDeck(activeDeckName, deckItems)}
+                title="Save the current deck to your library"
+              >
+                Save current
+              </button>
+            </div>
+            {savedDecks.length === 0 ? (
+              <p className="sidebar__hint">
+                No saved decks yet. Build a deck, then “Save current” to store it here and re-open
+                it for printing any time.
+              </p>
+            ) : (
+              <ul className="library">
+                {savedDecks.map((deck) => (
+                  <li key={deck.id} className="library__item">
+                    <button
+                      type="button"
+                      className="library__open"
+                      onClick={() => loadDeck(deck.name, deck.items)}
+                      title="Open this deck in a new tab"
+                    >
+                      <span className="library__name">{deck.name}</span>
+                      <span className="library__count">{deckSize(deck.items)}</span>
+                    </button>
+                    <button
+                      type="button"
+                      className="library__remove"
+                      onClick={() => removeDeck(deck.id)}
+                      aria-label={`Delete ${deck.name} from library`}
+                      title="Delete from library"
+                    >
+                      ×
+                    </button>
+                  </li>
+                ))}
+              </ul>
+            )}
+          </>
         )}
         {view === 'settings' && (
           <p className="sidebar__hint">Print, upscale, and cache settings are in the main panel.</p>
         )}
-      </div>
-
-      <div className="sidebar__footer">
-        <PrintPartner />
       </div>
     </aside>
   )

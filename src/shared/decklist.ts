@@ -43,12 +43,35 @@ const SECTION_HEADERS = new Set([
   'about'
 ])
 
-// qty (optional) | name (lazy) | optional "(SET) NUMBER" suffix
+// qty (optional) | name (lazy) | optional "(SET) NUMBER" suffix.
+// Covers plain lists, MTG Arena / Moxfield, MTGO, and TappedOut.
 const LINE_RE = /^(?:(\d+)\s*[xX]?\s+)?(.+?)(?:\s+\(([0-9A-Za-z]+)\)(?:\s+([0-9A-Za-z-]+))?)?$/
 
+// qty | "[SET]" or "[SET:NUMBER]" | name. Covers Magic Workstation (.mwDeck),
+// Cockatrice, and XMage, which put the set in square brackets before the name.
+const BRACKET_RE = /^(\d+)\s+\[([0-9A-Za-z]*)(?::([0-9A-Za-z-]+))?\]\s+(.+)$/
+
 function parseLine(line: string): DeckLine | null {
-  // Drop trailing foil/condition markers such as "*F*".
-  const cleaned = line.replace(/\s*\*[^*]*\*\s*$/g, '').trim()
+  // Drop trailing foil/condition markers such as "*F*", and a leading "SB:"
+  // sideboard tag (Cockatrice / XMage / Magic Workstation).
+  const cleaned = line
+    .replace(/\s*\*[^*]*\*\s*$/g, '')
+    .replace(/^sb:\s*/i, '')
+    .trim()
+
+  const bracket = BRACKET_RE.exec(cleaned)
+  if (bracket) {
+    const [, qtyRaw, setRaw, numberRaw, nameRaw] = bracket
+    const name = nameRaw?.trim()
+    if (!name) return null
+    return {
+      quantity: Math.max(1, Number.parseInt(qtyRaw!, 10)),
+      name,
+      ...(setRaw ? { setCode: setRaw } : {}),
+      ...(numberRaw ? { collectorNumber: numberRaw } : {})
+    }
+  }
+
   const match = LINE_RE.exec(cleaned)
   if (!match) return null
 

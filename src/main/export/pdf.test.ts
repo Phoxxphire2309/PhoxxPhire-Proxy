@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest'
 import { PDFDocument } from 'pdf-lib'
 import sharp from 'sharp'
 import { DEFAULT_EXPORT_OPTIONS } from '@shared/layout'
-import { buildProxyPdf } from './pdf'
+import { buildProxyPdf, splitPdfByPages } from './pdf'
 
 // Zero bleed + 6mm margin yields a 3×3 (9 per page) grid on A4.
 const NINE_UP = { ...DEFAULT_EXPORT_OPTIONS, bleedMm: 0, marginMm: 6 }
@@ -64,5 +64,55 @@ describe('buildProxyPdf', () => {
       const doc = await PDFDocument.load(bytes)
       expect(doc.getPageCount()).toBe(1)
     }
+  })
+})
+
+describe('splitPdfByPages', () => {
+  // A custom page just big enough for one card → one card per page, so a slot
+  // count equals the page count (lets these tests control pages directly).
+  const ONE_UP = {
+    ...DEFAULT_EXPORT_OPTIONS,
+    bleedMm: 0,
+    pageSize: 'custom' as const,
+    customWidthMm: 70,
+    customHeightMm: 95,
+    marginTopMm: 0,
+    marginRightMm: 0,
+    marginBottomMm: 0,
+    marginLeftMm: 0
+  }
+  const fivePages = (): Promise<Uint8Array> =>
+    buildProxyPdf([PNG_1X1], [0, 0, 0, 0, 0], ONE_UP)
+
+  it('returns the original bytes when no split is requested', async () => {
+    const bytes = await fivePages()
+    expect(await splitPdfByPages(bytes, 0, false)).toEqual([bytes])
+  })
+
+  it('returns the original bytes when the document already fits', async () => {
+    const bytes = await fivePages()
+    expect(await splitPdfByPages(bytes, 10, false)).toEqual([bytes])
+  })
+
+  it('splits into chunks of at most maxPages, preserving the total page count', async () => {
+    const bytes = await fivePages()
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(5)
+    const parts = await splitPdfByPages(bytes, 2, false)
+    expect(parts).toHaveLength(3) // 2 + 2 + 1
+    const counts = await Promise.all(
+      parts.map(async (p) => (await PDFDocument.load(p)).getPageCount())
+    )
+    expect(counts).toEqual([2, 2, 1])
+  })
+
+  it('rounds the chunk down to an even number so duplex front/back pairs stay together', async () => {
+    // 3 cards with backs → 6 pages interleaved [f,b,f,b,f,b]. maxPages 3 → even 2.
+    const bytes = await buildProxyPdf([PNG_1X1], [0, 0, 0], { ...ONE_UP, cardBack: 'plain' })
+    expect((await PDFDocument.load(bytes)).getPageCount()).toBe(6)
+    const parts = await splitPdfByPages(bytes, 3, true)
+    const counts = await Promise.all(
+      parts.map(async (p) => (await PDFDocument.load(p)).getPageCount())
+    )
+    expect(counts).toEqual([2, 2, 2])
   })
 })

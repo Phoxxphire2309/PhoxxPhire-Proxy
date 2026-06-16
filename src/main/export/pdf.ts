@@ -219,3 +219,35 @@ export async function buildProxyPdf(
 
   return doc.save()
 }
+
+/**
+ * Splits a built proxy PDF into chunks of at most `maxPages` pages, copying
+ * pages into fresh documents. Returns the original bytes unchanged when no split
+ * is needed (`maxPages <= 0` or the document already fits). When `keepPairs` is
+ * set (duplex backs), the chunk size is rounded down to an even number so a
+ * front page and its mirrored back page always land in the same file.
+ */
+export async function splitPdfByPages(
+  bytes: Uint8Array,
+  maxPages: number,
+  keepPairs: boolean
+): Promise<Uint8Array[]> {
+  if (maxPages <= 0) return [bytes]
+  let chunk = Math.floor(maxPages)
+  if (keepPairs && chunk % 2 === 1) chunk = chunk - 1
+  if (chunk < (keepPairs ? 2 : 1)) chunk = keepPairs ? 2 : 1
+
+  const source = await PDFDocument.load(bytes)
+  const total = source.getPageCount()
+  if (total <= chunk) return [bytes]
+
+  const parts: Uint8Array[] = []
+  for (let start = 0; start < total; start += chunk) {
+    const indices = Array.from({ length: Math.min(chunk, total - start) }, (_v, i) => start + i)
+    const part = await PDFDocument.create()
+    const pages = await part.copyPages(source, indices)
+    for (const page of pages) part.addPage(page)
+    parts.push(await part.save())
+  }
+  return parts
+}

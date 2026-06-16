@@ -49,7 +49,7 @@ Grab the latest installer from the [**Releases**](https://github.com/Phoxxphire2
 
 **Deck building**
 - **Multiple deck tabs**, **undo/redo**, drag-and-drop, deck **sections** (commander / main / sideboard / maybeboard).
-- Import by **paste** (text / MTG Arena) or **URL** (Archidekt, Moxfield), with an option to **exclude foils**.
+- Import by **paste** (text / MTG Arena) or **URL** (Archidekt, Moxfield, Cube Cobra, MTGGoldfish, TappedOut), with an option to **exclude foils**.
 - Export the list as **text**, **MTG Arena**, or **CSV**; save / load decks and full projects.
 - **Group** (type / colour / rarity / mana value / section) and **sort** within groups, with collapsible groups.
 - Deck **stats**, **format legality**, price-by-section, **combo detection** (Commander Spellbook), **token** + **basic-land** helpers, and a **sample-hand** draw.
@@ -57,6 +57,7 @@ Grab the latest installer from the [**Releases**](https://github.com/Phoxxphire2
 
 **Print & export**
 - Page sizes A4 / Letter / Legal / A3 / custom, portrait or landscape, per-edge margins, and **scale calibration**.
+- **Split large PDFs** into multiple files by page count for print services that cap uploads (keeps duplex front/back pairs together).
 - Configurable **bleed** (extend / solid / zoom), **cut guides** (outline / corner marks), a **card-back library** for duplex, and **duplex registration** offsets to align fronts and backs.
 - **Print presets** — save whole page-setup profiles ("Home inkjet", "Print-shop A3") and switch in one click.
 - **WYSIWYG print preview** with drag-to-reorder, spacers, and per-card 180° rotation.

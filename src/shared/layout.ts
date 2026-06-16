@@ -10,7 +10,7 @@
 
 import { CARD_HEIGHT_MM, CARD_WIDTH_MM, mmToPt } from './units'
 
-export type PageSize = 'a4' | 'letter' | 'legal' | 'a3' | 'custom'
+export type PageSize = 'a4' | 'letter' | 'legal' | 'a3' | 'tabloid' | 'a5' | 'custom'
 export type Orientation = 'portrait' | 'landscape'
 export type CutGuideStyle = 'none' | 'outline' | 'corners'
 /** 'plain' draws a flat dark back; 'custom' uses a user-uploaded back image. */
@@ -64,6 +64,13 @@ export interface ExportOptions {
    * 98% needs ~102 here). 100 = no compensation.
    */
   scalePercent: number
+  /**
+   * Split the exported PDF into multiple files of at most this many pages each
+   * (0 = a single file). For print services that cap upload page counts / file
+   * size. With duplex backs the cut is rounded to whole front/back page pairs so
+   * a sheet is never split across files.
+   */
+  maxPagesPerFile: number
   /** Colour adjustment for the target printer (PDF export). */
   colorProfile: ColorProfile
   /** Overlay a faint diagonal "PROXY" watermark on each card (PDF export). */
@@ -90,6 +97,7 @@ export const DEFAULT_EXPORT_OPTIONS: ExportOptions = {
   backOffsetYMm: 0,
   bleedMode: 'extend',
   scalePercent: 100,
+  maxPagesPerFile: 0,
   colorProfile: 'none',
   watermark: false
 }
@@ -118,12 +126,28 @@ export interface PageLayout {
   slots: Slot[]
 }
 
-/** Portrait page dimensions in points for the named sizes. */
+/** Portrait page dimensions in points (1/72") for the named sizes. */
 const PAGE_PT: Record<Exclude<PageSize, 'custom'>, { width: number; height: number }> = {
+  a5: { width: 419.53, height: 595.28 }, // 148 × 210 mm
   a4: { width: 595.28, height: 841.89 }, // 210 × 297 mm
+  a3: { width: 841.89, height: 1190.55 }, // 297 × 420 mm
   letter: { width: 612, height: 792 }, // 8.5 × 11 in
   legal: { width: 612, height: 1008 }, // 8.5 × 14 in
-  a3: { width: 841.89, height: 1190.55 } // 297 × 420 mm
+  tabloid: { width: 792, height: 1224 } // 11 × 17 in
+}
+
+/**
+ * Country codes (ISO 3166-1 alpha-2) that conventionally print on US Letter
+ * rather than ISO A4 — used to pick the first-run default paper size from the
+ * user's locale (the rest of the world defaults to A4).
+ */
+const LETTER_REGIONS = new Set([
+  'US', 'CA', 'MX', 'CL', 'CO', 'CR', 'DO', 'SV', 'GT', 'GY', 'NI', 'PA', 'PH', 'VE', 'BZ', 'PR', 'VI', 'UM'
+])
+
+/** Default paper size for a region (ISO country code): US Letter in Letter-using countries, else A4. */
+export function defaultPageSizeForRegion(region: string | undefined): PageSize {
+  return region && LETTER_REGIONS.has(region.toUpperCase()) ? 'letter' : 'a4'
 }
 
 /** Resolves the page size + orientation (+ custom dimensions) to points. */
@@ -155,15 +179,20 @@ export function computePageLayout(options: ExportOptions): PageLayout {
   const footW = cutW + bleed * 2
   const footH = cutH + bleed * 2
 
+  // Placement follows MTGProxyPrinter: fit as many cards as the margins allow,
+  // then centre the grid on the page, clamped so a border is never smaller than
+  // its margin (the margin is a minimum). For normal margins the grid ends up
+  // centred — which keeps duplex front/back margins equal, since backs are
+  // X-mirrored — while an oversized margin still pushes the grid off-centre to
+  // honour it. `border = max((page − grid) / 2, margin)`.
   const usableW = pageWidthPt - marginLeft - marginRight
   const usableH = pageHeightPt - marginTop - marginBottom
   const columns = Math.max(0, Math.floor((usableW + spacingX) / (footW + spacingX)))
   const rows = Math.max(0, Math.floor((usableH + spacingY) / (footH + spacingY)))
-
-  // Anchor the grid at the top-left margins so each edge margin is honoured
-  // exactly (a 0 margin prints right to that edge); slack falls to right/bottom.
-  const originX = marginLeft
-  const originY = marginTop
+  const gridW = columns > 0 ? columns * footW + (columns - 1) * spacingX : 0
+  const gridH = rows > 0 ? rows * footH + (rows - 1) * spacingY : 0
+  const originX = Math.max((pageWidthPt - gridW) / 2, marginLeft)
+  const originY = Math.max((pageHeightPt - gridH) / 2, marginTop)
 
   const slots: Slot[] = []
   for (let row = 0; row < rows; row += 1) {
@@ -202,11 +231,13 @@ export interface ExportRequest {
   /** Fully expanded, ordered list of printable slots (one per printed card image). */
   slots: ExportSlot[]
   options: ExportOptions
+  /** Deck name, used as the default export filename. */
+  name?: string
 }
 
 export type ExportOutcome =
   | { canceled: true }
-  | { canceled: false; path: string; cardCount: number; pageCount: number }
+  | { canceled: false; path: string; cardCount: number; pageCount: number; fileCount: number }
 
 export type ExportImagesOutcome =
   | { canceled: true }

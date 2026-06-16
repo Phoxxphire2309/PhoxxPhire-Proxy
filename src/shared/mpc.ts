@@ -37,6 +37,14 @@ export const MPC_BRACKETS = [
 /** Default card stock label MPC Autofill expects. */
 export const MPC_DEFAULT_STOCK = '(S30) Standard Smooth'
 
+/**
+ * Subfolder (relative to the order.xml) the card images are written into. The
+ * MPC Autofill desktop tool resolves local images from a `cards/` directory
+ * beside the XML (its `get_image_directory`), and also accepts a path in each
+ * `<id>`; we satisfy both by writing here and emitting `cards/<file>` ids.
+ */
+export const MPC_IMAGE_SUBDIR = 'cards'
+
 /** Full-bleed export dimensions in pixels (2× the 300-DPI minimum). */
 export const MPC_IMAGE_WIDTH = 1644
 export const MPC_IMAGE_HEIGHT = 2244

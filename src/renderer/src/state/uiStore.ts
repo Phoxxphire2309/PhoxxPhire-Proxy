@@ -18,6 +18,10 @@ interface UiState {
   onboarded: boolean
   /** Whether the quick-tour overlay is open. */
   tourOpen: boolean
+  /** Whether the "What's new" changelog overlay is open. */
+  changelogOpen: boolean
+  /** App version last seen, so the changelog can auto-open after an update. */
+  lastSeenVersion: string | null
   setTheme: (theme: ThemeName) => void
   toggleTheme: () => void
   setView: (view: AppView) => void
@@ -25,6 +29,8 @@ interface UiState {
   setDeckSortBy: (sortBy: DeckSortKey) => void
   setOnboarded: (value: boolean) => void
   setTourOpen: (value: boolean) => void
+  setChangelogOpen: (value: boolean) => void
+  setLastSeenVersion: (version: string) => void
 }
 
 /** Reflects the theme onto the document so CSS variables switch. */
@@ -39,6 +45,8 @@ export const useUiStore = create<UiState>((set, get) => ({
   deckSortBy: 'manual',
   onboarded: false,
   tourOpen: false,
+  changelogOpen: false,
+  lastSeenVersion: null,
   setTheme: (theme) => {
     applyTheme(theme)
     set({ theme })
@@ -48,5 +56,7 @@ export const useUiStore = create<UiState>((set, get) => ({
   setDeckGroupBy: (deckGroupBy) => set({ deckGroupBy }),
   setDeckSortBy: (deckSortBy) => set({ deckSortBy }),
   setOnboarded: (value) => set({ onboarded: value }),
-  setTourOpen: (value) => set({ tourOpen: value })
+  setTourOpen: (value) => set({ tourOpen: value }),
+  setChangelogOpen: (value) => set({ changelogOpen: value }),
+  setLastSeenVersion: (version) => set({ lastSeenVersion: version })
 }))

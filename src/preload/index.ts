@@ -10,10 +10,10 @@ const api: PhoxxApi = {
   searchCards: (query, options) => ipcRenderer.invoke(IpcChannel.ScryfallSearch, query, options),
   autocomplete: (query) => ipcRenderer.invoke(IpcChannel.ScryfallAutocomplete, query),
   getPrintings: (oracleId) => ipcRenderer.invoke(IpcChannel.ScryfallPrints, oracleId),
-  resolveDeck: (text, excludeFoils) =>
-    ipcRenderer.invoke(IpcChannel.ScryfallResolveDeck, text, excludeFoils),
-  importDeckUrl: (url, excludeFoils) =>
-    ipcRenderer.invoke(IpcChannel.ScryfallImportUrl, url, excludeFoils),
+  resolveDeck: (text, excludeFoils, removeBasics, language) =>
+    ipcRenderer.invoke(IpcChannel.ScryfallResolveDeck, text, excludeFoils, removeBasics, language),
+  importDeckUrl: (url, excludeFoils, removeBasics, language) =>
+    ipcRenderer.invoke(IpcChannel.ScryfallImportUrl, url, excludeFoils, removeBasics, language),
   findTokens: (cardIds) => ipcRenderer.invoke(IpcChannel.ScryfallFindTokens, cardIds),
   findCombos: (cards) => ipcRenderer.invoke(IpcChannel.CombosFind, cards),
   onImportProgress: (listener) => {
@@ -39,7 +39,7 @@ const api: PhoxxApi = {
   exportPdf: (request) => ipcRenderer.invoke(IpcChannel.ExportPdf, request),
   printPdf: (request) => ipcRenderer.invoke(IpcChannel.ExportPrint, request),
   exportImages: (slots) => ipcRenderer.invoke(IpcChannel.ExportImages, slots),
-  exportZip: (slots) => ipcRenderer.invoke(IpcChannel.ExportZip, slots),
+  exportZip: (slots, name) => ipcRenderer.invoke(IpcChannel.ExportZip, slots, name),
   exportMpc: (cards) => ipcRenderer.invoke(IpcChannel.ExportMpc, cards),
   exportCalibration: (options) => ipcRenderer.invoke(IpcChannel.ExportCalibration, options),
   exportCutFile: (options) => ipcRenderer.invoke(IpcChannel.ExportCutFile, options),

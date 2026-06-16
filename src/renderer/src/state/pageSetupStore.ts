@@ -1,6 +1,21 @@
 import { create } from 'zustand'
 import type { PagePreset } from '@shared/appState'
-import { DEFAULT_EXPORT_OPTIONS, type ExportOptions } from '@shared/layout'
+import { DEFAULT_EXPORT_OPTIONS, defaultPageSizeForRegion, type ExportOptions } from '@shared/layout'
+
+/** The user's region (ISO country code) from the browser/OS locale, if any. */
+function detectRegion(): string | undefined {
+  try {
+    return new Intl.Locale(navigator.language).region ?? undefined
+  } catch {
+    return undefined
+  }
+}
+
+/** First-run defaults: the standard options with the locale-appropriate paper size. */
+const initialOptions: ExportOptions = {
+  ...DEFAULT_EXPORT_OPTIONS,
+  pageSize: defaultPageSizeForRegion(detectRegion())
+}
 
 /** Migrate a legacy single `marginMm` to the per-edge fields, then fill defaults. */
 function normalizeOptions(options: ExportOptions): ExportOptions {
@@ -35,11 +50,11 @@ interface PageSetupState {
 
 /** The single source of layout/print options shared by Page setup, preview, and export. */
 export const usePageSetupStore = create<PageSetupState>((set, get) => ({
-  options: DEFAULT_EXPORT_OPTIONS,
+  options: initialOptions,
   presets: [],
   set: (key, value) => set((state) => ({ options: { ...state.options, [key]: value } })),
   replace: (options) => set({ options: normalizeOptions(options) }),
-  reset: () => set({ options: DEFAULT_EXPORT_OPTIONS }),
+  reset: () => set({ options: initialOptions }),
   savePreset: (name) => {
     const trimmed = name.trim()
     if (!trimmed) return

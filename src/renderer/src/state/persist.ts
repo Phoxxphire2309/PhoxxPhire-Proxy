@@ -4,6 +4,8 @@ import type { DeckSortKey } from '@shared/deckSort'
 import type { SortKey } from '@shared/scryfallQuery'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useDecksStore } from '@renderer/state/decksStore'
+import { useSavedDecksStore } from '@renderer/state/savedDecksStore'
+import { usePrintingFiltersStore } from '@renderer/state/printingFiltersStore'
 import { useCollectionStore } from '@renderer/state/collectionStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore, type AppView } from '@renderer/state/uiStore'
@@ -22,6 +24,7 @@ export async function loadPersistedState(): Promise<void> {
 
   if (state.theme) useUiStore.getState().setTheme(state.theme)
   if (state.onboarded) useUiStore.getState().setOnboarded(true)
+  if (state.lastSeenVersion) useUiStore.getState().setLastSeenVersion(state.lastSeenVersion)
   if (state.ui?.view) useUiStore.getState().setView(state.ui.view as AppView)
   if (state.ui?.deckGroupBy) useUiStore.getState().setDeckGroupBy(state.ui.deckGroupBy as GroupBy)
   if (state.ui?.deckSortBy) useUiStore.getState().setDeckSortBy(state.ui.deckSortBy as DeckSortKey)
@@ -33,6 +36,8 @@ export async function loadPersistedState(): Promise<void> {
   } else if (state.deck) {
     useDeckStore.getState().setItems(state.deck)
   }
+  if (state.savedDecks) useSavedDecksStore.getState().restore(state.savedDecks)
+  if (state.printingFilters) usePrintingFiltersStore.getState().restore(state.printingFilters)
   if (state.pageSetup) usePageSetupStore.getState().replace(state.pageSetup)
   if (state.pagePresets) usePageSetupStore.getState().restorePresets(state.pagePresets)
   if (state.collection) {
@@ -61,10 +66,13 @@ function snapshot(): AppState {
     deck: useDeckStore.getState().items, // legacy fallback
     decks: tabs,
     activeDeckId: activeId,
+    savedDecks: useSavedDecksStore.getState().decks,
+    printingFilters: Object.keys(usePrintingFiltersStore.getState().active),
     upscale: { model: upscale.model, scale: upscale.scale },
     upscaledCardIds: Object.keys(upscale.upscaled),
     theme: ui.theme,
     onboarded: ui.onboarded,
+    ...(ui.lastSeenVersion ? { lastSeenVersion: ui.lastSeenVersion } : {}),
     pageSetup: usePageSetupStore.getState().options,
     pagePresets: usePageSetupStore.getState().presets,
     collection: {
@@ -95,6 +103,8 @@ export function startPersisting(): () => void {
   const unsubscribers = [
     useDeckStore.subscribe(schedule),
     useDecksStore.subscribe(schedule),
+    useSavedDecksStore.subscribe(schedule),
+    usePrintingFiltersStore.subscribe(schedule),
     useCollectionStore.subscribe(schedule),
     useUpscaleStore.subscribe(schedule),
     useUiStore.subscribe(schedule),

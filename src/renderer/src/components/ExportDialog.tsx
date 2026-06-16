@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react'
 import type { ExportProgress, ExportSlot } from '@shared/layout'
 import { useDeckStore } from '@renderer/state/deckStore'
+import { useDecksStore } from '@renderer/state/decksStore'
 import { useOrderStore } from '@renderer/state/orderStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
 import { useCollectionStore } from '@renderer/state/collectionStore'
 import { useRotateStore } from '@renderer/state/rotateStore'
 import { useTextProxyStore } from '@renderer/state/textProxyStore'
-import { PrintPartner } from '@renderer/components/PrintPartner'
 
 type Phase = 'configure' | 'running' | 'done' | 'error'
 
@@ -26,6 +26,8 @@ export function ExportDialog({
   const collection = useCollectionStore()
   const rotated = useRotateStore((state) => state.rotated)
   const proxies = useTextProxyStore((state) => state.proxies)
+  // The active deck's name, used as the default export filename.
+  const deckName = useDecksStore((state) => state.tabs.find((tab) => tab.id === state.activeId)?.name)
   const [phase, setPhase] = useState<Phase>('configure')
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   const [message, setMessage] = useState<string>('')
@@ -101,10 +103,17 @@ export function ExportDialog({
 
   const exportPdf = (): Promise<void> =>
     runGuarded(async () => {
-      const outcome = await window.phoxx.exportPdf({ slots: exportSlots, options })
-      return outcome.canceled
-        ? null
-        : `Saved ${outcome.cardCount} cards across ${outcome.pageCount} page(s) to ${outcome.path}`
+      const outcome = await window.phoxx.exportPdf({
+        slots: exportSlots,
+        options,
+        ...(deckName ? { name: deckName } : {})
+      })
+      if (outcome.canceled) return null
+      const spread =
+        outcome.fileCount > 1
+          ? `${outcome.pageCount} page(s) across ${outcome.fileCount} files`
+          : `${outcome.pageCount} page(s)`
+      return `Saved ${outcome.cardCount} cards (${spread}) to ${outcome.path}`
     })
 
   const printDeck = (): Promise<void> =>
@@ -125,13 +134,14 @@ export function ExportDialog({
     runGuarded(async () => {
       const first = exportSlots[0]
       if (!first) return null
-      const outcome = await window.phoxx.exportPdf({ slots: [first], options })
+      const testName = [deckName, 'test card'].filter(Boolean).join(' ')
+      const outcome = await window.phoxx.exportPdf({ slots: [first], options, name: testName })
       return outcome.canceled ? null : `Saved a 1-card test sheet to ${outcome.path}`
     })
 
   const exportZip = (): Promise<void> =>
     runGuarded(async () => {
-      const outcome = await window.phoxx.exportZip(exportSlots)
+      const outcome = await window.phoxx.exportZip(exportSlots, deckName)
       return outcome.canceled ? null : `Saved ${outcome.count} card image(s) to ${outcome.path}`
     })
 
@@ -294,8 +304,6 @@ export function ExportDialog({
                 {running ? 'Working…' : 'Print'}
               </button>
             </div>
-
-            <PrintPartner />
           </>
         )}
       </div>

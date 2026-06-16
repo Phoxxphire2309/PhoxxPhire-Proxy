@@ -222,17 +222,80 @@ h3 {
   cursor: pointer;
 }
 
-.sidebar__footer {
-  margin-top: 14px;
-  padding-top: 14px;
-  border-top: 1px solid var(--border-soft);
-}
-
 .sidebar__hint {
   margin: 4px 2px;
   font-size: 13px;
   line-height: 1.5;
   color: var(--muted);
+}
+
+/* Deck library list (Decks view) */
+.library {
+  list-style: none;
+  margin: 4px 0 0;
+  padding: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.library__item {
+  display: flex;
+  align-items: stretch;
+  gap: 4px;
+}
+
+.library__open {
+  flex: 1;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 7px 10px;
+  background: var(--bg);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  color: var(--text);
+  font-size: 13px;
+  text-align: left;
+  cursor: pointer;
+  transition: border-color 0.15s ease;
+}
+
+.library__open:hover {
+  border-color: var(--accent);
+}
+
+.library__name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.library__count {
+  flex-shrink: 0;
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.library__remove {
+  flex-shrink: 0;
+  width: 28px;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  background: var(--bg);
+  color: var(--muted);
+  font-size: 16px;
+  line-height: 1;
+  cursor: pointer;
+  transition:
+    color 0.15s ease,
+    border-color 0.15s ease;
+}
+
+.library__remove:hover {
+  color: var(--danger, #e5484d);
+  border-color: var(--danger, #e5484d);
 }
 
 /* Primary nav (left menu) */
@@ -342,6 +405,44 @@ h3 {
   line-height: 1.5;
   color: var(--muted);
   border-top: 1px solid var(--border-soft);
+}
+
+/* Printing-filter checkboxes (Settings) */
+.pfilters {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  margin: 8px 0;
+}
+
+.pfilters__item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 13px;
+  cursor: pointer;
+}
+
+.pfilters__group {
+  margin-top: 8px;
+  font-size: 12px;
+  font-weight: 600;
+  color: var(--muted);
+}
+
+/* "Show N filtered printings" toggle (card detail) */
+.prints__showhidden {
+  margin-top: 8px;
+  padding: 4px 2px;
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 12px;
+  cursor: pointer;
+}
+
+.prints__showhidden:hover {
+  text-decoration: underline;
 }
 
 .settings__card--about .settings__hint a {
@@ -609,81 +710,6 @@ h3 {
 .app__note {
   font-size: 13px;
   color: var(--muted);
-}
-
-/* Print partner credit (TCGPlaytest.com) */
-.partner {
-  display: flex;
-  align-items: center;
-  gap: 12px;
-  text-decoration: none;
-  color: var(--text);
-}
-
-.partner__logo {
-  flex-shrink: 0;
-  object-fit: contain;
-}
-
-.partner__text {
-  display: flex;
-  flex-direction: column;
-}
-
-.partner__lead {
-  font-size: 13px;
-  font-weight: 600;
-}
-
-.partner__sub {
-  font-size: 12px;
-  color: var(--muted);
-}
-
-/* Full card, shown in the export dialog */
-.partner:not(.partner--compact) {
-  margin-top: 16px;
-  padding: 12px 14px;
-  background: var(--bg);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  transition: border-color 0.15s ease;
-}
-
-.partner:not(.partner--compact):hover {
-  border-color: var(--accent);
-}
-
-.partner:not(.partner--compact) .partner__logo {
-  width: 56px;
-  height: 50px;
-}
-
-/* Compact badge, shown persistently in the header */
-.partner--compact {
-  gap: 8px;
-  padding: 4px 10px 4px 6px;
-  border: 1px solid var(--border);
-  border-radius: 999px;
-  transition:
-    border-color 0.15s ease,
-    background 0.15s ease;
-}
-
-.partner--compact:hover {
-  border-color: var(--accent);
-  background: var(--surface, rgba(255, 255, 255, 0.04));
-}
-
-.partner--compact .partner__logo {
-  width: 30px;
-  height: 27px;
-}
-
-.partner__compact-text {
-  font-size: 12px;
-  font-weight: 600;
-  white-space: nowrap;
 }
 
 /* Upscale controls (header) */
@@ -1256,6 +1282,50 @@ h3 {
   font-size: 11px;
   color: var(--muted);
   font-variant-numeric: tabular-nums;
+}
+
+/* "What's new" changelog modal */
+.changelog__scroll {
+  margin-top: 8px;
+  max-height: 60vh;
+  overflow-y: auto;
+}
+
+.changelog__entry {
+  padding: 14px 0;
+  border-top: 1px solid var(--border-soft);
+}
+
+.changelog__entry:first-child {
+  border-top: none;
+}
+
+.changelog__head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 12px;
+  margin-bottom: 6px;
+}
+
+.changelog__version {
+  font-size: 15px;
+  font-weight: 600;
+}
+
+.changelog__date {
+  font-size: 12px;
+  color: var(--muted);
+}
+
+.changelog__list {
+  margin: 0;
+  padding-left: 18px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  font-size: 13px;
+  line-height: 1.5;
 }
 
 /* Collection ownership indicators */
