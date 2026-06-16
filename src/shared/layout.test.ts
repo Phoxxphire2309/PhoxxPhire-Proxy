@@ -112,9 +112,7 @@ describe('computePageLayout', () => {
     // so an off-centre grid would give the back a different left margin. Centred,
     // the mirrored grid reproduces the front's margins.
     const frontLeftMargin = Math.min(...layout.slots.map((s) => s.bleed.x))
-    const backLeftMargin = Math.min(
-      ...layout.slots.map((s) => width - (s.bleed.x + s.bleed.width))
-    )
+    const backLeftMargin = Math.min(...layout.slots.map((s) => width - (s.bleed.x + s.bleed.width)))
     expect(backLeftMargin).toBeCloseTo(frontLeftMargin, 3)
   })
 

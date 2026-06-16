@@ -27,7 +27,9 @@ export function ExportDialog({
   const rotated = useRotateStore((state) => state.rotated)
   const proxies = useTextProxyStore((state) => state.proxies)
   // The active deck's name, used as the default export filename.
-  const deckName = useDecksStore((state) => state.tabs.find((tab) => tab.id === state.activeId)?.name)
+  const deckName = useDecksStore(
+    (state) => state.tabs.find((tab) => tab.id === state.activeId)?.name
+  )
   const [phase, setPhase] = useState<Phase>('configure')
   const [progress, setProgress] = useState<ExportProgress | null>(null)
   const [message, setMessage] = useState<string>('')

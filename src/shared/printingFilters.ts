@@ -41,7 +41,11 @@ export const GENERAL_PRINTING_FILTERS: PrintingFilter[] = [
     label: 'Low-resolution scans',
     hidden: (c) => c.imageStatus !== undefined && c.imageStatus !== 'highres_scan'
   },
-  { key: 'gold-bordered', label: 'Gold-bordered (Championship)', hidden: (c) => c.borderColor === 'gold' },
+  {
+    key: 'gold-bordered',
+    label: 'Gold-bordered (Championship)',
+    hidden: (c) => c.borderColor === 'gold'
+  },
   { key: 'white-bordered', label: 'White-bordered', hidden: (c) => c.borderColor === 'white' },
   {
     key: 'content-warning',

@@ -1,6 +1,10 @@
 import { create } from 'zustand'
 import type { PagePreset } from '@shared/appState'
-import { DEFAULT_EXPORT_OPTIONS, defaultPageSizeForRegion, type ExportOptions } from '@shared/layout'
+import {
+  DEFAULT_EXPORT_OPTIONS,
+  defaultPageSizeForRegion,
+  type ExportOptions
+} from '@shared/layout'
 
 /** The user's region (ISO country code) from the browser/OS locale, if any. */
 function detectRegion(): string | undefined {

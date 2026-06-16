@@ -142,7 +142,24 @@ const PAGE_PT: Record<Exclude<PageSize, 'custom'>, { width: number; height: numb
  * user's locale (the rest of the world defaults to A4).
  */
 const LETTER_REGIONS = new Set([
-  'US', 'CA', 'MX', 'CL', 'CO', 'CR', 'DO', 'SV', 'GT', 'GY', 'NI', 'PA', 'PH', 'VE', 'BZ', 'PR', 'VI', 'UM'
+  'US',
+  'CA',
+  'MX',
+  'CL',
+  'CO',
+  'CR',
+  'DO',
+  'SV',
+  'GT',
+  'GY',
+  'NI',
+  'PA',
+  'PH',
+  'VE',
+  'BZ',
+  'PR',
+  'VI',
+  'UM'
 ])
 
 /** Default paper size for a region (ISO country code): US Letter in Letter-using countries, else A4. */

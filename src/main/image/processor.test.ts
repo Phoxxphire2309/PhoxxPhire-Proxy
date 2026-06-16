@@ -102,7 +102,9 @@ describe('squareOffCorners', () => {
         raw[i + 3] = a
       }
     }
-    const png = await sharp(raw, { raw: { width: N, height: N, channels: 4 } }).png().toBuffer()
+    const png = await sharp(raw, { raw: { width: N, height: N, channels: 4 } })
+      .png()
+      .toBuffer()
     const { data, info } = await sharp(await squareOffCorners(new Uint8Array(png)))
       .raw()
       .toBuffer({ resolveWithObject: true })

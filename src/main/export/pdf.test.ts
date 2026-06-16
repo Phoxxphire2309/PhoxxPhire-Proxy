@@ -81,8 +81,7 @@ describe('splitPdfByPages', () => {
     marginBottomMm: 0,
     marginLeftMm: 0
   }
-  const fivePages = (): Promise<Uint8Array> =>
-    buildProxyPdf([PNG_1X1], [0, 0, 0, 0, 0], ONE_UP)
+  const fivePages = (): Promise<Uint8Array> => buildProxyPdf([PNG_1X1], [0, 0, 0, 0, 0], ONE_UP)
 
   it('returns the original bytes when no split is requested', async () => {
     const bytes = await fivePages()
