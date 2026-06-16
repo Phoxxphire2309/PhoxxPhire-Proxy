@@ -12,7 +12,7 @@ permissions:
 
 jobs:
   build:
-    name: Build & publish (${{ matrix.os }})
+    name: Build (${{ matrix.os }})
     strategy:
       fail-fast: false
       matrix:
@@ -38,8 +38,11 @@ jobs:
         run: node scripts/fetch-upscaler.mjs --force
 
       - name: Build installer
-        # On a version tag: build + publish a GitHub release. On a manual run:
-        # build only; the installers are uploaded as workflow artifacts below.
+        # Build only — never publish from the matrix. Three OS jobs publishing in
+        # parallel would each race to create the GitHub release for the tag,
+        # producing duplicate drafts with the assets split between them. Instead
+        # every job just builds and uploads its output; the single `release` job
+        # below collects all three platforms and publishes one complete release.
         shell: bash
         run: |
           # Without a macOS signing cert, skip signing entirely — ad-hoc signing
@@ -49,15 +52,8 @@ jobs:
             EXTRA="-c.mac.identity=null"
           fi
           npm run build
-          if [ "${{ github.event_name }}" = "push" ]; then
-            # Version tag → publish the installers to the GitHub release.
-            npx electron-builder --publish always $EXTRA
-          else
-            # Manual run → build only; installers are uploaded as artifacts below.
-            npx electron-builder --publish never $EXTRA
-          fi
+          npx electron-builder --publish never $EXTRA
         env:
-          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
           # Signing cert for the current OS (base64 .p12/.pfx) + its password.
           # Empty when the secrets aren't set → an unsigned build is produced.
           CSC_LINK: ${{ runner.os == 'macOS' && secrets.MAC_CSC_LINK || secrets.WIN_CSC_LINK }}
@@ -69,13 +65,50 @@ jobs:
           APPLE_APP_SPECIFIC_PASSWORD: ${{ secrets.APPLE_APP_SPECIFIC_PASSWORD }}
           APPLE_TEAM_ID: ${{ secrets.APPLE_TEAM_ID }}
 
-      - name: Upload installers (manual runs)
-        if: github.event_name == 'workflow_dispatch'
+      # Upload the full build output — installers AND the electron-updater
+      # metadata (latest*.yml + .blockmap), which the auto-updater needs and the
+      # old workflow dropped. On manual runs these are the downloadable result;
+      # on a tag push the `release` job below turns them into a GitHub release.
+      - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: installers-${{ matrix.os }}
+          name: dist-${{ matrix.os }}
           path: |
             dist/*.dmg
             dist/*.exe
             dist/*.AppImage
+            dist/*.blockmap
+            dist/*.yml
           if-no-files-found: ignore
+
+  release:
+    name: Publish GitHub release
+    needs: build
+    # Only a version tag publishes a release; manual runs stop at the artifacts.
+    if: startsWith(github.ref, 'refs/tags/v')
+    runs-on: ubuntu-latest
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: dist-all
+          pattern: dist-*
+          merge-multiple: true
+
+      - name: Publish release
+        # One release, all platforms attached, marked Latest so the in-app update
+        # check (which reads /releases/latest) sees it. Idempotent: if a release
+        # for the tag already exists, replace its assets and ensure it's the
+        # published Latest rather than failing.
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          REPO: ${{ github.repository }}
+          TAG: ${{ github.ref_name }}
+        run: |
+          if gh release view "$TAG" --repo "$REPO" >/dev/null 2>&1; then
+            gh release upload "$TAG" --repo "$REPO" --clobber dist-all/*
+            gh release edit "$TAG" --repo "$REPO" --draft=false --latest
+          else
+            gh release create "$TAG" --repo "$REPO" --title "$TAG" \
+              --generate-notes --latest dist-all/*
+          fi
