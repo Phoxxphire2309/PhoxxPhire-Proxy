@@ -26,6 +26,8 @@ interface DecksState {
   switchTab: (id: string) => void
   closeTab: (id: string) => void
   renameTab: (id: string, name: string) => void
+  /** Open a saved deck in a new active tab (used by the deck library). */
+  loadDeck: (name: string, items: DeckItem[]) => void
   /** Sync the live deck items into the active tab. Call before persisting/switching. */
   commitActive: () => void
   /** Restore tabs (e.g. from persistence) and load the active deck's cards. */
@@ -68,6 +70,19 @@ export const useDecksStore = create<DecksState>((set, get) => ({
       activeId: id
     }))
     loadIntoDeck([])
+  },
+
+  /** Open a saved deck in a new active tab (used by the deck library). */
+  loadDeck: (name, items) => {
+    get().commitActive()
+    const id = newId()
+    const copied = items.map((item) => ({
+      card: item.card,
+      quantities: [...item.quantities],
+      section: item.section
+    }))
+    set((state) => ({ tabs: [...state.tabs, { id, name, items: copied }], activeId: id }))
+    loadIntoDeck(copied)
   },
 
   closeTab: (id) => {

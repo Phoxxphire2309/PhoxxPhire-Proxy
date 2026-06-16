@@ -117,6 +117,36 @@ describe('ExportService.export', () => {
     expect(doc.getPageCount()).toBe(result.pageCount)
   })
 
+  it('splits the PDF into numbered files when maxPagesPerFile is set', async () => {
+    const cards: Record<string, Card> = { single: card('single', 1) }
+    const service = new ExportService({
+      resolveCard: async (id) => cards[id]!,
+      ensureImage: async () => imagePath,
+      emit: () => {}
+    })
+
+    const savePath = join(dir, 'split.pdf')
+    // 19 copies → 3 pages at 9-up; split every page → three files.
+    const result = await service.export(
+      Array.from({ length: 19 }, () => ({ cardId: 'single', faceIndex: 0, upscale: false })),
+      { ...DEFAULT_EXPORT_OPTIONS, maxPagesPerFile: 1 },
+      savePath
+    )
+
+    expect(result.pageCount).toBe(3)
+    expect(result.fileCount).toBe(3)
+    expect(result.path).toBe(join(dir, 'split-1.pdf'))
+
+    const files = (await readdir(dir)).filter((f) => f.startsWith('split-')).sort()
+    expect(files).toEqual(['split-1.pdf', 'split-2.pdf', 'split-3.pdf'])
+    // The unsplit savePath itself is not written.
+    expect(await readdir(dir)).not.toContain('split.pdf')
+    for (const file of files) {
+      const doc = await PDFDocument.load(await readFile(join(dir, file)))
+      expect(doc.getPageCount()).toBe(1)
+    }
+  })
+
   it('exports each unique face as a PNG named by set, number, and card name', async () => {
     const cards: Record<string, Card> = { single: card('single', 1), dfc: card('dfc', 2) }
     const outDir = join(dir, 'images')
@@ -331,9 +361,10 @@ describe('ExportService.exportMpc', () => {
     })
 
     await service.exportMpc([{ cardId: 'single', quantity: 1, upscale: false }], outDir)
-    const files = (await readdir(outDir)).filter((f) => f.startsWith('cardback'))
+    const cardsDir = join(outDir, 'cards')
+    const files = (await readdir(cardsDir)).filter((f) => f.startsWith('cardback'))
     expect(files).toHaveLength(1)
-    expect(new Uint8Array(await readFile(join(outDir, files[0]!)))).toEqual(customBack)
+    expect(new Uint8Array(await readFile(join(cardsDir, files[0]!)))).toEqual(customBack)
   })
 
   it('throws a clear error when the MPC deps are not configured', async () => {
@@ -365,19 +396,22 @@ describe('ExportService.exportMpc', () => {
     // single front + dfc front + dfc back + cardback = 4 files (+ order.xml).
     expect(result.fileCount).toBe(4)
 
-    const files = (await readdir(outDir)).sort()
-    expect(files).toContain('order.xml')
-    expect(files).toContain('tst-1-single.png')
-    expect(files).toContain('tst-1-dfc.png')
-    expect(files).toContain('tst-1-dfc-back.png')
+    // order.xml at the top level; the card images live in the cards/ subfolder.
+    expect(await readdir(outDir)).toContain('order.xml')
+    const cardFiles = (await readdir(join(outDir, 'cards'))).sort()
+    expect(cardFiles).toContain('tst-1-single.png')
+    expect(cardFiles).toContain('tst-1-dfc.png')
+    expect(cardFiles).toContain('tst-1-dfc-back.png')
 
     const xml = await readFile(join(outDir, 'order.xml'), 'utf8')
     expect(xml).toContain('<quantity>3</quantity>')
     // The single card's two copies occupy two consecutive slots.
     expect(xml).toContain('<slots>0,1</slots>')
+    // Images are referenced by their cards/ path so the tool resolves them.
+    expect(xml).toContain('<id>cards/tst-1-single.png</id>')
     // The DFC front+back share the DFC's single slot (index 2).
     const backs = xml.slice(xml.indexOf('<backs>'), xml.indexOf('</backs>'))
-    expect(backs).toContain('tst-1-dfc-back.png')
+    expect(backs).toContain('cards/tst-1-dfc-back.png')
     expect(backs).toContain('<slots>2</slots>')
   })
 

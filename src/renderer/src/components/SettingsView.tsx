@@ -1,6 +1,8 @@
 import { useEffect, useState } from 'react'
 import { UPSCALE_MODELS } from '@shared/ipc'
 import type { InstallPhase } from '@shared/upscaleInstall'
+import { FORMAT_BAN_FILTERS, GENERAL_PRINTING_FILTERS } from '@shared/printingFilters'
+import { usePrintingFiltersStore } from '@renderer/state/printingFiltersStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore } from '@renderer/state/uiStore'
 import { useDeckUiStore } from '@renderer/state/deckUiStore'
@@ -50,6 +52,9 @@ function Setting({
 export function SettingsView(): React.JSX.Element {
   const theme = useUiStore((state) => state.theme)
   const setTheme = useUiStore((state) => state.setTheme)
+  const activeFilters = usePrintingFiltersStore((state) => state.active)
+  const toggleFilter = usePrintingFiltersStore((state) => state.toggle)
+  const resetFilters = usePrintingFiltersStore((state) => state.reset)
   const available = useUpscaleStore((state) => state.available)
   const model = useUpscaleStore((state) => state.model)
   const scale = useUpscaleStore((state) => state.scale)
@@ -57,6 +62,7 @@ export function SettingsView(): React.JSX.Element {
   const loadSettings = useUpscaleStore((state) => state.loadSettings)
   const openModal = useDeckUiStore((state) => state.open)
   const setTourOpen = useUiStore((state) => state.setTourOpen)
+  const setChangelogOpen = useUiStore((state) => state.setChangelogOpen)
 
   const [cacheBytes, setCacheBytes] = useState<number | null>(null)
   const [cachePath, setCachePath] = useState<string | null>(null)
@@ -227,10 +233,51 @@ export function SettingsView(): React.JSX.Element {
       </section>
 
       <section className="settings__card">
+        <h2 className="settings__title">Printing filters</h2>
+        <p className="settings__hint">
+          Hide unwanted versions when choosing a card’s art and when switching every printing in
+          bulk. Hidden printings stay reachable via “Show filtered printings” in card detail.
+        </p>
+        <div className="pfilters">
+          {GENERAL_PRINTING_FILTERS.map((filter) => (
+            <label key={filter.key} className="pfilters__item">
+              <input
+                type="checkbox"
+                checked={activeFilters[filter.key] === true}
+                onChange={() => toggleFilter(filter.key)}
+              />
+              <span>{filter.label}</span>
+            </label>
+          ))}
+          <span className="pfilters__group">Hide cards banned in</span>
+          {FORMAT_BAN_FILTERS.map((filter) => (
+            <label key={filter.key} className="pfilters__item">
+              <input
+                type="checkbox"
+                checked={activeFilters[filter.key] === true}
+                onChange={() => toggleFilter(filter.key)}
+              />
+              <span>{filter.label.replace('Banned in ', '')}</span>
+            </label>
+          ))}
+        </div>
+        {Object.keys(activeFilters).length > 0 && (
+          <button className="toggle" type="button" onClick={resetFilters}>
+            Clear all filters ({Object.keys(activeFilters).length})
+          </button>
+        )}
+      </section>
+
+      <section className="settings__card">
         <h2 className="settings__title">Help</h2>
         <Setting title="Quick tour" description="Replay the first-run walkthrough of the app.">
           <button className="toggle" type="button" onClick={() => setTourOpen(true)}>
             Start tour
+          </button>
+        </Setting>
+        <Setting title="What’s new" description="See what changed in each version of the app.">
+          <button className="toggle" type="button" onClick={() => setChangelogOpen(true)}>
+            View changelog
           </button>
         </Setting>
       </section>

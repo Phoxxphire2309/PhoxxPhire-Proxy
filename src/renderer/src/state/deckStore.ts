@@ -11,8 +11,10 @@ import {
   type Card
 } from '@shared/scryfall'
 import { formatDecklist, type DecklistCard, type DecklistFormat } from '@shared/decklistExport'
+import { printingHidden } from '@shared/printingFilters'
 import { toast } from '@renderer/state/toastStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
+import { usePrintingFiltersStore } from '@renderer/state/printingFiltersStore'
 
 export interface DeckItem {
   card: Card
@@ -63,8 +65,18 @@ interface DeckState {
   clear: () => void
   bulkSwitchPrintings: (mode: BulkPrintingMode) => Promise<void>
   exportDecklist: (format: DecklistFormat) => Promise<void>
-  importText: (text: string, excludeFoils?: boolean) => Promise<void>
-  importUrl: (url: string, excludeFoils?: boolean) => Promise<void>
+  importText: (
+    text: string,
+    excludeFoils?: boolean,
+    removeBasics?: boolean,
+    language?: string
+  ) => Promise<void>
+  importUrl: (
+    url: string,
+    excludeFoils?: boolean,
+    removeBasics?: boolean,
+    language?: string
+  ) => Promise<void>
   saveDeck: () => Promise<void>
   loadDeck: () => Promise<void>
   saveProject: () => Promise<void>
@@ -184,6 +196,7 @@ export const useDeckStore = create<DeckState>((set, get) => ({
     const snapshot = get().items
     if (snapshot.length === 0 || get().bulkRunning) return
     set({ bulkRunning: true, bulkJob: { total: snapshot.length, done: 0 } })
+    const filterKeys = Object.keys(usePrintingFiltersStore.getState().active)
     let changed = 0
     let done = 0
 
@@ -216,7 +229,12 @@ export const useDeckStore = create<DeckState>((set, get) => ({
           if (item.card.oracleId) {
             const printings = await window.phoxx.getPrintings(item.card.oracleId)
             if (printings.length > 0) {
-              const pick = pickFor(printings)
+              // Skip filtered-out versions, but fall back to the full list if every
+              // printing is filtered so the card still gets a pick.
+              const allowed = filterKeys.length
+                ? printings.filter((printing) => !printingHidden(printing, filterKeys))
+                : printings
+              const pick = pickFor(allowed.length ? allowed : printings)
               if (pick && pick.id !== item.card.id) {
                 get().replaceCard(item.card.id, pick)
                 changed += 1
@@ -268,10 +286,10 @@ export const useDeckStore = create<DeckState>((set, get) => ({
     }
   },
 
-  importText: (text, excludeFoils) =>
-    runImport(set, () => window.phoxx.resolveDeck(text, excludeFoils)),
-  importUrl: (url, excludeFoils) =>
-    runImport(set, () => window.phoxx.importDeckUrl(url, excludeFoils)),
+  importText: (text, excludeFoils, removeBasics, language) =>
+    runImport(set, () => window.phoxx.resolveDeck(text, excludeFoils, removeBasics, language)),
+  importUrl: (url, excludeFoils, removeBasics, language) =>
+    runImport(set, () => window.phoxx.importDeckUrl(url, excludeFoils, removeBasics, language)),
 
   saveDeck: async () => {
     const { items } = get()

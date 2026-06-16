@@ -2,10 +2,12 @@ import { describe, expect, it } from 'vitest'
 import {
   computePageLayout,
   DEFAULT_EXPORT_OPTIONS,
+  defaultPageSizeForRegion,
   pageCountFor,
   pageDimensionsPt,
   type ExportOptions
 } from '@shared/layout'
+import { mmToPt } from '@shared/units'
 
 const base: ExportOptions = {
   ...DEFAULT_EXPORT_OPTIONS,
@@ -16,10 +18,27 @@ const base: ExportOptions = {
   marginLeftMm: 6
 }
 
+describe('defaultPageSizeForRegion', () => {
+  it('defaults to US Letter in Letter-using countries and A4 elsewhere', () => {
+    expect(defaultPageSizeForRegion('US')).toBe('letter')
+    expect(defaultPageSizeForRegion('ca')).toBe('letter') // case-insensitive
+    expect(defaultPageSizeForRegion('GB')).toBe('a4')
+    expect(defaultPageSizeForRegion('DE')).toBe('a4')
+    expect(defaultPageSizeForRegion(undefined)).toBe('a4')
+  })
+})
+
 describe('pageDimensionsPt', () => {
   it('returns portrait dimensions for named sizes', () => {
     expect(pageDimensionsPt({ ...base, pageSize: 'a4' }).width).toBeCloseTo(595.28, 1)
     expect(pageDimensionsPt({ ...base, pageSize: 'legal' }).height).toBeCloseTo(1008, 0)
+  })
+
+  it('resolves the added Tabloid and A5 sizes', () => {
+    expect(pageDimensionsPt({ ...base, pageSize: 'tabloid' })).toEqual({ width: 792, height: 1224 })
+    const a5 = pageDimensionsPt({ ...base, pageSize: 'a5' })
+    expect(a5.width).toBeCloseTo(419.53, 1) // 148mm
+    expect(a5.height).toBeCloseTo(595.28, 1) // 210mm
   })
 
   it('swaps width and height in landscape', () => {
@@ -72,16 +91,44 @@ describe('computePageLayout', () => {
     expect(layout.slots).toHaveLength(0)
   })
 
-  it('anchors the grid at the top-left margins (0 margin prints to the edge)', () => {
-    const layout = computePageLayout({
-      ...base,
-      marginTopMm: 0,
-      marginLeftMm: 0,
-      marginRightMm: 0,
-      marginBottomMm: 0
-    })
-    expect(layout.slots[0]!.bleed.x).toBeCloseTo(0, 5)
-    expect(layout.slots[0]!.bleed.y).toBeCloseTo(0, 5)
+  it('centres the grid so opposing margins are equal (and duplex backs align)', () => {
+    const layout = computePageLayout(base)
+    const { width, height } = pageDimensionsPt(base)
+    const firstRowEnd = layout.slots[layout.columns - 1]!
+    const lastRowStart = layout.slots[(layout.rows - 1) * layout.columns]!
+    // Left gap == right gap, and top gap == bottom gap → the grid is centred.
+    const leftGap = layout.slots[0]!.bleed.x
+    const rightGap = width - (firstRowEnd.bleed.x + firstRowEnd.bleed.width)
+    const topGap = layout.slots[0]!.bleed.y
+    const bottomGap = height - (lastRowStart.bleed.y + lastRowStart.bleed.height)
+    expect(leftGap).toBeCloseTo(rightGap, 3)
+    expect(topGap).toBeCloseTo(bottomGap, 3)
+  })
+
+  it('keeps duplex back margins equal to the front (the X-mirror is symmetric)', () => {
+    const layout = computePageLayout(base)
+    const { width } = pageDimensionsPt(base)
+    // Back pages mirror each card in X (mirroredLeft = pageW − (bleed.x + width)),
+    // so an off-centre grid would give the back a different left margin. Centred,
+    // the mirrored grid reproduces the front's margins.
+    const frontLeftMargin = Math.min(...layout.slots.map((s) => s.bleed.x))
+    const backLeftMargin = Math.min(
+      ...layout.slots.map((s) => width - (s.bleed.x + s.bleed.width))
+    )
+    expect(backLeftMargin).toBeCloseTo(frontLeftMargin, 3)
+  })
+
+  it('page-centres the grid even when left/right margins differ', () => {
+    const opts = { ...base, marginLeftMm: 20, marginRightMm: 2 }
+    const layout = computePageLayout(opts)
+    const { width } = pageDimensionsPt(opts)
+    const firstRowEnd = layout.slots[layout.columns - 1]!
+    // Despite unequal margins, the grid is centred on the page so the left gap
+    // equals the right gap — which is what keeps a mirrored duplex back aligned.
+    const leftGap = layout.slots[0]!.bleed.x
+    const rightGap = width - (firstRowEnd.bleed.x + firstRowEnd.bleed.width)
+    expect(leftGap).toBeCloseTo(rightGap, 3)
+    expect(leftGap).toBeGreaterThanOrEqual(mmToPt(20) - 0.01) // clears the larger margin
   })
 
   it('scales the printed card size by scalePercent', () => {

@@ -20,16 +20,22 @@ export interface AppState {
   /** Multiple deck tabs (preferred over `deck` when present). */
   decks?: { id: string; name: string; items: SavedDeckItemLite[] }[]
   activeDeckId?: string
+  /** The deck library: named deck snapshots the user can re-open and print later. */
+  savedDecks?: { id: string; name: string; items: SavedDeckItemLite[] }[]
   upscale?: { model: string; scale: number }
   /** Card ids the user has upscaled, so deck health stays accurate across launches. */
   upscaledCardIds?: string[]
   showSource?: boolean
   theme?: ThemeName
   onboarded?: boolean
+  /** App version last seen, so the changelog can auto-open after an update. */
+  lastSeenVersion?: string
   pageSetup?: ExportOptions
   /** Saved page-setup presets the user can switch between. */
   pagePresets?: PagePreset[]
   collection?: { owned: string[]; skipOwned: boolean }
+  /** Enabled printing-filter keys (hide funny/borderless/banned-in-format/… versions). */
+  printingFilters?: string[]
   /** UI preferences: active view, deck grouping, and search sort/view mode. */
   ui?: {
     view?: string

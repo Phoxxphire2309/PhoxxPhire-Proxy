@@ -10,7 +10,8 @@ import {
   buildMpcImage,
   extendBleed,
   finalizeUpscaled,
-  sampleBorderColor
+  sampleBorderColor,
+  squareOffCorners
 } from './processor'
 
 /** A card-like image: an opaque coloured border around a different-coloured interior. */
@@ -79,6 +80,37 @@ describe('finalizeUpscaled', () => {
     await writeFile(tmp, await solidPng(400, 560))
     await finalizeUpscaled(tmp, dest, 4)
     expect((await sharp(dest).metadata()).width).toBe(400)
+  })
+})
+
+describe('squareOffCorners', () => {
+  it('drops the white-matte corner fringe instead of leaving a pale halo', async () => {
+    // Real card PNGs store transparent corners as white RGB; the rounded edge has
+    // a partly-transparent white fringe. Build that: a dark-red "card" whose
+    // top-left corner is transparent white (matte) with a half-alpha fringe ring.
+    const N = 80
+    const raw = Buffer.alloc(N * N * 4)
+    for (let y = 0; y < N; y += 1) {
+      for (let x = 0; x < N; x += 1) {
+        const i = (y * N + x) * 4
+        const d = x + y // anti-diagonal distance from the top-left corner
+        const [r, g, b, a] =
+          d < 6 ? [255, 255, 255, 0] : d < 10 ? [255, 255, 255, 128] : [200, 30, 30, 255]
+        raw[i] = r
+        raw[i + 1] = g
+        raw[i + 2] = b
+        raw[i + 3] = a
+      }
+    }
+    const png = await sharp(raw, { raw: { width: N, height: N, channels: 4 } }).png().toBuffer()
+    const { data, info } = await sharp(await squareOffCorners(new Uint8Array(png)))
+      .raw()
+      .toBuffer({ resolveWithObject: true })
+    // A pixel that was the white fringe (x=y=4) must now show the red corner fill,
+    // not a pale white/red blend — i.e. green stays low (red), not ~140 (halo).
+    const i = (4 * info.width + 4) * info.channels
+    expect(data[i + 1]).toBeLessThan(100) // green low → red fill, no white halo
+    expect(data[i]).toBeGreaterThan(120) // red present
   })
 })
 

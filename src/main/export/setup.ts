@@ -55,7 +55,18 @@ function printHtmlFile(htmlPath: string): Promise<boolean> {
 
     win.webContents.once('did-finish-load', () => {
       clearTimeout(loadTimer)
-      win.webContents.print({ silent: false, printBackground: true }, (success, failureReason) => {
+      // marginType 'none' stops Chromium fitting the full-page sheet inside the
+      // printer's default margins — that fit-to-margins step silently shrinks
+      // every card by a few percent. With zero margins the page prints 1:1 at
+      // true size (cards already sit inside a layout margin, so the printer's
+      // unprintable edge clips nothing). Mirrors MTGProxyPrinter's full-page,
+      // "prevent downscaling the page content" rendering.
+      const printOptions = {
+        silent: false,
+        printBackground: true,
+        margins: { marginType: 'none' as const }
+      }
+      win.webContents.print(printOptions, (success, failureReason) => {
         cleanup()
         // A user-cancelled dialog isn't an error; anything else is.
         if (success || /cancel/i.test(failureReason)) resolve(success)
@@ -74,6 +85,15 @@ function printHtmlFile(htmlPath: string): Promise<boolean> {
       reject(error instanceof Error ? error : new Error('Could not open the document for printing'))
     })
   })
+}
+
+/**
+ * Builds a default export filename from the deck name, stripping characters that
+ * are invalid in filenames and falling back when the name is empty.
+ */
+function exportFileName(name: string | undefined, extension: string, fallback: string): string {
+  const cleaned = (name ?? '').replace(/[/\\:*?"<>|]+/g, '').trim()
+  return `${cleaned || fallback}.${extension}`
 }
 
 /** Wires the PDF export IPC handler. Call after `app.whenReady()`. */
@@ -100,7 +120,7 @@ export function initExport(options: ExportSetupOptions): void {
     async (_event, request: ExportRequest): Promise<ExportOutcome> => {
       const { canceled, filePath } = await dialog.showSaveDialog({
         title: 'Export proxy PDF',
-        defaultPath: 'proxies.pdf',
+        defaultPath: exportFileName(request.name, 'pdf', 'proxies'),
         filters: [{ name: 'PDF', extensions: ['pdf'] }]
       })
       if (canceled || !filePath) {
@@ -146,10 +166,10 @@ export function initExport(options: ExportSetupOptions): void {
 
   ipcMain.handle(
     IpcChannel.ExportZip,
-    async (_event, slots: ExportSlot[]): Promise<ExportImagesOutcome> => {
+    async (_event, slots: ExportSlot[], name?: string): Promise<ExportImagesOutcome> => {
       const { canceled, filePath } = await dialog.showSaveDialog({
         title: 'Export card images as ZIP',
-        defaultPath: 'card-images.zip',
+        defaultPath: exportFileName(name, 'zip', 'card-images'),
         filters: [{ name: 'ZIP archive', extensions: ['zip'] }]
       })
       if (canceled || !filePath) {

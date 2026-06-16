@@ -81,6 +81,18 @@ export interface ScryfallCard {
   prices?: ScryfallPrices
   all_parts?: ScryfallRelatedCard[]
   legalities?: Record<string, string>
+  // Printing attributes used by the printing filters.
+  border_color?: string
+  frame_effects?: string[]
+  full_art?: boolean
+  textless?: boolean
+  oversized?: boolean
+  digital?: boolean
+  games?: string[]
+  promo_types?: string[]
+  set_type?: string
+  security_stamp?: string
+  content_warning?: boolean
 }
 
 /** Generic Scryfall paginated list envelope. */
@@ -153,6 +165,28 @@ export interface Card {
   finishes?: string[]
   /** Per-format legality from Scryfall, e.g. { modern: 'legal', vintage: 'restricted' }. */
   legalities?: Record<string, string>
+  /** Border colour: 'black' | 'white' | 'silver' | 'gold' | 'borderless'. */
+  borderColor?: string
+  /** Frame effects, e.g. 'extendedart', 'showcase', 'inverted'. */
+  frameEffects?: string[]
+  /** True for full-art printings. */
+  fullArt?: boolean
+  /** True for textless printings. */
+  textless?: boolean
+  /** True for oversized printings (e.g. Commander oversized cards). */
+  oversized?: boolean
+  /** True for digital-only cards. */
+  digital?: boolean
+  /** Game availability, e.g. ['paper', 'mtgo', 'arena']. */
+  games?: string[]
+  /** Promo types, e.g. 'promo', 'prerelease'. */
+  promoTypes?: string[]
+  /** Set category, e.g. 'funny', 'token', 'memorabilia', 'expansion'. */
+  setType?: string
+  /** Security stamp: 'oval', 'triangle', 'acorn' (acorn = un-set "funny"), etc. */
+  securityStamp?: string
+  /** True when Scryfall flags the card with a content warning. */
+  contentWarning?: boolean
 }
 
 /**

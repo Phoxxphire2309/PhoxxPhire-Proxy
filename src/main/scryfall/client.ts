@@ -146,6 +146,15 @@ export class ScryfallClient {
     return normalizeCard(raw)
   }
 
+  /** Fetch the same printing in a specific language (e.g. 'de', 'fr', 'ja'); 404s if not localised. */
+  async getLocalized(setCode: string, collectorNumber: string, lang: string): Promise<Card> {
+    const raw = await this.request<ScryfallCard>(
+      `/cards/${encodeURIComponent(setCode.toLowerCase())}/` +
+        `${encodeURIComponent(collectorNumber)}/${encodeURIComponent(lang.toLowerCase())}`
+    )
+    return normalizeCard(raw)
+  }
+
   private buildUrl(path: string, params?: Record<string, string>): URL {
     const url = new URL(path, this.baseUrl)
     if (params) {

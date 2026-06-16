@@ -1,4 +1,4 @@
-import type { DeckLine } from '@shared/decklist'
+import { parseDecklist, type DeckLine } from '@shared/decklist'
 
 /**
  * Fetches a decklist from a supported deck-building site URL and returns it as
@@ -7,6 +7,13 @@ import type { DeckLine } from '@shared/decklist'
  */
 const ARCHIDEKT_RE = /archidekt\.com\/(?:api\/)?decks\/(\d+)/i
 const MOXFIELD_RE = /moxfield\.com\/decks\/([A-Za-z0-9_-]+)/i
+// Cube Cobra: /cube/<section>/<id> (overview, list, playtest…) or the short /c/<id>.
+const CUBECOBRA_RE = /cubecobra\.com\/(?:cube\/\w+|c)\/([\w-]+)/i
+const MTGGOLDFISH_RE = /mtggoldfish\.com\/deck\/(?:visual\/|download\/)?(\d+)/i
+const TAPPEDOUT_RE = /tappedout\.net\/mtg-decks\/([\w-]+)/i
+
+/** A User-Agent some of these sites require before they'll answer a request. */
+const USER_AGENT = 'PhoxxPhireProxy/1.0'
 
 interface ArchidektCard {
   quantity: number
@@ -82,6 +89,42 @@ async function fetchMoxfield(publicId: string, fetchFn: typeof fetch): Promise<D
   return lines
 }
 
+/**
+ * Fetches a site's own plain-text decklist export and runs it through the
+ * shared decklist parser. `site` names the source for error messages. Throws a
+ * helpful error when the response isn't ok or doesn't contain a readable list
+ * (private decks often redirect to an HTML login page, which parses to nothing).
+ */
+async function fetchTextDeck(
+  url: string,
+  site: string,
+  fetchFn: typeof fetch
+): Promise<DeckLine[]> {
+  const response = await fetchFn(url, {
+    headers: { Accept: 'text/plain', 'User-Agent': USER_AGENT }
+  })
+  if (!response.ok) {
+    throw new Error(
+      `${site} returned HTTP ${response.status}. The deck may be private — try pasting the decklist text instead.`
+    )
+  }
+  const body = await response.text()
+  // Private/blocked decks answer 200 with an HTML page; the forgiving decklist
+  // parser would turn that markup into junk "cards", so reject it up front.
+  if (body.trimStart().startsWith('<')) {
+    throw new Error(
+      `Couldn't read a decklist from ${site}. The deck may be private or empty — try pasting the decklist text instead.`
+    )
+  }
+  const lines = parseDecklist(body)
+  if (lines.length === 0) {
+    throw new Error(
+      `Couldn't read a decklist from ${site}. The deck may be private or empty — try pasting the decklist text instead.`
+    )
+  }
+  return lines
+}
+
 export async function fetchDeckLines(
   url: string,
   fetchFn: typeof fetch = fetch
@@ -92,5 +135,34 @@ export async function fetchDeckLines(
   const moxfield = MOXFIELD_RE.exec(url)
   if (moxfield) return fetchMoxfield(moxfield[1]!, fetchFn)
 
-  throw new Error('Unsupported deck URL. Supported sites: Archidekt, Moxfield.')
+  const cubecobra = CUBECOBRA_RE.exec(url)
+  if (cubecobra) {
+    return fetchTextDeck(
+      `https://cubecobra.com/cube/api/cubelist/${cubecobra[1]!}`,
+      'Cube Cobra',
+      fetchFn
+    )
+  }
+
+  const goldfish = MTGGOLDFISH_RE.exec(url)
+  if (goldfish) {
+    return fetchTextDeck(
+      `https://www.mtggoldfish.com/deck/download/${goldfish[1]!}`,
+      'MTGGoldfish',
+      fetchFn
+    )
+  }
+
+  const tappedout = TAPPEDOUT_RE.exec(url)
+  if (tappedout) {
+    return fetchTextDeck(
+      `https://tappedout.net/mtg-decks/${tappedout[1]!}/?fmt=txt`,
+      'TappedOut',
+      fetchFn
+    )
+  }
+
+  throw new Error(
+    'Unsupported deck URL. Supported sites: Archidekt, Moxfield, Cube Cobra, MTGGoldfish, TappedOut.'
+  )
 }

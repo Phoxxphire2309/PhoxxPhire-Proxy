@@ -7,7 +7,9 @@ import {
   isHighRes,
   type Card
 } from '@shared/scryfall'
+import { printingHidden } from '@shared/printingFilters'
 import { usePrintingStore } from '@renderer/state/printingStore'
+import { usePrintingFiltersStore } from '@renderer/state/printingFiltersStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { upscaleCardWithConfirm } from '@renderer/state/upscaleActions'
 import { useTextProxyStore } from '@renderer/state/textProxyStore'
@@ -36,6 +38,8 @@ export function CardDetail({
   const [compare, setCompare] = useState(50)
   const [dragging, setDragging] = useState(false)
   const [setFilter, setSetFilter] = useState('')
+  const [showHidden, setShowHidden] = useState(false)
+  const activeFilters = usePrintingFiltersStore((state) => state.active)
   const compareRef = useRef<HTMLDivElement>(null)
 
   // Map a pointer X position to a 0–100 split across the comparison image.
@@ -92,9 +96,23 @@ export function CardDetail({
   const printingsNewestFirst = [...printings].reverse()
   // Distinct sets across all printings, for the set filter dropdown.
   const setCodes = [...new Set(printings.map((printing) => printing.setCode))].sort()
-  const visiblePrintings = setFilter
+  const setMatched = setFilter
     ? printingsNewestFirst.filter((printing) => printing.setCode === setFilter)
     : printingsNewestFirst
+  // Apply the printing filters, but always keep the currently chosen printing
+  // visible so the selection never disappears. A toggle reveals the hidden ones.
+  const filterKeys = Object.keys(activeFilters)
+  const hiddenCount = filterKeys.length
+    ? setMatched.filter(
+        (printing) => printing.id !== displayed.id && printingHidden(printing, filterKeys)
+      ).length
+    : 0
+  const visiblePrintings =
+    filterKeys.length && !showHidden
+      ? setMatched.filter(
+          (printing) => printing.id === displayed.id || !printingHidden(printing, filterKeys)
+        )
+      : setMatched
   const betterAvailable =
     best !== null && best.id !== displayed.id && isHighRes(best) && !isHighRes(displayed)
   const upscaled = Boolean(upscaledSet[displayed.id])
@@ -295,6 +313,17 @@ export function CardDetail({
                 </li>
               ))}
             </ul>
+          )}
+          {hiddenCount > 0 && (
+            <button
+              type="button"
+              className="prints__showhidden"
+              onClick={() => setShowHidden((value) => !value)}
+            >
+              {showHidden
+                ? 'Hide filtered printings'
+                : `Show ${hiddenCount} filtered printing${hiddenCount === 1 ? '' : 's'}`}
+            </button>
           )}
         </div>
       </div>

@@ -140,9 +140,19 @@ export interface PhoxxApi {
   /** All printings (across sets) of the card with the given Scryfall oracle id. */
   getPrintings(oracleId: string): Promise<Card[]>
   /** Parse a decklist and resolve every line to a Scryfall card. */
-  resolveDeck(text: string, excludeFoils?: boolean): Promise<DeckResolution>
-  /** Fetch + resolve a decklist from a supported site URL (Archidekt, Moxfield). */
-  importDeckUrl(url: string, excludeFoils?: boolean): Promise<DeckResolution>
+  resolveDeck(
+    text: string,
+    excludeFoils?: boolean,
+    removeBasics?: boolean,
+    language?: string
+  ): Promise<DeckResolution>
+  /** Fetch + resolve a decklist from a supported site URL (Archidekt, Moxfield…). */
+  importDeckUrl(
+    url: string,
+    excludeFoils?: boolean,
+    removeBasics?: boolean,
+    language?: string
+  ): Promise<DeckResolution>
   /** Distinct tokens / emblems created by the given deck cards, ready to add. */
   findTokens(cardIds: string[]): Promise<Card[]>
   /** Find the combos present in the deck via the Commander Spellbook API. */
@@ -182,7 +192,7 @@ export interface PhoxxApi {
   /** Export each unique card face as a PNG into a chosen folder. */
   exportImages(slots: ExportSlot[]): Promise<ExportImagesOutcome>
   /** Bundle every unique card face (upscaled or source) into a single ZIP file. */
-  exportZip(slots: ExportSlot[]): Promise<ExportImagesOutcome>
+  exportZip(slots: ExportSlot[], name?: string): Promise<ExportImagesOutcome>
   /** Export the deck as a MakePlayingCards (MPC Autofill) order into a chosen folder. */
   exportMpc(cards: MpcCard[]): Promise<MpcExportOutcome>
   /** Save a print-calibration PDF for the given page options. */

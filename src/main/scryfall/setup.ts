@@ -47,11 +47,15 @@ export async function initScryfall(
       }
     }
   }
-  ipcMain.handle(IpcChannel.ScryfallResolveDeck, (_event, text: string, excludeFoils?: boolean) =>
-    service.resolveDeck(text, broadcastImportProgress, excludeFoils)
+  ipcMain.handle(
+    IpcChannel.ScryfallResolveDeck,
+    (_event, text: string, excludeFoils?: boolean, removeBasics?: boolean, language?: string) =>
+      service.resolveDeck(text, broadcastImportProgress, excludeFoils, removeBasics, language)
   )
-  ipcMain.handle(IpcChannel.ScryfallImportUrl, (_event, url: string, excludeFoils?: boolean) =>
-    service.importDeckUrl(url, broadcastImportProgress, excludeFoils)
+  ipcMain.handle(
+    IpcChannel.ScryfallImportUrl,
+    (_event, url: string, excludeFoils?: boolean, removeBasics?: boolean, language?: string) =>
+      service.importDeckUrl(url, broadcastImportProgress, excludeFoils, removeBasics, language)
   )
   ipcMain.handle(IpcChannel.ScryfallFindTokens, (_event, cardIds: string[]) =>
     service.findTokens(cardIds)

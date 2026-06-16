@@ -40,6 +40,27 @@ describe('parseDecklist', () => {
     expect(parseDecklist('1 Fire // Ice')).toEqual([{ quantity: 1, name: 'Fire // Ice' }])
   })
 
+  it('parses the Magic Workstation / Cockatrice [SET] bracket form', () => {
+    expect(parseDecklist('4 [M21] Lightning Bolt')).toEqual([
+      { quantity: 4, name: 'Lightning Bolt', setCode: 'M21' }
+    ])
+    // An empty bracket (unknown set) resolves by name.
+    expect(parseDecklist('2 [] Brainstorm')).toEqual([{ quantity: 2, name: 'Brainstorm' }])
+  })
+
+  it('parses the XMage [SET:NUMBER] bracket form', () => {
+    expect(parseDecklist('4 [M21:159] Lightning Bolt')).toEqual([
+      { quantity: 4, name: 'Lightning Bolt', setCode: 'M21', collectorNumber: '159' }
+    ])
+  })
+
+  it('strips a leading SB: sideboard tag (Cockatrice/XMage)', () => {
+    expect(parseDecklist('SB: 2 [M21] Negate')).toEqual([
+      { quantity: 2, name: 'Negate', setCode: 'M21' }
+    ])
+    expect(parseDecklist('SB: 3 Counterspell')).toEqual([{ quantity: 3, name: 'Counterspell' }])
+  })
+
   it('skips blank lines, comments, and section headers', () => {
     const text = [
       'Deck',

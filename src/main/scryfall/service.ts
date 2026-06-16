@@ -159,18 +159,45 @@ export class ScryfallService {
   resolveDeck(
     text: string,
     onProgress?: ProgressFn,
-    excludeFoils = false
+    excludeFoils = false,
+    removeBasics = false,
+    language = ''
   ): Promise<DeckResolution> {
-    return this.resolveLines(parseDecklist(text), onProgress, excludeFoils)
+    return this.resolveLines(parseDecklist(text), onProgress, excludeFoils, removeBasics, language)
   }
 
   /** Fetch a decklist from a supported site URL and resolve it. */
   async importDeckUrl(
     url: string,
     onProgress?: ProgressFn,
-    excludeFoils = false
+    excludeFoils = false,
+    removeBasics = false,
+    language = ''
   ): Promise<DeckResolution> {
-    return this.resolveLines(await fetchDeckLines(url, this.deckFetch), onProgress, excludeFoils)
+    return this.resolveLines(
+      await fetchDeckLines(url, this.deckFetch),
+      onProgress,
+      excludeFoils,
+      removeBasics,
+      language
+    )
+  }
+
+  /**
+   * Swap a resolved card for its printing in `lang` (e.g. 'de'), keeping the
+   * original when no localised version of that exact printing exists.
+   */
+  private async localized(card: Card, lang: string): Promise<Card> {
+    try {
+      const local = await this.client.getLocalized(card.setCode, card.collectorNumber, lang)
+      if (local.faces[0]?.imageUrl) {
+        await this.cache.putCard(local)
+        return local
+      }
+    } catch {
+      // No localised printing for this card — keep the original.
+    }
+    return card
   }
 
   /**
@@ -194,7 +221,9 @@ export class ScryfallService {
   async resolveLines(
     lines: DeckLine[],
     onProgress?: ProgressFn,
-    excludeFoils = false
+    excludeFoils = false,
+    removeBasics = false,
+    language = ''
   ): Promise<DeckResolution> {
     const items: DeckResolvedItem[] = []
     const byId = new Map<string, DeckResolvedItem>()
@@ -207,7 +236,15 @@ export class ScryfallService {
           line.setCode && line.collectorNumber
             ? await this.client.getBySetAndNumber(line.setCode, line.collectorNumber)
             : await this.client.named(line.name, false)
-        const card = excludeFoils ? await this.toNonFoil(resolved) : resolved
+        // Skip basic lands (incl. snow basics and Wastes) when asked — you don't
+        // proxy basics. They carry "Basic … Land" in the type line.
+        if (removeBasics && /\bbasic\b.*\bland\b/i.test(resolved.typeLine ?? '')) {
+          completed += 1
+          onProgress?.({ completed, total: lines.length, name: line.name })
+          continue
+        }
+        let card = excludeFoils ? await this.toNonFoil(resolved) : resolved
+        if (language && card.lang !== language) card = await this.localized(card, language)
         await this.cache.putCard(card)
 
         const existing = byId.get(card.id)

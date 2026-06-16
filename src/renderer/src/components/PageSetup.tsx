@@ -187,10 +187,12 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
                 value={options.pageSize}
                 onChange={(event) => set('pageSize', event.target.value as PageSize)}
               >
+                <option value="a5">A5</option>
                 <option value="a4">A4</option>
+                <option value="a3">A3</option>
                 <option value="letter">US Letter</option>
                 <option value="legal">US Legal</option>
-                <option value="a3">A3</option>
+                <option value="tabloid">Tabloid (11×17")</option>
                 <option value="custom">Custom</option>
               </select>
             </label>
@@ -391,6 +393,19 @@ export function PageSetup({ onClose }: { onClose: () => void }): React.JSX.Eleme
                     'scalePercent',
                     Math.min(150, Math.max(50, Number(event.target.value) || 100))
                   )
+                }
+              />
+            </label>
+
+            <label className="export__field">
+              <span>Split PDF every N pages (0 = one file)</span>
+              <input
+                type="number"
+                min={0}
+                step={1}
+                value={options.maxPagesPerFile}
+                onChange={(event) =>
+                  set('maxPagesPerFile', Math.max(0, Math.floor(Number(event.target.value) || 0)))
                 }
               />
             </label>

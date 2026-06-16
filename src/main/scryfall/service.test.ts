@@ -86,6 +86,111 @@ describe('ScryfallService.resolveDeck', () => {
   })
 })
 
+describe('ScryfallService.resolveDeck removeBasics', () => {
+  let dir: string
+  let service: ScryfallService
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'phoxx-basics-'))
+    const cache = new CardCache(dir)
+    await cache.init()
+    const fetchFn = (async (input: string | URL) => {
+      const url = String(input)
+      if (url.includes('/cards/named') && url.includes('Lightning')) {
+        return jsonResponse(card('bolt', 'lea', '161'))
+      }
+      if (url.includes('/cards/named') && url.includes('Forest')) {
+        return jsonResponse({
+          ...card('forest', 'lea', '294', 'Forest'),
+          type_line: 'Basic Land — Forest'
+        })
+      }
+      if (url.includes('/cards/named') && url.includes('Snow')) {
+        return jsonResponse({
+          ...card('snow', 'khm', '278', 'Snow-Covered Forest'),
+          type_line: 'Basic Snow Land — Forest'
+        })
+      }
+      return jsonResponse({ object: 'error', status: 404 }, 404)
+    }) as typeof fetch
+    const client = new ScryfallClient({
+      userAgent: 'test',
+      limiter: new RateLimiter(0),
+      sleepFn: async () => {},
+      maxRetries: 0,
+      fetchFn
+    })
+    service = new ScryfallService(client, cache)
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('drops basic lands (incl. snow basics) when removeBasics is set, keeps the rest', async () => {
+    const text = ['4 Lightning Bolt', '10 Forest', '5 Snow-Covered Forest'].join('\n')
+    const result = await service.resolveDeck(text, undefined, false, true)
+    expect(result.items.map((item) => item.card.id)).toEqual(['bolt'])
+    expect(result.errors).toHaveLength(0)
+  })
+
+  it('keeps basic lands when removeBasics is not set', async () => {
+    const result = await service.resolveDeck('10 Forest', undefined, false, false)
+    expect(result.items.map((item) => item.card.id)).toEqual(['forest'])
+  })
+})
+
+describe('ScryfallService.resolveDeck language', () => {
+  let dir: string
+  let service: ScryfallService
+
+  beforeEach(async () => {
+    dir = await mkdtemp(join(tmpdir(), 'phoxx-lang-'))
+    const cache = new CardCache(dir)
+    await cache.init()
+    const fetchFn = (async (input: string | URL) => {
+      const url = String(input)
+      // English resolution by name → a known printing (lea/161).
+      if (url.includes('/cards/named') && url.includes('Lightning')) {
+        return jsonResponse(card('bolt-en', 'lea', '161'))
+      }
+      // German localisation of that exact printing exists.
+      if (url.includes('/cards/lea/161/de')) {
+        return jsonResponse({ ...card('bolt-de', 'lea', '161', 'Blitzschlag'), lang: 'de' })
+      }
+      // No French localisation → 404.
+      if (url.includes('/cards/lea/161/fr')) {
+        return jsonResponse({ object: 'error', status: 404 }, 404)
+      }
+      return jsonResponse({ object: 'error', status: 404 }, 404)
+    }) as typeof fetch
+    const client = new ScryfallClient({
+      userAgent: 'test',
+      limiter: new RateLimiter(0),
+      sleepFn: async () => {},
+      maxRetries: 0,
+      fetchFn
+    })
+    service = new ScryfallService(client, cache)
+  })
+
+  afterEach(async () => {
+    await rm(dir, { recursive: true, force: true })
+  })
+
+  it('swaps to the localised printing when it exists', async () => {
+    const result = await service.resolveDeck('1 Lightning Bolt', undefined, false, false, 'de')
+    expect(result.items[0]?.card.id).toBe('bolt-de')
+    expect(result.items[0]?.card.lang).toBe('de')
+  })
+
+  it('keeps the English printing when no localisation exists', async () => {
+    const result = await service.resolveDeck('1 Lightning Bolt', undefined, false, false, 'fr')
+    expect(result.items[0]?.card.id).toBe('bolt-en')
+    expect(result.errors).toHaveLength(0)
+  })
+})
+
 describe('ScryfallService.resolveDeck excludeFoils', () => {
   let dir: string
   let service: ScryfallService

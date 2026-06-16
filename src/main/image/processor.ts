@@ -143,6 +143,15 @@ export async function squareOffCorners(imageBytes: Uint8Array): Promise<Uint8Arr
   // Generous patch so the whole rounded gap is covered (the card hides the rest).
   const patch = Math.max(8, Math.round(Math.min(width, height) * 0.08))
 
+  // Snap alpha to 0/255 before compositing. The card's transparent corner pixels
+  // carry white RGB, so the anti-aliased rounded-corner fringe (partly transparent)
+  // would composite a pale halo over the fill. Dropping that fringe to fully
+  // transparent reveals the fill cleanly; the opaque art and the fully-opaque
+  // straight edges (alpha 255) are untouched, so only the rounded corners change.
+  for (let p = 3; p < data.length; p += ch) {
+    if (data[p]! < 250) data[p] = 0
+  }
+
   const out = await sharp({
     create: { width, height, channels: 4, background: { r: 0, g: 0, b: 0, alpha: 0 } }
   })
@@ -151,8 +160,8 @@ export async function squareOffCorners(imageBytes: Uint8Array): Promise<Uint8Arr
       { input: await solidRect(tr, patch), left: width - patch, top: 0 },
       { input: await solidRect(bl, patch), left: 0, top: height - patch },
       { input: await solidRect(br, patch), left: width - patch, top: height - patch },
-      // Card on top: only its rounded-corner gaps reveal the fills beneath.
-      { input: Buffer.from(imageBytes) }
+      // Card (fringe-stripped) on top: only its rounded-corner gaps reveal the fills.
+      { input: data, raw: { width, height, channels: ch } }
     ])
     .flatten({ background: { r: 0, g: 0, b: 0 } })
     .removeAlpha()

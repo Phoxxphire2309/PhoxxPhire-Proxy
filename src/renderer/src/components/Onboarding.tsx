@@ -64,13 +64,7 @@ const STEPS: Step[] = [
     points: [
       'Export a print-ready PDF, a ZIP of images, single images, or a MakePlayingCards (MPC Autofill) order.',
       '“Test card” prints just one card so you can check scale and colour first. Add a “PROXY” watermark if your playgroup requires it.',
-      'Save a project file to reproduce a whole print job (deck + layout) later. Rotate individual cards 180° from the deck list.'
-    ]
-  },
-  {
-    title: '8 · Need them professionally printed?',
-    points: [
-      'In the US, order finished cards from our print partner TCGPlaytest.com (the badge in the header) — upscaling and bleed already applied.',
+      'Save a project file to reproduce a whole print job (deck + layout) later. Rotate individual cards 180° from the deck list.',
       'That’s the tour — happy proxying!'
     ]
   }

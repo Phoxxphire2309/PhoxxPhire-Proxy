@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react'
 import type { ImportProgress } from '@shared/decklist'
+import { LANGUAGES } from '@shared/scryfallQuery'
 import { useDeckStore } from '@renderer/state/deckStore'
 
 const PLACEHOLDER = `4 Lightning Bolt
@@ -13,6 +14,8 @@ export function ImportDialog({ onClose }: { onClose: () => void }): React.JSX.El
   const [text, setText] = useState('')
   const [url, setUrl] = useState('')
   const [excludeFoils, setExcludeFoils] = useState(true)
+  const [removeBasics, setRemoveBasics] = useState(false)
+  const [language, setLanguage] = useState('')
   const [progress, setProgress] = useState<ImportProgress | null>(null)
 
   useEffect(() => {
@@ -29,13 +32,13 @@ export function ImportDialog({ onClose }: { onClose: () => void }): React.JSX.El
 
   const submit = async (): Promise<void> => {
     setProgress(null)
-    await importText(text, excludeFoils)
+    await importText(text, excludeFoils, removeBasics, language)
     onClose()
   }
 
   const submitUrl = async (): Promise<void> => {
     setProgress(null)
-    await importUrl(url, excludeFoils)
+    await importUrl(url, excludeFoils, removeBasics, language)
     onClose()
   }
 
@@ -48,7 +51,9 @@ export function ImportDialog({ onClose }: { onClose: () => void }): React.JSX.El
         </button>
         <h2 className="detail__name">Import decklist</h2>
 
-        <p className="detail__hint">From an Archidekt or Moxfield deck URL:</p>
+        <p className="detail__hint">
+          From an Archidekt, Moxfield, Cube Cobra, MTGGoldfish, or TappedOut URL:
+        </p>
         <div className="import__url">
           <input
             className="search__input"
@@ -70,8 +75,9 @@ export function ImportDialog({ onClose }: { onClose: () => void }): React.JSX.El
         </div>
 
         <p className="detail__hint">
-          …or paste a decklist — plain text or MTG Arena format (e.g. “4 Lightning Bolt (M21) 159”).
-          Lines that can’t be matched are reported afterwards.
+          …or paste a decklist — plain text, MTG Arena/MTGO, or Cockatrice/Magic Workstation/XMage
+          (e.g. “4 Lightning Bolt (M21) 159” or “4 [M21] Lightning Bolt”). Lines that can’t be
+          matched are reported afterwards.
         </p>
         <textarea
           className="import__textarea"
@@ -89,6 +95,27 @@ export function ImportDialog({ onClose }: { onClose: () => void }): React.JSX.El
             onChange={(event) => setExcludeFoils(event.target.checked)}
           />
           <span>Exclude foils — use the cheapest non-foil printing (foils print poorly)</span>
+        </label>
+        <label className="export__field export__field--inline">
+          <input
+            type="checkbox"
+            checked={removeBasics}
+            onChange={(event) => setRemoveBasics(event.target.checked)}
+          />
+          <span>Skip basic lands — don’t import Plains/Island/Swamp/Mountain/Forest/Wastes</span>
+        </label>
+        <label className="export__field">
+          <span>Print in language</span>
+          <select value={language} onChange={(event) => setLanguage(event.target.value)}>
+            {LANGUAGES.map((lang) => (
+              <option key={lang.code} value={lang.code}>
+                {lang.label}
+              </option>
+            ))}
+          </select>
+          <span className="detail__hint">
+            Uses each card’s printing in this language when one exists; otherwise keeps English.
+          </span>
         </label>
 
         {importing && progress && (

@@ -14,6 +14,7 @@ import { ConfirmHost } from '@renderer/components/ConfirmHost'
 import { CommandPalette } from '@renderer/components/CommandPalette'
 import { UpdateBanner } from '@renderer/components/UpdateBanner'
 import { Onboarding } from '@renderer/components/Onboarding'
+import { Changelog } from '@renderer/components/Changelog'
 import logo from '@renderer/assets/phoxxphire-logo.png'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useUiStore } from '@renderer/state/uiStore'
@@ -30,6 +31,8 @@ export function App(): React.JSX.Element {
   const setOnboarded = useUiStore((state) => state.setOnboarded)
   const tourOpen = useUiStore((state) => state.tourOpen)
   const setTourOpen = useUiStore((state) => state.setTourOpen)
+  const changelogOpen = useUiStore((state) => state.changelogOpen)
+  const setChangelogOpen = useUiStore((state) => state.setChangelogOpen)
 
   // Load settings + persisted state, then begin persisting changes.
   useEffect(() => {
@@ -39,8 +42,18 @@ export function App(): React.JSX.Element {
       await loadSettings()
       await loadPersistedState()
       stop = startPersisting()
-      // First-run guide, once we know whether it's been seen.
-      if (!useUiStore.getState().onboarded) setTourOpen(true)
+      const version = await window.phoxx.getVersion()
+      if (!useUiStore.getState().onboarded) {
+        // First-run guide, once we know whether it's been seen.
+        setTourOpen(true)
+      } else if (
+        useUiStore.getState().lastSeenVersion &&
+        useUiStore.getState().lastSeenVersion !== version
+      ) {
+        // Existing user opening a newer build — show what's new, once per version.
+        useUiStore.getState().setChangelogOpen(true)
+      }
+      useUiStore.getState().setLastSeenVersion(version)
     })()
     return () => {
       unsubscribeStatus()
@@ -118,6 +131,7 @@ export function App(): React.JSX.Element {
       <CommandPalette />
       <UpdateBanner />
       {tourOpen && <Onboarding onClose={dismissOnboarding} />}
+      {changelogOpen && <Changelog onClose={() => setChangelogOpen(false)} />}
     </div>
   )
 }

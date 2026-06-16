@@ -1,4 +1,4 @@
-import { readFile, writeFile } from 'node:fs/promises'
+import { mkdir, readFile, writeFile } from 'node:fs/promises'
 import { join } from 'node:path'
 import {
   computePageLayout,
@@ -7,11 +7,11 @@ import {
   type ExportProgress,
   type ExportSlot
 } from '@shared/layout'
-import type { MpcCard } from '@shared/mpc'
+import { MPC_IMAGE_SUBDIR, type MpcCard } from '@shared/mpc'
 import type { Card } from '@shared/scryfall'
 import { squareOffCorners } from '../image/processor'
 import { buildMpcOrderXml, type MpcXmlCard } from './mpc'
-import { buildProxyPdf } from './pdf'
+import { buildProxyPdf, splitPdfByPages } from './pdf'
 import { buildPrintHtml } from './print-html'
 import { buildZip } from './zip'
 
@@ -165,7 +165,7 @@ export class ExportService {
     slots: ExportSlot[],
     options: ExportOptions,
     savePath: string
-  ): Promise<{ path: string; cardCount: number; pageCount: number }> {
+  ): Promise<{ path: string; cardCount: number; pageCount: number; fileCount: number }> {
     const prepared = await this.prepareRender(slots, options)
 
     this.deps.emit({
@@ -181,10 +181,46 @@ export class ExportService {
       prepared.slotRotations,
       prepared.slotBackImages
     )
-    await writeFile(savePath, pdf)
+
+    // Optionally split into several files for print services that cap pages per
+    // upload. Duplex backs must stay paired with their front, so keep page pairs.
+    const parts = await splitPdfByPages(
+      pdf,
+      options.maxPagesPerFile ?? 0,
+      options.cardBack !== 'none'
+    )
+    const primaryPath = await this.writePdfParts(parts, savePath)
 
     this.deps.emit({ phase: 'done', completed: slots.length, total: slots.length })
-    return { path: savePath, cardCount: prepared.cardCount, pageCount: prepared.pageCount }
+    return {
+      path: primaryPath,
+      cardCount: prepared.cardCount,
+      pageCount: prepared.pageCount,
+      fileCount: parts.length
+    }
+  }
+
+  /**
+   * Writes one or more PDF parts. A single part goes straight to `savePath`;
+   * multiple parts are numbered (`name-1.pdf`, `name-2.pdf`, …). Returns the
+   * path of the first file written.
+   */
+  private async writePdfParts(parts: Uint8Array[], savePath: string): Promise<string> {
+    if (parts.length <= 1) {
+      await writeFile(savePath, parts[0]!)
+      return savePath
+    }
+    const dot = savePath.lastIndexOf('.')
+    const stem = dot > 0 ? savePath.slice(0, dot) : savePath
+    const ext = dot > 0 ? savePath.slice(dot) : '.pdf'
+    const width = String(parts.length).length
+    let firstPath = savePath
+    for (let i = 0; i < parts.length; i += 1) {
+      const partPath = `${stem}-${String(i + 1).padStart(width, '0')}${ext}`
+      if (i === 0) firstPath = partPath
+      await writeFile(partPath, parts[i]!)
+    }
+    return firstPath
   }
 
   /**
@@ -310,10 +346,11 @@ export class ExportService {
   }
 
   /**
-   * Exports a deck as a MakePlayingCards (MPC Autofill) order into `folder`: one
-   * full-bleed PNG per card face, a common card-back image, and an `order.xml`.
-   * Double-faced cards become a single physical card (front + paired back);
-   * single-faced cards use the common back.
+   * Exports a deck as a MakePlayingCards (MPC Autofill) order into `folder`: an
+   * `order.xml` plus one full-bleed PNG per card face and a common card-back
+   * image, all written into a `cards/` subfolder — the layout the MPC Autofill
+   * desktop tool resolves local images from. Double-faced cards become a single
+   * physical card (front + paired back); single-faced cards use the common back.
    */
   async exportMpc(
     cards: MpcCard[],
@@ -323,6 +360,8 @@ export class ExportService {
     if (!mpcImage || !mpcCardBack) {
       throw new Error('MPC export is not configured')
     }
+    const imagesDir = join(folder, MPC_IMAGE_SUBDIR)
+    await mkdir(imagesDir, { recursive: true })
 
     // Resolve everything up front so progress has a known denominator.
     const resolved: { entry: MpcCard; card: Card }[] = []
@@ -350,7 +389,7 @@ export class ExportService {
     ): Promise<void> => {
       const source = await this.deps.ensureImage(cardId, faceIndex, upscale)
       const bytes = await mpcImage(new Uint8Array(await readFile(source)))
-      await writeFile(join(folder, fileName), bytes)
+      await writeFile(join(imagesDir, fileName), bytes)
     }
 
     const xmlCards: MpcXmlCard[] = []
@@ -388,7 +427,7 @@ export class ExportService {
     const customBack = (await this.deps.customCardBack?.()) ?? null
     const cardBackName = uniqueName('cardback')
     const cardBackBytes = customBack ? await mpcImage(customBack) : await mpcCardBack()
-    await writeFile(join(folder, cardBackName), cardBackBytes)
+    await writeFile(join(imagesDir, cardBackName), cardBackBytes)
     fileCount += 1
     this.deps.emit({ phase: 'preparing', completed: (completed += 1), total })
 

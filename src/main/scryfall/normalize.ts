@@ -78,7 +78,18 @@ export function normalizeCard(raw: ScryfallCard): Card {
     })(),
     ...(raw.rarity !== undefined ? { rarity: raw.rarity } : {}),
     ...(Array.isArray(raw.finishes) ? { finishes: raw.finishes } : {}),
-    ...(raw.legalities ? { legalities: raw.legalities } : {})
+    ...(raw.legalities ? { legalities: raw.legalities } : {}),
+    ...(raw.border_color !== undefined ? { borderColor: raw.border_color } : {}),
+    ...(Array.isArray(raw.frame_effects) ? { frameEffects: raw.frame_effects } : {}),
+    ...(raw.full_art !== undefined ? { fullArt: raw.full_art } : {}),
+    ...(raw.textless !== undefined ? { textless: raw.textless } : {}),
+    ...(raw.oversized !== undefined ? { oversized: raw.oversized } : {}),
+    ...(raw.digital !== undefined ? { digital: raw.digital } : {}),
+    ...(Array.isArray(raw.games) ? { games: raw.games } : {}),
+    ...(Array.isArray(raw.promo_types) ? { promoTypes: raw.promo_types } : {}),
+    ...(raw.set_type !== undefined ? { setType: raw.set_type } : {}),
+    ...(raw.security_stamp !== undefined ? { securityStamp: raw.security_stamp } : {}),
+    ...(raw.content_warning !== undefined ? { contentWarning: raw.content_warning } : {})
   }
 }
 
