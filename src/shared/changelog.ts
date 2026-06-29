@@ -13,6 +13,13 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '1.1.1',
+    date: '2026-06-29',
+    highlights: [
+      'Fixed cards showing up blank — some cards were loading with an empty box instead of the artwork, even though the card list, prices and deck stats all looked fine. Card images now load correctly again.'
+    ]
+  },
+  {
     version: '1.1.0',
     date: '2026-06-16',
     highlights: [
