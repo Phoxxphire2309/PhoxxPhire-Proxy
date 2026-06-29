@@ -55,6 +55,16 @@ export class ScryfallClient {
     this.sleepFn = options.sleepFn ?? ((ms) => new Promise((resolve) => setTimeout(resolve, ms)))
   }
 
+  /**
+   * The accurate User-Agent Scryfall requires. Exposed so the image-download
+   * path (which fetches from `cards.scryfall.io` directly, not through this
+   * client) can send the same identity — Scryfall's CDN rejects generic agents
+   * such as Node's default `node` with HTTP 400.
+   */
+  get scryfallUserAgent(): string {
+    return this.userAgent
+  }
+
   /** Full-text search. A Scryfall 404 (no matches) is mapped to an empty result. */
   async search(query: string, options: SearchOptions = {}): Promise<SearchResult> {
     try {

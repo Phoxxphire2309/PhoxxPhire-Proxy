@@ -54,12 +54,20 @@ async function forEachLimit<T>(
 async function downloadImage(
   url: string,
   fetchFn: typeof fetch,
+  userAgent: string,
   timeoutMs: number
 ): Promise<Uint8Array> {
   const controller = new AbortController()
   const timer = setTimeout(() => controller.abort(), timeoutMs)
   try {
-    const response = await fetchFn(url, { signal: controller.signal })
+    // Scryfall's image CDN (cards.scryfall.io) rejects generic/library agents —
+    // a plain Node `fetch` sends `User-Agent: node`, which gets HTTP 400 — so
+    // send the same accurate UA the metadata client uses, exactly as Scryfall's
+    // API guidelines require.
+    const response = await fetchFn(url, {
+      signal: controller.signal,
+      headers: { 'User-Agent': userAgent, Accept: 'image/*,*/*;q=0.8' }
+    })
     if (!response.ok) {
       throw new Error(`Image download failed (HTTP ${response.status})`)
     }
@@ -289,7 +297,12 @@ export class ScryfallService {
       throw new Error(`Card ${cardId} has no face at index ${faceIndex}`)
     }
 
-    const data = await downloadImage(face.imageUrl, this.fetchFn, IMAGE_DOWNLOAD_TIMEOUT_MS)
+    const data = await downloadImage(
+      face.imageUrl,
+      this.fetchFn,
+      this.client.scryfallUserAgent,
+      IMAGE_DOWNLOAD_TIMEOUT_MS
+    )
     // Square the transparent rounded corners on download (filled with the card's
     // border colour) so every consumer — preview, upscaler, export — sees a clean
     // rectangular card.
@@ -321,6 +334,7 @@ export class ScryfallService {
     const data = await downloadImage(
       face.thumbUrl ?? face.imageUrl,
       this.fetchFn,
+      this.client.scryfallUserAgent,
       IMAGE_DOWNLOAD_TIMEOUT_MS
     )
     return this.cache.writeThumb(cardId, faceIndex, data)

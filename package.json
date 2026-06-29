@@ -1,6 +1,6 @@
 {
   "name": "phoxxphire-proxy",
-  "version": "1.1.0",
+  "version": "1.1.1",
   "description": "MTG proxy printing tool that upscales Scryfall card art with Real-ESRGAN before layout and print.",
   "author": "Ryan Alexander",
   "license": "MIT",
