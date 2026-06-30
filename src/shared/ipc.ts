@@ -17,6 +17,7 @@ import type {
 } from './deck'
 import type { ComboCardInput, ComboResult } from './combo'
 import type { DeckResolution, ImportProgress } from './decklist'
+import type { MpcfillImage } from './mpcfill'
 import type { DecklistExportOutcome, DecklistFormat } from './decklistExport'
 import type {
   CalibrationOutcome,
@@ -41,6 +42,7 @@ export const IpcChannel = {
   ScryfallResolveDeck: 'scryfall:resolveDeck',
   ScryfallImportUrl: 'scryfall:importUrl',
   ScryfallFindTokens: 'scryfall:findTokens',
+  MpcfillSearch: 'mpcfill:search',
   CombosFind: 'combos:find',
   /** Main → renderer push channel for per-card deck-import progress. */
   ScryfallImportProgress: 'scryfall:importProgress',
@@ -155,6 +157,8 @@ export interface PhoxxApi {
   ): Promise<DeckResolution>
   /** Distinct tokens / emblems created by the given deck cards, ready to add. */
   findTokens(cardIds: string[]): Promise<Card[]>
+  /** Search MPCFill (MPC Autofill) for community art options for a card name. */
+  searchMpcfill(name: string): Promise<MpcfillImage[]>
   /** Find the combos present in the deck via the Commander Spellbook API. */
   findCombos(cards: ComboCardInput[]): Promise<ComboResult>
   /** Subscribe to per-card deck-import progress; returns an unsubscribe function. */

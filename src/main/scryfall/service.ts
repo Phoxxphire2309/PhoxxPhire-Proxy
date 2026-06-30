@@ -16,6 +16,7 @@ import {
   type SearchOptions,
   type SearchResult
 } from '@shared/scryfall'
+import { downloadImage } from '../image/download'
 import { squareOffCorners } from '../image/processor'
 import { renderTextProxy } from '../image/textProxy'
 import { CardCache } from './cache'
@@ -48,33 +49,6 @@ async function forEachLimit<T>(
     for (let next = queue.shift(); next !== undefined; next = queue.shift()) await fn(next)
   }
   await Promise.all(Array.from({ length: Math.min(limit, items.length) }, () => worker()))
-}
-
-/** Downloads an image into the given face slot of the cache. */
-async function downloadImage(
-  url: string,
-  fetchFn: typeof fetch,
-  userAgent: string,
-  timeoutMs: number
-): Promise<Uint8Array> {
-  const controller = new AbortController()
-  const timer = setTimeout(() => controller.abort(), timeoutMs)
-  try {
-    // Scryfall's image CDN (cards.scryfall.io) rejects generic/library agents —
-    // a plain Node `fetch` sends `User-Agent: node`, which gets HTTP 400 — so
-    // send the same accurate UA the metadata client uses, exactly as Scryfall's
-    // API guidelines require.
-    const response = await fetchFn(url, {
-      signal: controller.signal,
-      headers: { 'User-Agent': userAgent, Accept: 'image/*,*/*;q=0.8' }
-    })
-    if (!response.ok) {
-      throw new Error(`Image download failed (HTTP ${response.status})`)
-    }
-    return new Uint8Array(await response.arrayBuffer())
-  } finally {
-    clearTimeout(timer)
-  }
 }
 
 /**

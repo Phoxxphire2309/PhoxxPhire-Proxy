@@ -15,6 +15,7 @@ import type {
 import type { MpcCard, MpcExportOutcome } from '@shared/mpc'
 import type { CardBackManager } from '../cardback/setup'
 import type { ScryfallService } from '../scryfall/service'
+import type { MpcfillService } from '../mpcfill/service'
 import type { UpscaleService } from '../upscale/service'
 import { applyColorProfile, buildMpcCardBack, buildMpcImage, extendBleed } from '../image/processor'
 import { buildCalibrationPdf } from './calibration'
@@ -23,6 +24,7 @@ import { ExportService } from './service'
 
 export interface ExportSetupOptions {
   scryfall: ScryfallService
+  mpcfill: MpcfillService
   upscale: UpscaleService
   cardBack: CardBackManager
 }
@@ -104,10 +106,15 @@ export function initExport(options: ExportSetupOptions): void {
       useUpscaled && options.upscale.available()
         ? options.upscale.ensureUpscaled(cardId, faceIndex)
         : options.scryfall.ensureFaceImage(cardId, faceIndex),
+    ensureMpcfillImage: (identifier) => options.mpcfill.ensureImage(identifier, 'source'),
     proxyImage: (cardId, faceIndex) => options.scryfall.ensureProxyImage(cardId, faceIndex),
-    processImage: async (bytes, exportOptions) => {
-      const bled = await extendBleed(bytes, exportOptions.bleedMm, exportOptions.bleedMode)
-      return applyColorProfile(bled, exportOptions.colorProfile)
+    processImage: async (bytes, exportOptions, alreadyBled) => {
+      // MPCFill images already include bleed, so only colour-manage them; Scryfall
+      // scans are borderless and get mirrored bleed added first.
+      const prepared = alreadyBled
+        ? bytes
+        : await extendBleed(bytes, exportOptions.bleedMm, exportOptions.bleedMode)
+      return applyColorProfile(prepared, exportOptions.colorProfile)
     },
     mpcImage: buildMpcImage,
     mpcCardBack: buildMpcCardBack,

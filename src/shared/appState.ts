@@ -1,5 +1,6 @@
 import type { DeckSection } from './deck'
 import type { ExportOptions } from './layout'
+import type { MpcfillSelection } from './mpcfill'
 import type { Card } from './scryfall'
 
 export type ThemeName = 'dark' | 'light'
@@ -36,6 +37,9 @@ export interface AppState {
   collection?: { owned: string[]; skipOwned: boolean }
   /** Enabled printing-filter keys (hide funny/borderless/banned-in-format/… versions). */
   printingFilters?: string[]
+  /** Per-card MPCFill art picks, keyed by `<cardId>:<faceIndex>`; cards without a
+   * pick use their Scryfall scan. */
+  mpcfillSelections?: Record<string, MpcfillSelection>
   /** UI preferences: active view, deck grouping, and search sort/view mode. */
   ui?: {
     view?: string

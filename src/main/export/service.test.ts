@@ -84,6 +84,40 @@ describe('ExportService.export', () => {
     expect(doc.getPageCount()).toBe(1)
   })
 
+  it('resolves MPCFill slots via Drive and skips the bleed step', async () => {
+    const ensureImage = vi.fn(async () => imagePath)
+    const ensureMpcfillImage = vi.fn(async () => imagePath)
+    const processImage = vi.fn(
+      async (bytes: Uint8Array, _options: unknown, _alreadyBled?: boolean) => bytes
+    )
+
+    const service = new ExportService({
+      resolveCard: async (id) => card(id, 1),
+      ensureImage,
+      ensureMpcfillImage,
+      processImage,
+      emit: () => {}
+    })
+
+    await service.export(
+      [
+        { cardId: 'mpc', faceIndex: 0, upscale: false, mpcfillIdentifier: 'drive-xyz' },
+        { cardId: 'scry', faceIndex: 0, upscale: false }
+      ],
+      DEFAULT_EXPORT_OPTIONS,
+      join(dir, 'mpc.pdf')
+    )
+
+    // The MPCFill slot goes through the Drive resolver, the other via Scryfall.
+    expect(ensureMpcfillImage).toHaveBeenCalledWith('drive-xyz')
+    expect(ensureImage).toHaveBeenCalledTimes(1)
+    expect(ensureImage).toHaveBeenCalledWith('scry', 0, false)
+    // MPCFill image is flagged already-bled (skip bleed); the Scryfall one is not.
+    const alreadyBledFlags = processImage.mock.calls.map((call) => call[2])
+    expect(alreadyBledFlags).toContain(true)
+    expect(alreadyBledFlags).toContain(false)
+  })
+
   it('prints slots in the given order across pages', async () => {
     const cards: Record<string, Card> = { a: card('a', 1), b: card('b', 1), c: card('c', 1) }
     const ensureImage = vi.fn(async (_cardId: string, _faceIndex: number, _upscale: boolean) =>

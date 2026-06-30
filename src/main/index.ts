@@ -4,9 +4,11 @@ import { IpcChannel } from '@shared/ipc'
 import {
   handleImageProtocol,
   registerImageProtocolScheme,
-  type FaceImageResolver
+  type FaceImageResolver,
+  type MpcfillImageResolver
 } from './scryfall/image-protocol'
 import { initScryfall } from './scryfall/setup'
+import { initMpcfill } from './mpcfill/setup'
 import { initUpscale } from './upscale/setup'
 import { initExport } from './export/setup'
 import { initDeckIo } from './deck/setup'
@@ -75,6 +77,11 @@ app.whenReady().then(async () => {
     cache,
     scryfall
   })
+  const mpcfill = initMpcfill({
+    cache,
+    version: app.getVersion(),
+    fetchFn: net.fetch as unknown as typeof fetch
+  })
 
   // thumb → medium JPEG for browsing; upscaled → Real-ESRGAN (when available);
   // source → full-resolution PNG for print/upscale.
@@ -87,10 +94,14 @@ app.whenReady().then(async () => {
       return scryfall.ensureFaceImage(cardId, faceIndex)
     }
   }
-  handleImageProtocol(resolver)
+  // MPCFill images are already print-ready Drive files — no Scryfall id, no upscale.
+  const mpcfillResolver: MpcfillImageResolver = {
+    resolveMpcfill: (identifier, quality) => mpcfill.service.ensureImage(identifier, quality)
+  }
+  handleImageProtocol(resolver, mpcfillResolver)
 
   const cardBack = initCardBack(app.getPath('userData'))
-  initExport({ scryfall, upscale, cardBack })
+  initExport({ scryfall, mpcfill: mpcfill.service, upscale, cardBack })
   initDeckIo()
   initCustomCards(cache)
   initCombos(net.fetch as unknown as typeof fetch)

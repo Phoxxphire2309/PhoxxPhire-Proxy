@@ -242,6 +242,12 @@ export interface ExportSlot {
   spacer?: boolean
   /** Print a rendered text proxy (oracle data) instead of the card scan. */
   textProxy?: boolean
+  /**
+   * Google Drive id of a chosen MPCFill image for this face. When set, the slot
+   * prints that community proxy instead of the Scryfall scan. MPCFill images are
+   * already full-bleed, so the bleed step is skipped for them.
+   */
+  mpcfillIdentifier?: string
 }
 
 export interface ExportRequest {

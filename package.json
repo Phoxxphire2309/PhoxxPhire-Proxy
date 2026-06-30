@@ -1,6 +1,6 @@
 {
   "name": "phoxxphire-proxy",
-  "version": "1.1.1",
+  "version": "2.0.0",
   "description": "MTG proxy printing tool that upscales Scryfall card art with Real-ESRGAN before layout and print.",
   "author": "Ryan Alexander",
   "license": "MIT",
@@ -12,7 +12,8 @@
   "scripts": {
     "dev": "electron-vite dev",
     "start": "electron-vite preview",
-    "build": "npm run typecheck && electron-vite build",
+    "check:changelog": "node scripts/check-changelog-version.mjs",
+    "build": "npm run check:changelog && npm run typecheck && electron-vite build",
     "package": "npm run build && electron-builder",
     "release": "npm run build && electron-builder --publish always",
     "setup:upscaler": "node scripts/fetch-upscaler.mjs",

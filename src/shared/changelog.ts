@@ -13,6 +13,16 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.0',
+    date: '2026-06-30',
+    highlights: [
+      'New card-art source: MPCFill. Open any card’s art picker and switch from Scryfall to MPCFill to use community-made proxy art (full-art, custom frames, alternate styles) instead of the official scan.',
+      'It’s per-card — pick MPCFill art for some cards and keep Scryfall scans for others, all in one deck. Cards using MPCFill show a small “MPC” badge in the deck grid.',
+      'Your choice carries all the way through: the print preview and your PDF, print and image exports use the MPCFill art you picked, with bleed handled automatically.',
+      'Settings → Card images has a one-click “reset everything back to Scryfall”.'
+    ]
+  },
+  {
     version: '1.1.1',
     date: '2026-06-29',
     highlights: [

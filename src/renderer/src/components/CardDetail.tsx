@@ -7,14 +7,19 @@ import {
   isHighRes,
   type Card
 } from '@shared/scryfall'
+import { mpcfillFaceKey, mpcfillImageUrl, type MpcfillImage } from '@shared/mpcfill'
 import { printingHidden } from '@shared/printingFilters'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { usePrintingFiltersStore } from '@renderer/state/printingFiltersStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { upscaleCardWithConfirm } from '@renderer/state/upscaleActions'
 import { useTextProxyStore } from '@renderer/state/textProxyStore'
+import { useImageSourceStore, useMpcfillSelection } from '@renderer/state/imageSourceStore'
 import { ManaCost } from '@renderer/components/ManaCost'
 import { useDeckStore } from '@renderer/state/deckStore'
+import { toast } from '@renderer/state/toastStore'
+
+type ArtSource = 'scryfall' | 'mpcfill'
 
 export function CardDetail({
   variant = 'modal'
@@ -31,10 +36,15 @@ export function CardDetail({
   const upscaledSet = useUpscaleStore((state) => state.upscaled)
   const proxies = useTextProxyStore((state) => state.proxies)
   const toggleProxy = useTextProxyStore((state) => state.toggle)
+  const selectMpcfill = useImageSourceStore((state) => state.selectMpcfill)
+  const clearMpcfill = useImageSourceStore((state) => state.clearMpcfill)
 
   const [printings, setPrintings] = useState<Card[]>([])
   const [loadingPrintings, setLoadingPrintings] = useState(false)
   const [faceIndex, setFaceIndex] = useState(0)
+  const [artSource, setArtSource] = useState<ArtSource>('scryfall')
+  const [mpcfillResults, setMpcfillResults] = useState<MpcfillImage[]>([])
+  const [mpcfillState, setMpcfillState] = useState<'idle' | 'loading' | 'error'>('idle')
   const [compare, setCompare] = useState(50)
   const [dragging, setDragging] = useState(false)
   const [setFilter, setSetFilter] = useState('')
@@ -53,6 +63,7 @@ export function CardDetail({
 
   const displayed = detailCard
   const oracleId = displayed?.oracleId ?? null
+  const mpcfillSelection = useMpcfillSelection(displayed?.id ?? '', faceIndex)
 
   // Close on Escape.
   useEffect(() => {
@@ -66,6 +77,35 @@ export function CardDetail({
 
   // Reset the viewed face when switching to a different card.
   useEffect(() => setFaceIndex(0), [detailCard?.id])
+
+  // Open the art tab on whichever source the face is currently using.
+  useEffect(() => {
+    if (!detailCard) return
+    const has = Boolean(
+      useImageSourceStore.getState().selections[mpcfillFaceKey(detailCard.id, faceIndex)]
+    )
+    setArtSource(has ? 'mpcfill' : 'scryfall')
+  }, [detailCard?.id, faceIndex, detailCard])
+
+  // Lazily search MPCFill for the face's name when the MPCFill tab is shown.
+  useEffect(() => {
+    if (!detailCard || artSource !== 'mpcfill') return
+    const query = detailCard.faces[faceIndex]?.name ?? detailCard.name
+    let cancelled = false
+    setMpcfillState('loading')
+    setMpcfillResults([])
+    window.phoxx
+      .searchMpcfill(query)
+      .then((results) => {
+        if (cancelled) return
+        setMpcfillResults(results)
+        setMpcfillState('idle')
+      })
+      .catch(() => !cancelled && setMpcfillState('error'))
+    return () => {
+      cancelled = true
+    }
+  }, [detailCard?.id, faceIndex, artSource, detailCard])
 
   // Load all printings for the displayed card's oracle id.
   useEffect(() => {
@@ -123,6 +163,27 @@ export function CardDetail({
     ? faceImageUrl(displayed.id, faceIndex, 'proxy')
     : faceImageUrl(displayed.id, faceIndex, 'thumb')
   const upscaledSrc = faceImageUrl(displayed.id, faceIndex, 'upscaled', settingsVersion)
+  // A face using MPCFill art previews that Drive image (the Scryfall upscale
+  // compare slider doesn't apply to it).
+  const previewSrc = mpcfillSelection
+    ? mpcfillImageUrl(mpcfillSelection.identifier, 'source')
+    : thumbSrc
+  const showCompareFinal = showCompare && !mpcfillSelection
+
+  // Choosing from either tab sets the card's per-card source: a Scryfall
+  // printing clears any MPCFill pick; an MPCFill image overrides the scan.
+  const chooseScryfall = (printing: Card): void => {
+    clearMpcfill(displayed.id, faceIndex)
+    choose(printing)
+  }
+  const chooseMpcfill = (image: MpcfillImage): void => {
+    selectMpcfill(displayed.id, faceIndex, {
+      identifier: image.identifier,
+      name: image.name,
+      source: image.source
+    })
+    toast(`Using MPCFill art by ${image.source}`, 'success')
+  }
 
   const panel = (
     <div className="detail__panel">
@@ -131,7 +192,7 @@ export function CardDetail({
       </button>
 
       <div className="detail__main">
-        {showCompare ? (
+        {showCompareFinal ? (
           <div
             className={`compare${dragging ? ' is-dragging' : ''}`}
             ref={compareRef}
@@ -184,7 +245,7 @@ export function CardDetail({
         ) : (
           <img
             className="detail__image"
-            src={thumbSrc}
+            src={previewSrc}
             alt={face?.name ?? displayed.name}
             draggable={false}
           />
@@ -207,7 +268,7 @@ export function CardDetail({
             <button
               className="detail__suggest"
               type="button"
-              onClick={() => choose(best)}
+              onClick={() => chooseScryfall(best)}
               title="Switch to a higher-resolution printing for a sharper upscale"
             >
               <span className="detail__suggest-icon" aria-hidden="true">
@@ -262,10 +323,25 @@ export function CardDetail({
           </div>
 
           <div className="detail__subrow">
-            <h3 className="detail__sub detail__sub--inline">
-              Printings{printings.length ? ` (${visiblePrintings.length})` : ''}
-            </h3>
-            {setCodes.length > 1 && (
+            <div className="segmented" role="group" aria-label="Card art source">
+              <button
+                type="button"
+                className={artSource === 'scryfall' ? 'is-on' : ''}
+                onClick={() => setArtSource('scryfall')}
+                aria-pressed={artSource === 'scryfall'}
+              >
+                Scryfall
+              </button>
+              <button
+                type="button"
+                className={artSource === 'mpcfill' ? 'is-on' : ''}
+                onClick={() => setArtSource('mpcfill')}
+                aria-pressed={artSource === 'mpcfill'}
+              >
+                MPCFill
+              </button>
+            </div>
+            {artSource === 'scryfall' && setCodes.length > 1 && (
               <select
                 className="prints__setfilter"
                 value={setFilter}
@@ -281,49 +357,114 @@ export function CardDetail({
               </select>
             )}
           </div>
-          {loadingPrintings ? (
-            <p className="detail__hint">Loading printings…</p>
-          ) : printings.length <= 1 ? (
-            <p className="detail__hint">No other printings found.</p>
-          ) : visiblePrintings.length === 0 ? (
-            <p className="detail__hint">No printings in {setFilter.toUpperCase()}.</p>
+
+          {artSource === 'scryfall' ? (
+            <>
+              <h3 className="detail__sub">
+                Printings{printings.length ? ` (${visiblePrintings.length})` : ''}
+              </h3>
+              {loadingPrintings ? (
+                <p className="detail__hint">Loading printings…</p>
+              ) : printings.length <= 1 ? (
+                <p className="detail__hint">No other printings found.</p>
+              ) : visiblePrintings.length === 0 ? (
+                <p className="detail__hint">No printings in {setFilter.toUpperCase()}.</p>
+              ) : (
+                <ul className="prints">
+                  {visiblePrintings.map((printing) => (
+                    <li key={printing.id}>
+                      <button
+                        type="button"
+                        className={`prints__item${
+                          printing.id === displayed.id && !mpcfillSelection ? ' is-active' : ''
+                        }`}
+                        onClick={() => chooseScryfall(printing)}
+                        title={`${printing.setCode.toUpperCase()} · #${printing.collectorNumber}`}
+                      >
+                        <img
+                          className="prints__thumb"
+                          src={faceImageUrl(printing.id, 0, 'thumb')}
+                          alt={`${printing.name} (${printing.setCode.toUpperCase()})`}
+                          loading="lazy"
+                          draggable={false}
+                        />
+                        <span className="prints__label">
+                          {printing.setCode.toUpperCase()}
+                          {isHighRes(printing) && <span className="prints__hd">HD</span>}
+                        </span>
+                        <span className="prints__price">{formatUsd(bestUsd(printing.prices))}</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {hiddenCount > 0 && (
+                <button
+                  type="button"
+                  className="prints__showhidden"
+                  onClick={() => setShowHidden((value) => !value)}
+                >
+                  {showHidden
+                    ? 'Hide filtered printings'
+                    : `Show ${hiddenCount} filtered printing${hiddenCount === 1 ? '' : 's'}`}
+                </button>
+              )}
+            </>
           ) : (
-            <ul className="prints">
-              {visiblePrintings.map((printing) => (
-                <li key={printing.id}>
-                  <button
-                    type="button"
-                    className={`prints__item${printing.id === displayed.id ? ' is-active' : ''}`}
-                    onClick={() => choose(printing)}
-                    title={`${printing.setCode.toUpperCase()} · #${printing.collectorNumber}`}
-                  >
-                    <img
-                      className="prints__thumb"
-                      src={faceImageUrl(printing.id, 0, 'thumb')}
-                      alt={`${printing.name} (${printing.setCode.toUpperCase()})`}
-                      loading="lazy"
-                      draggable={false}
-                    />
-                    <span className="prints__label">
-                      {printing.setCode.toUpperCase()}
-                      {isHighRes(printing) && <span className="prints__hd">HD</span>}
-                    </span>
-                    <span className="prints__price">{formatUsd(bestUsd(printing.prices))}</span>
-                  </button>
-                </li>
-              ))}
-            </ul>
-          )}
-          {hiddenCount > 0 && (
-            <button
-              type="button"
-              className="prints__showhidden"
-              onClick={() => setShowHidden((value) => !value)}
-            >
-              {showHidden
-                ? 'Hide filtered printings'
-                : `Show ${hiddenCount} filtered printing${hiddenCount === 1 ? '' : 's'}`}
-            </button>
+            <>
+              <h3 className="detail__sub">
+                MPCFill art{mpcfillResults.length ? ` (${mpcfillResults.length})` : ''}
+              </h3>
+              {mpcfillState === 'loading' ? (
+                <p className="detail__hint">Searching MPCFill…</p>
+              ) : mpcfillState === 'error' ? (
+                <p className="detail__hint">
+                  Couldn’t reach MPCFill — check your connection and try again.
+                </p>
+              ) : mpcfillResults.length === 0 ? (
+                <p className="detail__hint">
+                  No MPCFill art found for this card. It’ll use the Scryfall scan.
+                </p>
+              ) : (
+                <ul className="prints">
+                  {mpcfillResults.map((image) => (
+                    <li key={image.identifier}>
+                      <button
+                        type="button"
+                        className={`prints__item${
+                          mpcfillSelection?.identifier === image.identifier ? ' is-active' : ''
+                        }`}
+                        onClick={() => chooseMpcfill(image)}
+                        title={`${image.name} · ${image.source}`}
+                      >
+                        <img
+                          className="prints__thumb"
+                          src={mpcfillImageUrl(image.identifier, 'thumb')}
+                          alt={`${image.name} by ${image.source}`}
+                          loading="lazy"
+                          draggable={false}
+                        />
+                        <span className="prints__label">{image.source}</span>
+                        <span className="prints__price">{image.dpi}dpi</span>
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+              {mpcfillSelection && (
+                <button
+                  type="button"
+                  className="prints__showhidden"
+                  onClick={() => {
+                    clearMpcfill(displayed.id, faceIndex)
+                    setArtSource('scryfall')
+                    toast('Using the Scryfall scan', 'success')
+                  }}
+                >
+                  Use Scryfall scan instead
+                </button>
+              )}
+            </>
           )}
         </div>
       </div>

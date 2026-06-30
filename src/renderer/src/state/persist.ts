@@ -8,6 +8,7 @@ import { useSavedDecksStore } from '@renderer/state/savedDecksStore'
 import { usePrintingFiltersStore } from '@renderer/state/printingFiltersStore'
 import { useCollectionStore } from '@renderer/state/collectionStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
+import { useImageSourceStore } from '@renderer/state/imageSourceStore'
 import { useUiStore, type AppView } from '@renderer/state/uiStore'
 import { useSearchStore, type ViewMode } from '@renderer/state/searchStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
@@ -38,6 +39,9 @@ export async function loadPersistedState(): Promise<void> {
   }
   if (state.savedDecks) useSavedDecksStore.getState().restore(state.savedDecks)
   if (state.printingFilters) usePrintingFiltersStore.getState().restore(state.printingFilters)
+  if (state.mpcfillSelections) {
+    useImageSourceStore.getState().restore(state.mpcfillSelections)
+  }
   if (state.pageSetup) usePageSetupStore.getState().replace(state.pageSetup)
   if (state.pagePresets) usePageSetupStore.getState().restorePresets(state.pagePresets)
   if (state.collection) {
@@ -68,6 +72,7 @@ function snapshot(): AppState {
     activeDeckId: activeId,
     savedDecks: useSavedDecksStore.getState().decks,
     printingFilters: Object.keys(usePrintingFiltersStore.getState().active),
+    mpcfillSelections: useImageSourceStore.getState().selections,
     upscale: { model: upscale.model, scale: upscale.scale },
     upscaledCardIds: Object.keys(upscale.upscaled),
     theme: ui.theme,
@@ -107,6 +112,7 @@ export function startPersisting(): () => void {
     usePrintingFiltersStore.subscribe(schedule),
     useCollectionStore.subscribe(schedule),
     useUpscaleStore.subscribe(schedule),
+    useImageSourceStore.subscribe(schedule),
     useUiStore.subscribe(schedule),
     useSearchStore.subscribe(schedule),
     usePageSetupStore.subscribe(schedule)

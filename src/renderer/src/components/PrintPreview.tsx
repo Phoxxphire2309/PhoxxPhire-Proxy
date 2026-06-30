@@ -6,12 +6,13 @@ import {
   type ExportSlot,
   type Rect
 } from '@shared/layout'
-import { faceImageUrl } from '@shared/scryfall'
+import { mpcfillFaceKey } from '@shared/mpcfill'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useOrderStore } from '@renderer/state/orderStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
 import { useTextProxyStore } from '@renderer/state/textProxyStore'
 import { usePageSetupStore } from '@renderer/state/pageSetupStore'
+import { useFaceImageResolver, useImageSourceStore } from '@renderer/state/imageSourceStore'
 import { toast } from '@renderer/state/toastStore'
 
 /** A cut-guide overlay at the trim rectangle, matching the export style. */
@@ -47,6 +48,8 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
   const settingsVersion = useUpscaleStore((state) => state.settingsVersion)
   const proxies = useTextProxyStore((state) => state.proxies)
   const options = usePageSetupStore((state) => state.options)
+  const resolveImage = useFaceImageResolver()
+  const mpcfillSelections = useImageSourceStore((state) => state.selections)
 
   const dragIndex = useRef<number | null>(null)
   const [customBackUrl, setCustomBackUrl] = useState<string | null>(null)
@@ -110,7 +113,8 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
     const exportSlots: ExportSlot[] = slots.map((slot) => ({
       ...slot,
       upscale: Boolean(upscaledSet[slot.cardId]),
-      textProxy: Boolean(proxies[slot.cardId])
+      textProxy: Boolean(proxies[slot.cardId]),
+      mpcfillIdentifier: mpcfillSelections[mpcfillFaceKey(slot.cardId, slot.faceIndex)]?.identifier
     }))
     try {
       const outcome = await window.phoxx.exportPdf({ slots: exportSlots, options })
@@ -186,7 +190,7 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
                       ) : (
                         <img
                           className="preview__card"
-                          src={faceImageUrl(
+                          src={resolveImage(
                             spec.cardId,
                             spec.faceIndex,
                             proxies[spec.cardId] ? 'proxy' : isUpscaled ? 'upscaled' : 'thumb',
@@ -224,7 +228,7 @@ export function PrintPreview({ onClose }: { onClose: () => void }): React.JSX.El
                         {isDfc ? (
                           <img
                             className="preview__card"
-                            src={faceImageUrl(
+                            src={resolveImage(
                               spec.cardId,
                               1,
                               isUpscaled ? 'upscaled' : 'thumb',

@@ -4,6 +4,7 @@ import type { InstallPhase } from '@shared/upscaleInstall'
 import { FORMAT_BAN_FILTERS, GENERAL_PRINTING_FILTERS } from '@shared/printingFilters'
 import { usePrintingFiltersStore } from '@renderer/state/printingFiltersStore'
 import { useUpscaleStore } from '@renderer/state/upscaleStore'
+import { useImageSourceStore } from '@renderer/state/imageSourceStore'
 import { useUiStore } from '@renderer/state/uiStore'
 import { useDeckUiStore } from '@renderer/state/deckUiStore'
 import { toast } from '@renderer/state/toastStore'
@@ -52,6 +53,8 @@ function Setting({
 export function SettingsView(): React.JSX.Element {
   const theme = useUiStore((state) => state.theme)
   const setTheme = useUiStore((state) => state.setTheme)
+  const mpcfillCount = useImageSourceStore((state) => Object.keys(state.selections).length)
+  const clearMpcfillAll = useImageSourceStore((state) => state.clearAll)
   const activeFilters = usePrintingFiltersStore((state) => state.active)
   const toggleFilter = usePrintingFiltersStore((state) => state.toggle)
   const resetFilters = usePrintingFiltersStore((state) => state.reset)
@@ -139,6 +142,29 @@ export function SettingsView(): React.JSX.Element {
               ☀ Light
             </button>
           </div>
+        </Setting>
+      </section>
+
+      <section className="settings__card">
+        <h2 className="settings__title">Card images</h2>
+        <Setting
+          title="Art source"
+          description="Every card uses its Scryfall scan by default. In the Decks grid, a card's “Art” button switches just that card to MPCFill community proxy art — so a single deck can mix both."
+        >
+          {mpcfillCount > 0 ? (
+            <button
+              className="search__button"
+              type="button"
+              onClick={() => {
+                clearMpcfillAll()
+                toast('All cards reset to Scryfall', 'success')
+              }}
+            >
+              Reset {mpcfillCount} to Scryfall
+            </button>
+          ) : (
+            <span className="setting__desc">All Scryfall</span>
+          )}
         </Setting>
       </section>
 

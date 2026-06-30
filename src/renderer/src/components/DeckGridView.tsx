@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { bestUsd, faceImageUrl, formatUsd } from '@shared/scryfall'
+import { bestUsd, formatUsd } from '@shared/scryfall'
 import { DECK_SECTIONS, DECK_SECTION_LABELS, type DeckSection } from '@shared/deck'
 import { GROUP_OPTIONS, groupDeckItems, type GroupBy } from '@shared/deckGroup'
 import { DECK_SORT_OPTIONS, sortDeckItems, type DeckSortKey } from '@shared/deckSort'
@@ -9,6 +9,7 @@ import { useTextProxyStore } from '@renderer/state/textProxyStore'
 import { useDeckStore, type DeckItem } from '@renderer/state/deckStore'
 import { useDeckUiStore } from '@renderer/state/deckUiStore'
 import { usePrintingStore } from '@renderer/state/printingStore'
+import { useFaceImageResolver, useMpcfillSelection } from '@renderer/state/imageSourceStore'
 import { DeckTabs } from '@renderer/components/DeckTabs'
 
 /** One deck card as an art tile with quantity, section, and remove controls. */
@@ -18,6 +19,8 @@ function DeckGridCard({ item }: { item: DeckItem }): React.JSX.Element {
   const remove = useDeckStore((state) => state.remove)
   const openDeck = usePrintingStore((state) => state.openDeck)
   const isProxy = useTextProxyStore((state) => Boolean(state.proxies[item.card.id]))
+  const resolveImage = useFaceImageResolver()
+  const mpcfillPick = useMpcfillSelection(item.card.id, 0)
 
   const faceCount = Math.max(1, item.card.faces.length)
   const qty = item.quantities[0] ?? 0
@@ -34,11 +37,25 @@ function DeckGridCard({ item }: { item: DeckItem }): React.JSX.Element {
         aria-label={`Change version of ${item.card.name}`}
       >
         <img
-          src={faceImageUrl(item.card.id, 0, isProxy ? 'proxy' : 'thumb')}
+          src={resolveImage(item.card.id, 0, isProxy ? 'proxy' : 'thumb')}
           alt={item.card.name}
           loading="lazy"
           draggable={false}
         />
+        {mpcfillPick && (
+          <button
+            className="dgrid__source is-on"
+            type="button"
+            onClick={(event) => {
+              event.stopPropagation()
+              openDeck(item.card)
+            }}
+            aria-label={`Using MPCFill art by ${mpcfillPick.source} for ${item.card.name}`}
+            title={`MPCFill art by ${mpcfillPick.source} — click to change`}
+          >
+            MPC
+          </button>
+        )}
         <button
           className="dgrid__remove"
           type="button"

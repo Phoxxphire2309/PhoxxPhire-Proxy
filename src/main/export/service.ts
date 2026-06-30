@@ -20,10 +20,20 @@ export interface ExportServiceDeps {
   resolveCard: (cardId: string) => Promise<Card>
   /** Path to a face image — upscaled when `useUpscaled` is set and available, else source. */
   ensureImage: (cardId: string, faceIndex: number, useUpscaled: boolean) => Promise<string>
+  /** Path to a chosen MPCFill image by its Google Drive id (already full-bleed). */
+  ensureMpcfillImage?: (identifier: string) => Promise<string>
   /** Path to a rendered text-proxy image for a face (required for `textProxy` slots). */
   proxyImage?: (cardId: string, faceIndex: number) => Promise<string>
-  /** Optionally transform image bytes (e.g. add mirrored bleed). Defaults to passthrough. */
-  processImage?: (bytes: Uint8Array, options: ExportOptions) => Promise<Uint8Array>
+  /**
+   * Optionally transform image bytes (e.g. add mirrored bleed). `alreadyBled`
+   * is set for MPCFill images, which ship with bleed — so the bleed step is
+   * skipped to avoid double-bleeding (which would misalign the cut lines).
+   */
+  processImage?: (
+    bytes: Uint8Array,
+    options: ExportOptions,
+    alreadyBled?: boolean
+  ) => Promise<Uint8Array>
   /** Render a face image to MPC full-bleed spec (required for `exportMpc`). */
   mpcImage?: (bytes: Uint8Array) => Promise<Uint8Array>
   /** Build the common MPC card-back image (required for `exportMpc`). */
@@ -74,7 +84,9 @@ export class ExportService {
     pageCount: number
   }> {
     const slotKey = (slot: ExportSlot): string =>
-      `${slot.textProxy ? 'p' : slot.upscale ? 'u' : 's'} ${slot.faceIndex} ${slot.cardId}`
+      slot.mpcfillIdentifier
+        ? `m ${slot.mpcfillIdentifier}`
+        : `${slot.textProxy ? 'p' : slot.upscale ? 'u' : 's'} ${slot.faceIndex} ${slot.cardId}`
 
     // Prepare each unique image (per card / face / quality) exactly once. Blank
     // spacer slots carry no image and map to index -1.
@@ -87,13 +99,15 @@ export class ExportService {
     let completed = 0
     for (const key of keys) {
       const slot = uniqueSlots.get(key)!
-      const path =
-        slot.textProxy && this.deps.proxyImage
+      const isMpcfill = Boolean(slot.mpcfillIdentifier && this.deps.ensureMpcfillImage)
+      const path = isMpcfill
+        ? await this.deps.ensureMpcfillImage!(slot.mpcfillIdentifier!)
+        : slot.textProxy && this.deps.proxyImage
           ? await this.deps.proxyImage(slot.cardId, slot.faceIndex)
           : await this.deps.ensureImage(slot.cardId, slot.faceIndex, slot.upscale)
       const bytes = new Uint8Array(await readFile(path))
       uniqueImages.push(
-        this.deps.processImage ? await this.deps.processImage(bytes, options) : bytes
+        this.deps.processImage ? await this.deps.processImage(bytes, options, isMpcfill) : bytes
       )
       completed += 1
       this.deps.emit({ phase: 'preparing', completed, total: keys.length })

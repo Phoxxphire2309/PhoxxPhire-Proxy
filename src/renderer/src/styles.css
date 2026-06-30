@@ -1702,6 +1702,18 @@ h3 {
   display: block;
 }
 
+/* When the tile is a clickable choice (MPCFill picker). */
+button.pickgrid__art {
+  padding: 0;
+  cursor: pointer;
+  width: 100%;
+}
+
+button.pickgrid__art.is-on {
+  border-color: var(--accent);
+  box-shadow: 0 0 0 2px var(--accent);
+}
+
 .pickgrid__bar {
   display: flex;
   justify-content: center;
@@ -3553,6 +3565,34 @@ h3 {
 
 .dgrid__art:hover .dgrid__remove {
   opacity: 1;
+}
+
+/* Per-card "choose art source" pill (Scryfall ↔ MPCFill). */
+.dgrid__source {
+  position: absolute;
+  top: 6px;
+  left: 6px;
+  height: 24px;
+  padding: 0 9px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #fff;
+  background: rgba(8, 9, 11, 0.72);
+  border: none;
+  border-radius: 12px;
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.dgrid__art:hover .dgrid__source {
+  opacity: 1;
+}
+
+/* Stays lit while the card is showing a chosen MPCFill image. */
+.dgrid__source.is-on {
+  opacity: 1;
+  background: var(--accent);
 }
 
 .dgrid__bar {

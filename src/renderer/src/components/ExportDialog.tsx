@@ -1,5 +1,7 @@
 import { useEffect, useState } from 'react'
 import type { ExportProgress, ExportSlot } from '@shared/layout'
+import { mpcfillFaceKey } from '@shared/mpcfill'
+import { useImageSourceStore } from '@renderer/state/imageSourceStore'
 import { useDeckStore } from '@renderer/state/deckStore'
 import { useDecksStore } from '@renderer/state/decksStore'
 import { useOrderStore } from '@renderer/state/orderStore'
@@ -26,6 +28,7 @@ export function ExportDialog({
   const collection = useCollectionStore()
   const rotated = useRotateStore((state) => state.rotated)
   const proxies = useTextProxyStore((state) => state.proxies)
+  const mpcfillSelections = useImageSourceStore((state) => state.selections)
   // The active deck's name, used as the default export filename.
   const deckName = useDecksStore(
     (state) => state.tabs.find((tab) => tab.id === state.activeId)?.name
@@ -79,7 +82,9 @@ export function ExportDialog({
             faceIndex: slot.faceIndex,
             upscale: Boolean(upscaledSet[slot.cardId]),
             rotate: Boolean(rotated[slot.cardId]),
-            textProxy: Boolean(proxies[slot.cardId])
+            textProxy: Boolean(proxies[slot.cardId]),
+            mpcfillIdentifier:
+              mpcfillSelections[mpcfillFaceKey(slot.cardId, slot.faceIndex)]?.identifier
           }
     )
   const totalCards = exportSlots.length
