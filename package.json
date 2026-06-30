@@ -29,7 +29,7 @@
     "test:coverage": "vitest run --coverage"
   },
   "dependencies": {
-    "electron-updater": "6.8.3",
+    "electron-updater": "6.8.9",
     "mana-font": "1.18.0",
     "pdf-lib": "1.17.1",
     "react": "19.2.6",
