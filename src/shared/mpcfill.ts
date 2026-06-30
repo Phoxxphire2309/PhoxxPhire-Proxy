@@ -7,7 +7,26 @@
  * to Scryfall.
  */
 
-import { IMAGE_PROTOCOL, type ImageQuality } from './scryfall'
+import { IMAGE_PROTOCOL, type Card, type ImageQuality } from './scryfall'
+
+/** MPCFill indexes art by kind; tokens/emblems live apart from normal cards. */
+export type MpcfillCardType = 'CARD' | 'TOKEN'
+
+/**
+ * Which MPCFill index a card's art lives in. Tokens and emblems are indexed
+ * under `TOKEN` (so a "Blood" token finds Blood token art, not the card named
+ * Blood); everything else is a `CARD`.
+ */
+export function mpcfillCardType(card: Pick<Card, 'layout' | 'typeLine'>): MpcfillCardType {
+  const layout = card.layout?.toLowerCase() ?? ''
+  const typeLine = card.typeLine?.toLowerCase() ?? ''
+  const tokenish =
+    layout.includes('token') ||
+    layout === 'emblem' ||
+    typeLine.includes('token') ||
+    typeLine.includes('emblem')
+  return tokenish ? 'TOKEN' : 'CARD'
+}
 
 /** A single MPCFill image option for a card (one Google Drive file). */
 export interface MpcfillImage {

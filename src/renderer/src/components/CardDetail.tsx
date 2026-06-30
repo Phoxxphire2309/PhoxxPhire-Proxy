@@ -7,7 +7,12 @@ import {
   isHighRes,
   type Card
 } from '@shared/scryfall'
-import { mpcfillFaceKey, mpcfillImageUrl, type MpcfillImage } from '@shared/mpcfill'
+import {
+  mpcfillCardType,
+  mpcfillFaceKey,
+  mpcfillImageUrl,
+  type MpcfillImage
+} from '@shared/mpcfill'
 import { printingHidden } from '@shared/printingFilters'
 import { usePrintingStore } from '@renderer/state/printingStore'
 import { usePrintingFiltersStore } from '@renderer/state/printingFiltersStore'
@@ -95,7 +100,7 @@ export function CardDetail({
     setMpcfillState('loading')
     setMpcfillResults([])
     window.phoxx
-      .searchMpcfill(query)
+      .searchMpcfill(query, mpcfillCardType(detailCard))
       .then((results) => {
         if (cancelled) return
         setMpcfillResults(results)

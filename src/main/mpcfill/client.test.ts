@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from 'vitest'
+import { mpcfillCardType } from '@shared/mpcfill'
 import { RateLimiter } from '../scryfall/rate-limiter'
 import { MpcfillClient, MpcfillError } from './client'
 
@@ -78,6 +79,32 @@ describe('MpcfillClient', () => {
       [3, true]
     ])
     expect(body.queries).toEqual([{ query: 'whatever', cardType: 'CARD' }])
+  })
+
+  it('searches the TOKEN index for tokens (so "Blood" finds token art, not cards)', async () => {
+    const fetchFn = routedFetch({
+      sources: { results: { '1': {} } },
+      // MPCFill returns token ids under the TOKEN bucket, not CARD.
+      editorSearch: { results: { Blood: { CARD: ['a-card'], TOKEN: ['a-token'] } } },
+      cards: { results: { 'a-token': { identifier: 'a-token', name: 'Blood (Token)', sourceName: 'X', dpi: 1200, extension: 'png' } } }
+    })
+
+    const images = await makeClient(fetchFn).searchImages('Blood', 'TOKEN')
+
+    expect(images.map((i) => i.identifier)).toEqual(['a-token'])
+    const editorCall = (fetchFn as ReturnType<typeof vi.fn>).mock.calls.find((c) =>
+      String(c[0]).includes('/2/editorSearch/')
+    )!
+    expect(JSON.parse((editorCall[1] as RequestInit).body as string).queries).toEqual([
+      { query: 'Blood', cardType: 'TOKEN' }
+    ])
+  })
+
+  it('classifies tokens/emblems vs cards', () => {
+    expect(mpcfillCardType({ layout: 'token', typeLine: 'Token Artifact — Blood' })).toBe('TOKEN')
+    expect(mpcfillCardType({ layout: 'double_faced_token' })).toBe('TOKEN')
+    expect(mpcfillCardType({ layout: 'emblem', typeLine: 'Emblem' })).toBe('TOKEN')
+    expect(mpcfillCardType({ layout: 'normal', typeLine: 'Artifact' })).toBe('CARD')
   })
 
   it('returns nothing for a blank query without hitting the network', async () => {

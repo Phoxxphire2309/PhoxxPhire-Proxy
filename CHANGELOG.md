@@ -3,6 +3,16 @@
 All notable changes to this project are documented here. This project adheres to
 [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+## [2.0.1] - 2026-06-30
+
+### Fixed
+
+- MPCFill art search was too broad. It used fuzzy matching (so "Blood" returned
+  every card containing "blood", e.g. Bloodthirster) and always queried the
+  `CARD` index, so token art (a "Blood" token) returned cards rather than token
+  art. Search is now exact (`fuzzySearch: false`) and chooses the `CARD` vs
+  `TOKEN` index from the card's `layout`/`typeLine`.
+
 ## [2.0.0] - 2026-06-30
 
 ### Added
@@ -50,6 +60,7 @@ All notable changes to this project are documented here. This project adheres to
 - Deck library, printing filters, additional deck imports, language support, and
   printing fixes.
 
+[2.0.1]: https://github.com/phoxxphire/proxy/releases/tag/v2.0.1
 [2.0.0]: https://github.com/phoxxphire/proxy/releases/tag/v2.0.0
 [1.1.1]: https://github.com/phoxxphire/proxy/releases/tag/v1.1.1
 [1.1.0]: https://github.com/phoxxphire/proxy/releases/tag/v1.1.0

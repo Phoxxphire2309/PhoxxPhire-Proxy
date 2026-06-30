@@ -13,6 +13,14 @@ export interface ChangelogEntry {
 
 export const CHANGELOG: ChangelogEntry[] = [
   {
+    version: '2.0.1',
+    date: '2026-06-30',
+    highlights: [
+      'Fixed MPCFill art search so it finds the exact card you’re viewing instead of every card that shares a word — searching a “Blood” token no longer shows Bloodthirster and friends.',
+      'Token and emblem art is now matched correctly (tokens are searched in MPCFill’s token library, not the main card list).'
+    ]
+  },
+  {
     version: '2.0.0',
     date: '2026-06-30',
     highlights: [

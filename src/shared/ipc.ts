@@ -17,7 +17,7 @@ import type {
 } from './deck'
 import type { ComboCardInput, ComboResult } from './combo'
 import type { DeckResolution, ImportProgress } from './decklist'
-import type { MpcfillImage } from './mpcfill'
+import type { MpcfillCardType, MpcfillImage } from './mpcfill'
 import type { DecklistExportOutcome, DecklistFormat } from './decklistExport'
 import type {
   CalibrationOutcome,
@@ -158,7 +158,7 @@ export interface PhoxxApi {
   /** Distinct tokens / emblems created by the given deck cards, ready to add. */
   findTokens(cardIds: string[]): Promise<Card[]>
   /** Search MPCFill (MPC Autofill) for community art options for a card name. */
-  searchMpcfill(name: string): Promise<MpcfillImage[]>
+  searchMpcfill(name: string, cardType?: MpcfillCardType): Promise<MpcfillImage[]>
   /** Find the combos present in the deck via the Commander Spellbook API. */
   findCombos(cards: ComboCardInput[]): Promise<ComboResult>
   /** Subscribe to per-card deck-import progress; returns an unsubscribe function. */

@@ -1,5 +1,6 @@
 import { ipcMain } from 'electron'
 import { IpcChannel } from '@shared/ipc'
+import type { MpcfillCardType } from '@shared/mpcfill'
 import type { CardCache } from '../scryfall/cache'
 import { MpcfillClient } from './client'
 import { MpcfillService } from './service'
@@ -27,7 +28,9 @@ export function initMpcfill(options: MpcfillSetupOptions): { service: MpcfillSer
   const client = new MpcfillClient({ userAgent, fetchFn: options.fetchFn })
   const service = new MpcfillService(options.cache, options.fetchFn, userAgent)
 
-  ipcMain.handle(IpcChannel.MpcfillSearch, (_event, name: string) => client.searchImages(name))
+  ipcMain.handle(IpcChannel.MpcfillSearch, (_event, name: string, cardType?: MpcfillCardType) =>
+    client.searchImages(name, cardType)
+  )
 
   return { service }
 }

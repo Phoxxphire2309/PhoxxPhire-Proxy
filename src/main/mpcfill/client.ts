@@ -1,4 +1,4 @@
-import type { MpcfillImage } from '@shared/mpcfill'
+import type { MpcfillCardType, MpcfillImage } from '@shared/mpcfill'
 import { RateLimiter } from '../scryfall/rate-limiter'
 
 const DEFAULT_BASE_URL = 'https://mpcfill.com'
@@ -76,10 +76,10 @@ export class MpcfillClient {
   }
 
   /** Searches MPCFill for a card name and returns ranked image options. */
-  async searchImages(query: string): Promise<MpcfillImage[]> {
+  async searchImages(query: string, cardType: MpcfillCardType = 'CARD'): Promise<MpcfillImage[]> {
     const trimmed = query.trim()
     if (!trimmed) return []
-    const identifiers = (await this.editorSearch(trimmed)).slice(0, MAX_RESULTS)
+    const identifiers = (await this.editorSearch(trimmed, cardType)).slice(0, MAX_RESULTS)
     if (identifiers.length === 0) return []
     const docs = await this.getCards(identifiers)
     // Preserve MPCFill's ranking order (getCards returns an unordered map).
@@ -95,20 +95,22 @@ export class MpcfillClient {
       }))
   }
 
-  private async editorSearch(query: string): Promise<string[]> {
+  private async editorSearch(query: string, cardType: MpcfillCardType): Promise<string[]> {
     const sources = await this.getSourcePks()
     const body = {
       searchSettings: {
         filterSettings: FILTER_SETTINGS,
-        searchTypeSettings: { filterCardbacks: false, fuzzySearch: true },
+        // Exact name match: fuzzy search returns every card *containing* the
+        // query (e.g. "Blood" → 1000+ "blood…" cards) instead of the card itself.
+        searchTypeSettings: { filterCardbacks: false, fuzzySearch: false },
         sourceSettings: { sources: sources.map((pk) => [pk, true] as [number, boolean]) }
       },
-      queries: [{ query, cardType: 'CARD' }]
+      queries: [{ query, cardType }]
     }
     const json = await this.post('/2/editorSearch/', body)
     const results = (json as { results?: Record<string, Record<string, string[]>> }).results ?? {}
     const firstQuery = Object.values(results)[0] ?? {}
-    return Array.isArray(firstQuery.CARD) ? firstQuery.CARD : []
+    return Array.isArray(firstQuery[cardType]) ? firstQuery[cardType] : []
   }
 
   private async getCards(identifiers: string[]): Promise<Map<string, CardDocument>> {
